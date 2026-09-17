@@ -1,0 +1,40 @@
+// ============================================================
+// 墓区设置页样式：公共结构引自业务公共样式库，本文件仅保留本页特有覆盖 20260914 抽取
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 卡片页公共结构（前缀 room） ====================
+.cms-list-panel(room);
+.cms-list-body(room);
+.cms-list-toolbar(room);
+.cms-no-data(room);
+.cms-card-layout(room);
+.cms-card-basic(room);
+// 空位卡与正常卡同边框同底色，仅“空位”文字保留占位色
+.cms-card-empty-plain(room);
+// 卡片统一迭代样式套件：hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐 20260916 抽取
+.cms-card-hover-highlight(room);
+.cms-card-head-pill(room);
+.cms-card-meta-between(room);
+.cms-card-status-tags(room);
+// 卡片操作有三个链接，间距略小于默认以适配卡片宽度
+.cms-card-actions-between(room, var(--td-comp-margin-m));
+
+.room-page-content {
+  .cms-page-content();
+}
+
+.operation-container {
+  .cms-operation-container-card();
+
+  justify-content: flex-end;
+}
+
+// ==================== 新建/修改表单（紧凑版：与销售页开单表单一致） ====================
+.form-basic-container {
+  .cms-form-basic-compact();
+}
+
+.form-submit-container {
+  .cms-form-submit-compact();
+}

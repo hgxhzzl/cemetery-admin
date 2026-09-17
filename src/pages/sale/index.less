@@ -1,0 +1,45 @@
+// ============================================================
+// 墓区销售基础页样式：公共结构引自业务公共样式库，本文件仅保留本页特有覆盖 20260914 抽取
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 卡片页公共结构（前缀 sale） ====================
+.cms-list-panel(sale);
+.cms-list-body(sale);
+.cms-list-toolbar(sale);
+.cms-no-data(sale);
+.cms-card-layout(sale);
+.cms-card-basic(sale);
+.cms-card-empty-dashed(sale);
+// 卡片统一迭代样式套件：与墓区设置页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260916 抽取
+.cms-card-hover-highlight(sale);
+.cms-card-head-pill(sale);
+.cms-card-meta-between(sale);
+.cms-card-status-tags(sale);
+.cms-card-actions-between(sale);
+
+.sale-page-content {
+  .cms-page-content();
+}
+
+.operation-container {
+  .cms-operation-container-card();
+
+  justify-content: flex-end;
+}
+
+// ==================== 开单表单（紧凑版：尽量一屏展示） ====================
+.form-basic-container {
+  .cms-form-basic-compact();
+  // 输入框行固定宽度为销售页原有规则，随公共库拆分保留在本页 20260917 修改
+  .cms-form-inputs-fixed();
+}
+
+.form-submit-container {
+  .cms-form-submit-compact();
+}
+
+// ==================== 只读信息行（表单墓位信息，两列布局） ====================
+.info-block {
+  .cms-info-block();
+}

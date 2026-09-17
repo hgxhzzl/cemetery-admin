@@ -1,0 +1,900 @@
+// ============================================================
+// 业务公共样式库：墓区系统实际业务页（非模板页）共享样式 20260914 抽取 20260914 合并单文件
+// 引用方式：业务页 scoped style 内 @import '../../style/business/index.less';
+// 约定：
+//   1. 页面 index.less 只保留本页特有样式；公共调整必须改本库，禁止回页面重复定义
+//   2. 带页面前缀的结构以 mixin 生成，页面调用时传本页前缀
+//   3. 颜色/间距/圆角统一使用 var(--td-*) 设计 token，保证亮暗主题与品牌色自适应
+// ============================================================
+
+// 业务页统一间距变量：查询条件之间空隙（卡片页 filter-inline 与查询页 filter-row 共用），改一处全站生效
+@cms-filter-gap: 24px;
+@cms-business-basic-filter-label-width: 84px;
+@cms-business-basic-filter-control-width: 200px;
+@cms-business-basic-filter-item-width: 286px;
+@cms-query-filter-control-width: @cms-business-basic-filter-control-width;
+@cms-query-filter-date-width: 360px;
+@cms-query-filter-keyword-width: 480px;
+
+// ============ 模块：base.less ============
+
+// ============================================================
+// 业务公共样式库：通用容器与操作区（无页面前缀，跨页面直接复用）20260914 抽取
+// 来源：sale/room/reserve/buried/adminfee/contacts 六页逐字相同的公共块
+// ============================================================
+
+// 白色内容容器：列表页外层卡片容器
+.list-common-table {
+  background-color: var(--td-bg-color-container);
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  border-radius: var(--td-radius-medium);
+
+  .table-container {
+    margin-top: var(--td-comp-margin-xxl);
+  }
+}
+
+// 表格树容器：小屏不做响应式换行，保持最小宽度，显示不下时由外层出横向滚动条
+.table-tree-container {
+  background-color: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium);
+  // min-width 1100px 为树布局时代遗留（7 个卡片页均已去树），窄视口下产生页面级横向溢出 20260917 移除
+}
+
+.list-tree-content {
+  border-left: 1px solid var(--td-border-level-1-color);
+  overflow: hidden;
+}
+
+// 与列表树并排的主内容区（带页面前缀，mixin 生成）
+.cms-page-content() {
+  border-left: 0;
+  width: 100%;
+  // 不再设内容区 min-width 保底：卡片网格宽度由内容撑开、由卡片区自身滚动条承接，
+  // 保底反而在窄视口产生页面级横向滚动条（与卡片区滚动条重复）20260917 修改
+}
+
+// 操作按钮容器（基本版：右对齐）；查询页扩展版见 query-page.less
+.cms-operation-container() {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+// 卡片页筛选区右侧操作容器：按钮间距统一、允许换行，避免页面模板再写内联边距或占位标签
+.cms-operation-container-card() {
+  .cms-operation-container();
+
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: var(--td-comp-margin-s);
+}
+
+// ============ 模块：card-page.less ============
+
+// ============================================================
+// 业务公共样式库：墓位卡片列表页结构（sale/room/reserve/buried/adminfee/contacts）20260914 抽取
+// 前缀 mixin 模式：页面调用 mixin 传入本页前缀，生成带前缀的类名；
+// 卡片细节差异（宽度/圆角/内边距/空位卡/操作行）通过参数或独立 mixin 切换。
+// ============================================================
+
+// 列表面板：初始未查询时高度随内容自适应，查询后铺满视口
+.cms-list-panel(@prefix) {
+  .@{prefix}-list-panel {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    padding-bottom: var(--td-comp-margin-m);
+
+    &--full {
+      height: calc(100vh - 220px);
+      min-height: 520px;
+    }
+  }
+}
+
+// 卡片业务页统一筛选表单类：room/sale/buried/reserve/contacts/adminfee 共用同一类名
+.cms-business-basic-filter-labels() {
+  :deep(.t-form__item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.t-form__label) {
+    float: left;
+    width: @cms-business-basic-filter-label-width;
+    padding-right: 6px;
+    text-align: left;
+  }
+}
+
+.cms-card-filter-bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding-bottom: 4px;
+  background-color: var(--td-bg-color-container);
+
+  .cms-business-basic-filter-labels();
+}
+
+// 卡片业务页统一筛选条件行类：固定两项宽度，保持横向位置一致
+.cms-card-filter-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: @cms-filter-gap;
+}
+
+// 查询条件项公共基类：卡片页与查询页共用，修饰类再决定各自宽度策略
+.cms-filter-item {
+  min-width: 0;
+  margin-right: 0;
+}
+
+// 列表主体：卡片区弹性占满剩余高度
+.cms-list-body(@prefix) {
+  .@{prefix}-list-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+}
+
+// 列表底部工具行：左侧记录数、右侧缩放图标
+.cms-list-toolbar(@prefix) {
+  .@{prefix}-list-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    color: var(--td-text-color-secondary);
+    font-size: var(--td-font-size-body-medium);
+
+    &__zoom {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--td-comp-margin-m);
+    }
+
+    &__zoom-icon {
+      cursor: pointer;
+      font-size: 18px;
+      color: var(--td-text-color-secondary);
+      transition: color 0.2s linear;
+
+      &:hover {
+        color: var(--td-brand-color);
+      }
+    }
+  }
+}
+
+// 无数据提示：筛选表单下方居中
+.cms-no-data(@prefix) {
+  .@{prefix}-no-data {
+    padding: var(--td-comp-paddingTB-xl) 0;
+    color: var(--td-text-color-placeholder);
+    font-size: var(--td-font-size-body-medium);
+    text-align: center;
+  }
+}
+
+// 卡片区：自身滚动条（横竖按需出现）+ 排/行/网格结构
+.cms-card-layout(@prefix) {
+  .@{prefix}-card-layout {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--td-scrollbar-color) var(--td-bg-color-secondarycontainer);
+
+    &::-webkit-scrollbar:vertical {
+      width: 10px;
+      height: auto;
+    }
+
+    &::-webkit-scrollbar:horizontal {
+      height: 10px;
+      width: auto;
+    }
+
+    &::-webkit-scrollbar-thumb:vertical {
+      background-color: var(--td-scrollbar-color);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-thumb:horizontal {
+      background-color: var(--td-scrollbar-color);
+      border-radius: 999px;
+    }
+
+    &::-webkit-scrollbar-track:vertical {
+      background-color: var(--td-bg-color-secondarycontainer);
+    }
+
+    &::-webkit-scrollbar-track:horizontal {
+      background-color: var(--td-bg-color-secondarycontainer);
+    }
+
+    .@{prefix}-card-rows {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 100%;
+      width: max-content;
+    }
+
+    .@{prefix}-card-row {
+      display: block;
+    }
+
+    .@{prefix}-card-grid {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 4px;
+      width: max-content;
+      padding-bottom: 0;
+    }
+  }
+}
+
+// 卡片基体与信息结构：卡片宽度/圆角/内边距可参数化；空位卡与操作行由独立 mixin 提供
+.cms-card-basic(@prefix, @card-width: 142px, @card-radius: var(--td-radius-large), @card-padding: 8px 10px) {
+  .@{prefix}-card {
+    flex: 0 0 @card-width;
+    min-height: 152px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: @card-padding;
+    border: 1px solid var(--td-border-level-1-color);
+    border-radius: @card-radius;
+    background-color: var(--td-bg-color-container);
+  }
+
+  .@{prefix}-card__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--td-comp-margin-s);
+    margin-bottom: var(--td-comp-margin-s);
+  }
+
+  .@{prefix}-card__serial {
+    color: var(--td-text-color-primary);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 22px;
+  }
+
+  .@{prefix}-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--td-comp-margin-s);
+  }
+
+  .@{prefix}-card__meta {
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+    line-height: 16px;
+    word-break: break-all;
+  }
+
+  .@{prefix}-card__empty-text {
+    line-height: 22px;
+  }
+}
+
+// 空位卡（虚线边框 + 灰底）：sale/reserve/adminfee/contacts
+.cms-card-empty-dashed(@prefix) {
+  // 与 plain 版相同的骨架复用统一名称，仅补虚线边框与灰底差异 20260917 合并
+  .cms-card-empty-plain(@prefix);
+
+  .@{prefix}-card--empty {
+    border-style: dashed;
+    background-color: var(--td-bg-color-page);
+  }
+}
+
+// 空位卡（与正常卡同边框同底色，仅“空位”文字占位色）：room
+.cms-card-empty-plain(@prefix) {
+  .@{prefix}-card--empty {
+    justify-content: flex-start;
+    color: var(--td-text-color-placeholder);
+
+    .@{prefix}-card__body {
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0;
+    }
+  }
+}
+
+// ============================================================
+// 卡片统一迭代样式套件：墓区设置/销售页卡片共用（胶囊/两端对齐/hover 凸显）20260916 抽取
+// ============================================================
+
+// 卡片 hover 凸显：默认浅阴影，hover 外框加深品牌色 + 阴影加深；空位卡保持静止
+.cms-card-hover-highlight(@prefix) {
+  .@{prefix}-card {
+    box-shadow: 0 1px 4px rgb(0 0 0 / 4%);
+    transition: border-color 0.2s linear, box-shadow 0.2s linear;
+
+    &:hover {
+      // 不上移，避免上边框被上方卡片阴影遮挡
+      border-color: var(--td-brand-color);
+      box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
+    }
+  }
+
+  .@{prefix}-card--empty {
+    &:hover {
+      border-color: var(--td-border-level-1-color);
+      box-shadow: 0 1px 4px rgb(0 0 0 / 4%);
+    }
+  }
+}
+
+// 卡片胶囊公共基体：首行类型胶囊与状态胶囊共用（内边距/圆角/字号/不换行）20260917 合并
+.cms-card-pill() {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+// 卡片首行右侧胶囊（墓穴类型等类型值，橙色底）
+.cms-card-head-pill(@prefix) {
+  .@{prefix}-card__type {
+    flex-shrink: 0;
+    .cms-card-pill();
+
+    background-color: var(--td-warning-color-light);
+    color: var(--td-warning-color);
+  }
+}
+
+// 卡片信息行两端对齐：标签在左、值在右，长值省略号截断
+.cms-card-meta-between(@prefix) {
+  .@{prefix}-card__meta {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--td-comp-margin-s);
+
+    &-label {
+      flex-shrink: 0;
+    }
+
+    &-value {
+      min-width: 0;
+      overflow: hidden;
+      text-align: right;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+}
+
+// 卡片状态胶囊：销售/下葬两枚两端分布，中性灰底 + 语义色文字，亮/暗主题自适应
+.cms-card-status-tags(@prefix) {
+  .@{prefix}-card__status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 3px;
+  }
+
+  .@{prefix}-card__tag {
+    display: inline-block;
+    .cms-card-pill();
+
+    // 已销售：中性灰底，文字绿色区分
+    &--sold {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-success-color);
+    }
+
+    // 未销售/未下葬/未迁出/未预定：中性灰
+    &--unsold,
+    &--incomplet,
+    &--notOut,
+    &--unreserved {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-text-color-secondary);
+    }
+
+    // 预定/核对：橙色
+    &--reserve,
+    &--examine {
+      background-color: var(--td-warning-color-light);
+      color: var(--td-warning-color);
+    }
+
+    // 已下葬/已预定：中性灰底，文字蓝色区分
+    &--buried,
+    &--reserved {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-brand-color);
+    }
+
+    // 已迁出：文字红色区分（终态），背色中性灰底与其余胶囊一致，迁出页特有 20260917 补充
+    &--out {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-error-color);
+    }
+  }
+}
+
+// 卡片操作行两端对齐 + 链接字号覆盖（13px/20px，t-link 默认 14px/22px）
+.cms-card-actions-between(@prefix, @gap: var(--td-comp-margin-l)) {
+  .@{prefix}-card__actions {
+    display: flex;
+    justify-content: space-between;
+    gap: @gap;
+
+    :deep(.t-link) {
+      font-size: 13px;
+      line-height: 20px;
+    }
+  }
+}
+
+// ============ 模块：query-page.less ============
+
+// ============================================================
+// 业务公共样式库：查询列表页（buriedQuery/saleQuery/adminfeeQuery/contactsQuery）20260914 抽取
+// ============================================================
+
+// 详情视图显示时隐藏列表：不用 display:none，改为高度塌陷+不可见。
+// display:none 使表格尺寸归零，TDesign 内部 ResizeObserver 会在隐藏期间以 0 尺寸刷新
+// 固定列偏移与表头 sticky 状态，返回列表后 200ms 延迟修正期间列表错位晃动；
+// 该方式保持表格布局尺寸不变，隐藏/显示均不触发重算
+.list-view-hidden {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+}
+
+// 查询页卡片容器：高度随屏幕自适应：视口高减上方布局区约 220px；小屏保底 520px
+.cms-list-card-container-fill() {
+  // 内边距与卡片内部留白复用普通版，仅补充满高尺寸 20260917 合并
+  .cms-list-card-container();
+
+  height: calc(100vh - 220px);
+  min-height: 520px;
+}
+
+.cms-query-list-card-container {
+  .cms-list-card-container-fill();
+}
+
+// 查询页统一筛选表单类：saleQuery/buriedQuery/adminfeeQuery/contactsQuery 共用同一类名
+.cms-query-filter-form {
+  margin-bottom: var(--td-comp-margin-xxl);
+
+  .cms-business-basic-filter-labels();
+}
+
+.cms-query-filter-row {
+  display: flex;
+  align-items: center;
+  column-gap: @cms-filter-gap;
+  flex-wrap: nowrap;
+}
+
+.cms-query-filter-row-fixed-three {
+  .cms-filter-item {
+    flex: 0 0 auto;
+  }
+
+  // 基础条件项宽度与全局 .cms-filter-item-basic 相同，不再重复声明 20260917 合并
+  .cms-filter-item-date-range {
+    width: @cms-query-filter-date-width;
+  }
+}
+
+// 查询页筛选条件项默认可弹性收缩，必要时再由修饰类固定宽度
+.cms-filter-item-query {
+  flex: 1 1 auto;
+}
+
+// 区域/园区条件项按 80px 标题宽度预留横向空间，避免与后续操作按钮挤压时过早换行
+.cms-filter-item-basic {
+  width: @cms-business-basic-filter-item-width;
+  max-width: @cms-business-basic-filter-item-width;
+}
+
+.cms-filter-item-date-range {
+  max-width: @cms-query-filter-date-width;
+}
+
+.cms-filter-item-keyword {
+  max-width: @cms-query-filter-keyword-width;
+}
+
+// 区域/园区下拉框固定 240px（与卡片页筛选控件宽度一致）；时间段/关键词控件保持弹性撑满
+.cms-filter-control {
+  width: @cms-query-filter-control-width;
+}
+
+.cms-filter-item-date-range .cms-filter-control,
+.cms-filter-item-keyword .cms-filter-control {
+  width: 100%;
+}
+
+// 操作按钮容器（查询版：固定在行尾不收缩）
+.cms-operation-container-extended() {
+  .cms-operation-container();
+
+  flex: 0 0 auto;
+  margin-left: auto;
+  gap: var(--td-comp-margin-s);
+}
+
+.cms-query-operation-container {
+  .cms-operation-container-extended();
+}
+
+// 底部信息行：左总数右状态
+.cms-query-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-left: 15px;
+  padding-right: 15px;
+  margin-top: var(--td-comp-margin-m);
+}
+
+// 左侧：总数 + 金额合计，间距 24px 与筛选行一致
+.cms-query-summary-left {
+  display: flex;
+  align-items: center;
+  column-gap: 24px;
+}
+
+// 金额合计：与列表金额列相同的强调色，视觉突出
+.cms-query-summary-amount {
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+}
+
+// 加载状态文字：浅色小字
+.cms-query-summary-status {
+  color: var(--td-text-color-placeholder);
+  font-size: 14px;
+}
+
+// 数据行高度与销售/合同列表页一致(48px)：td 上下内边距由默认 12px 调整为 13px(13+22+13=48)
+:deep(.t-table__body td) {
+  padding-top: 13px;
+  padding-bottom: 13px;
+}
+
+// 表格最小宽度与列宽总和一致：容器足够时铺满适应屏幕，容器不足时横向滚动而非压缩截断
+// 设置在内部 table 而非 .t-table 容器：若设在容器上会把卡片撑破溢出，
+// 设在 table 上则走 .t-table__content 内部滚动，fixed 列保持正常吸附 20260915 修改
+.cms-query-table-min-width(@width) {
+  :deep(.t-table table) {
+    min-width: @width;
+  }
+}
+
+// 时间段区间选择器内部是两个原生 input，固有最小宽度大会把栅格列撑爆导致条件换行；放开最小宽度允许收缩
+:deep(.t-date-range-picker .t-range-input__inner .t-input__wrap) {
+  min-width: 0;
+}
+
+// ============ 模块：form-page.less ============
+
+// ============================================================
+// 业务公共样式库：登记表单容器（新建/修改页通用）20260914 抽取
+// ============================================================
+
+// 表单容器公共骨架：白底圆角水平居中 + 内容区固定 676px + 标题字号（标准/紧凑版共用）20260917 合并
+.cms-form-basic-frame() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium) var(--td-radius-medium) 0 0;
+
+  .form-basic-item {
+    width: 676px;
+
+    .form-basic-container-title {
+      font: var(--td-font-title-large);
+      font-weight: 400;
+      color: var(--td-text-color-primary);
+    }
+  }
+}
+
+// 标准版表单容器：上下留白充足，底部 80px 给提交行让位
+.cms-form-basic() {
+  .cms-form-basic-frame();
+
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl) 80px var(--td-comp-paddingLR-xxl);
+
+  @media (max-width: @screen-sm-max) {
+    padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-xl) 80px var(--td-comp-paddingLR-xl);
+
+    .form-basic-container-title {
+      margin: 0 0 var(--td-comp-margin-xxxl) 0;
+    }
+  }
+
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-xxl) 0 var(--td-comp-margin-xl) 0;
+    }
+  }
+}
+
+// 紧凑版表单容器：压缩上下内边距，使开单表单尽量一屏展示；
+// 输入框行固定宽度规则已拆至 .cms-form-inputs-fixed（销售/预定/操作人员页调用）20260917 修改
+.cms-form-basic-compact() {
+  .cms-form-basic-frame();
+
+  padding: var(--td-comp-margin-l) var(--td-comp-paddingLR-xxl) var(--td-comp-margin-l) var(--td-comp-paddingLR-xxl);
+
+  @media (max-width: @screen-sm-max) {
+    padding: var(--td-comp-margin-m) var(--td-comp-paddingLR-xl) var(--td-comp-margin-m) var(--td-comp-paddingLR-xl);
+
+    .form-basic-container-title {
+      margin: 0 0 var(--td-comp-margin-l) 0;
+    }
+  }
+
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-m) 0 var(--td-comp-margin-m) 0;
+    }
+  }
+
+  // 清除表单项默认下边距，行间距仅由 t-row 的 gutter 控制
+  :deep(.t-form__item) {
+    margin-bottom: 0;
+  }
+}
+
+// 紧凑版配套：开单表单输入框行固定宽度（销售/预定/操作人员页专用，其余页字段宽度各异不强制）20260917 拆分
+.cms-form-inputs-fixed() {
+  // 身份证号等输入框独占一行时宽度与付款人等字段保持一致；备注在 t-row 之外不受限
+  :deep(.t-row .t-input) {
+    width: 322px !important;
+  }
+
+  // 备注单行输入框不被 flex 父容器压缩，保证右缘与联系人电话输入框对齐
+  :deep(.t-form__controls-content .t-input__wrap) {
+    flex-shrink: 0;
+  }
+}
+
+// 标题间隔扩展（合同类表单用）
+.cms-form-title-gap() {
+  .form-basic-item {
+    .form-title-gap {
+      margin: calc(var(--td-comp-margin-xxl) * 2) 0 var(--td-comp-margin-xl) 0;
+    }
+  }
+}
+
+// 标准版提交行
+.cms-form-submit() {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: var(--td-comp-paddingLR-xl);
+  padding-bottom: var(--td-comp-paddingLR-xl);
+  background-color: var(--td-bg-color-secondarycontainer);
+  border-bottom-left-radius: var(--td-radius-medium);
+  border-bottom-right-radius: var(--td-radius-medium);
+  border-top: 1px solid var(--td-component-stroke);
+
+  .form-submit-sub {
+    width: 676px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+// 紧凑版提交行
+.cms-form-submit-compact() {
+  .cms-form-submit();
+
+  padding-top: var(--td-comp-margin-m);
+  padding-bottom: var(--td-comp-margin-m);
+}
+
+// 提交行左侧上传提示（合同类表单用）
+.cms-form-submit-upload() {
+  .form-submit-sub {
+    .form-submit-left {
+      .form-submit-upload-span {
+        font-size: 14px;
+        line-height: 22px;
+        color: var(--td-text-color-placeholder);
+        padding-top: 8px;
+        display: inline-block;
+      }
+    }
+  }
+}
+
+// ============ 模块：detail-page.less ============
+
+// ============================================================
+// 业务公共样式库：详情/合同类页面（account/contract/operator）20260914 抽取
+// ============================================================
+
+// 详情卡片容器：TDesign 卡片内部留白归零，标题用大号字
+.detail-base {
+  :deep(.t-card) {
+    padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+  }
+
+  :deep(.t-card__header) {
+    padding: 0;
+    margin-bottom: var(--td-comp-margin-m);
+  }
+
+  :deep(.t-card__body) {
+    padding: 0;
+  }
+
+  :deep(.t-card__title) {
+    font: var(--td-font-title-large);
+    font-weight: 400;
+  }
+
+  &-info-steps {
+    padding-top: var(--td-comp-margin-xl);
+  }
+}
+
+// 付款列：金额与趋势图标同行
+.payment-col {
+  display: flex;
+
+  .trend-container {
+    display: flex;
+    align-items: center;
+    margin-left: var(--td-comp-margin-s);
+  }
+}
+
+// 详情页卡片容器（普通留白版；查询页满高版见 query-page.less 的 fill 版）
+.cms-list-card-container() {
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+
+  :deep(.t-card__body) {
+    padding: 0;
+  }
+}
+
+// 左侧操作容器：批量操作按钮 + 已选数量
+.left-operation-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--td-comp-margin-xxl);
+
+  .selected-count {
+    display: inline-block;
+    margin-left: var(--td-comp-margin-l);
+    color: var(--td-text-color-secondary);
+  }
+}
+
+.search-input {
+  width: 360px;
+}
+
+// ============ 模块：info-block.less ============
+
+// ============================================================
+// 业务公共样式库：只读信息行（两列布局）20260914 抽取
+// 表单版（紧凑）与详情版（宽松 + 状态圆点/文件链接）两种变体
+// ============================================================
+
+// 信息行公共骨架：标签左值右，长值省略号截断
+.cms-info-item() {
+  display: flex;
+  color: var(--td-text-color-primary);
+
+  h1 {
+    width: 160px;
+    font: var(--td-font-body-medium);
+    color: var(--td-text-color-secondary);
+    font-weight: normal;
+    text-align: left;
+
+    @media (max-width: @screen-sm-max) {
+      width: 80px;
+    }
+
+    @media (min-width: @screen-md-min) and (max-width: @screen-md-max) {
+      width: 120px;
+    }
+  }
+
+  span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-left: var(--td-comp-margin-xxl);
+  }
+}
+
+// 表单版：登记表单中的墓位信息，行间距紧凑
+.cms-info-block() {
+  column-count: 2;
+
+  .info-item {
+    padding-top: var(--td-comp-margin-m);
+    .cms-info-item();
+  }
+}
+
+// 详情版：行间距宽松，并带状态圆点/文件链接样式
+.cms-info-block-detail() {
+  // 两列布局与信息行骨架复用表单版，仅行间距与状态圆点/文件链接为差异 20260917 合并
+  .cms-info-block();
+
+  .info-item {
+    padding-top: var(--td-comp-margin-xxl);
+
+    i {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: var(--td-radius-circle);
+      background: var(--td-success-color);
+    }
+
+    .inProgress {
+      color: var(--td-success-color);
+    }
+
+    .pdf {
+      color: var(--td-brand-color);
+
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+// 只读信息行文字颜色
+.des {
+  span {
+    color: var(--td-text-color-secondary);
+  }
+}
+
+// ============ 模块：table-vertical.less ============
+
+// ============================================================
+// 业务公共样式库：记录选择列表竖格线（buried/adminfee/contacts）20260914 抽取
+// TDesign bordered 仅提供表格外框，列之间的竖格线需自定义；最后一列不画右边框以免与外框重叠
+// ============================================================
+.cms-record-table-vertical() {
+  :deep(th),
+  :deep(td) {
+    border-right: 1px solid var(--td-border-level-1-color);
+  }
+
+  :deep(th:last-child),
+  :deep(td:last-child) {
+    border-right: none;
+  }
+}

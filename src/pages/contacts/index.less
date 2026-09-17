@@ -1,0 +1,50 @@
+// ============================================================
+// 墓位联系人基础页样式：公共结构引自业务公共样式库，本文件仅保留本页特有覆盖 20260914 抽取
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 卡片页公共结构（前缀 contacts） ====================
+.cms-list-panel(contacts);
+.cms-list-body(contacts);
+.cms-list-toolbar(contacts);
+.cms-no-data(contacts);
+.cms-card-layout(contacts);
+// 卡片宽度改为公共默认 146px，与其余卡片页一致 20260917 修改
+.cms-card-basic(contacts);
+.cms-card-empty-dashed(contacts);
+// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260917 抽取
+.cms-card-hover-highlight(contacts);
+.cms-card-head-pill(contacts);
+.cms-card-meta-between(contacts);
+.cms-card-status-tags(contacts);
+// 四个操作链接两端对齐，间隙调小（与下葬页一致）
+.cms-card-actions-between(contacts, 2px);
+
+.contacts-page-content {
+  .cms-page-content();
+}
+
+.operation-container {
+  .cms-operation-container-card();
+
+  justify-content: flex-end;
+}
+
+// ==================== 新建/修改：墓位联系人登记表单（紧凑版：与销售页开单表单一致） ====================
+.form-basic-container {
+  .cms-form-basic-compact();
+}
+
+.form-submit-container {
+  .cms-form-submit-compact();
+}
+
+// ==================== 只读信息行（表单墓位信息，两列布局） ====================
+.info-block {
+  .cms-info-block();
+}
+
+// ==================== 记录选择列表（修改页/删除页）：外框 + 竖格线 ====================
+.contacts-record-table {
+  .cms-record-table-vertical();
+}

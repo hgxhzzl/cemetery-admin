@@ -1,0 +1,44 @@
+// ============================================================
+// 经办人页样式：公共结构引自业务公共样式库（detail-base/payment-col/left-operation-container/search-input 为库内公共类，直接生效）20260914 抽取
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 只读信息行（详情版：状态圆点/文件链接） ====================
+.info-block {
+  .cms-info-block-detail();
+}
+
+// ==================== 新建/修改表单（紧凑版：与销售页开单表单一致） ====================
+.form-basic-container {
+  .cms-form-basic-compact();
+  // 输入框行固定宽度为销售页规则；本页字段均为 322px 内联宽度、无并排小输入框，可安全套用 20260917 修改
+  .cms-form-inputs-fixed();
+}
+
+.form-submit-container {
+  .cms-form-submit-compact();
+}
+
+// ==================== 列表卡片容器（普通留白版） ====================
+.list-card-container {
+  .cms-list-card-container();
+}
+
+// ==================== 本页特有 ====================
+// 右侧操作容器：批量操作按钮 + 已选数量
+.right-operation-container {
+  display: flex;
+  align-items: center;
+  float: right;
+  margin-bottom: var(--td-comp-margin-xxl);
+
+  .selected-count {
+    display: inline-block;
+    margin-right: var(--td-comp-margin-l);
+    color: var(--td-text-color-secondary);
+  }
+}
+
+.checkbox-list {
+  width: 120px;
+}
