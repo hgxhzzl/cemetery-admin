@@ -4,7 +4,12 @@ import axios from 'axios';
 
 import type { UserPermission } from '@/types/interface';
 
-const loginApiUrl = import.meta.env.MODE === 'mock' ? '/api/login' : 'http://localhost:3000/api/login';
+// 与 utils/request/index.ts 的 host 逻辑保持一致：mock 或未启用直连代理时使用相对路径，由 Vite/Nginx 反代到后端
+const host =
+  import.meta.env.MODE === 'mock' || import.meta.env.VITE_IS_REQUEST_PROXY !== 'true'
+    ? ''
+    : import.meta.env.VITE_API_URL;
+const loginApiUrl = `${host}${import.meta.env.VITE_API_URL_PREFIX || '/api'}/login`;
 
 // 登录接口响应：code 0 且 message 为登录成功时 resolve，其余数据透传 20260917 优化
 export interface LoginResult {
