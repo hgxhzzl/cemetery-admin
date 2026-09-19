@@ -21,7 +21,14 @@
 .sale-page-content {
   .cms-page-content();
 }
+// 已销售卡片：浅灰底区分，未售/预定卡片保持白底，一眼区分 20260919 新增
+.sale-card--sold {
+  background-color: var(--td-bg-color-secondarycontainer);
 
+  &:hover {
+    background-color: var(--td-bg-color-container-active);
+  }
+}
 .operation-container {
   .cms-operation-container-card();
 

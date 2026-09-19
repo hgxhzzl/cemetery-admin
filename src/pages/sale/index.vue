@@ -72,7 +72,12 @@
                       v-for="card in rowGroup.cards"
                       :key="`${rowGroup.yNum}-${card.xNum}`"
                       class="sale-card"
-                      :class="{ 'sale-card--empty': card.placeholder }"
+                      :class="{
+                        'sale-card--empty': card.placeholder,
+                        // 已销售卡片浅绿底区分，样式见 index.less 的 .sale-card--sold 20260919 新增
+                        'sale-card--sold':
+                          !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.sold',
+                      }"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -228,6 +233,18 @@
                 <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
               </t-col>
               <!-- 维修状态从开单页墓位信息区移除 20260901 修改 -->
+              <!-- 收款人与编号字段 20260918 新增，字段顺序：编号、实收金额、付款人、付款人电话、付款人身份证号、收款人 20260918 调整 -->
+              <t-col :span="6">
+                <t-form-item :label="$t('pages.sale.serialNo')" name="serialNo">
+                  <t-input
+                    v-model="formSaleData.serialNo"
+                    :maxcharacter="6"
+                    show-limit-number
+                    :style="{ width: '312px' }"
+                    :placeholder="$t('pages.sale.serialNoPlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
               <t-col :span="6">
                 <t-form-item :label="$t('pages.sale.realPrice')" name="realPrice">
                   <t-input-number
@@ -264,7 +281,6 @@
                   />
                 </t-form-item>
               </t-col>
-              <!-- 付款人身份证号上移至电话右侧，与价格/付款人/电话同行排列 20260916 修改 -->
               <t-col :span="6">
                 <t-form-item :label="$t('pages.sale.payerIDCard')" name="payerIDCard">
                   <t-input
@@ -273,6 +289,17 @@
                     show-limit-number
                     :style="{ width: '312px' }"
                     :placeholder="$t('pages.sale.payerIDCardPlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
+              <t-col :span="6">
+                <t-form-item :label="$t('pages.sale.payee')" name="payee">
+                  <t-input
+                    v-model="formSaleData.payee"
+                    :maxcharacter="20"
+                    show-limit-number
+                    :style="{ width: '312px' }"
+                    :placeholder="$t('pages.sale.payeePlaceholder')"
                   />
                 </t-form-item>
               </t-col>
@@ -541,6 +568,9 @@ const fillSaleForm = async (idRoom: number) => {
       payerPhone: record.payerPhone ?? '',
       remark: record.remark ?? '',
       payerIDCard: record.payerIDCard ?? '',
+      // 收款人与编号回填 20260918 新增
+      payee: record.payee ?? '',
+      serialNo: record.serialNo ?? '',
     };
     return true;
   } catch (e) {
@@ -599,7 +629,8 @@ const onConfirmDelete = async () => {
 
 // 提交开单数据，校验必填项与成交价后调用新增接口 20260828 梳理,
 const ClickSubmit = async () => {
-  const { realPriceString, payer, payerPhone, remark, idRoom, idSale, payerIDCard } = formSaleData.value;
+  const { realPriceString, payer, payerPhone, remark, idRoom, idSale, payerIDCard, payee, serialNo } =
+    formSaleData.value;
 
   if (realPriceString === undefined || realPriceString === '') {
     return MessagePlugin.warning(translate('operate.realPricPlaceholder'));
@@ -625,6 +656,9 @@ const ClickSubmit = async () => {
     remark,
     // 付款人扩展字段随开单提交保存 20260901 新增,
     payerIDCard: payerIDCard.trim(),
+    // 收款人与编号随开单提交保存 20260918 新增,
+    payee: payee.trim(),
+    serialNo: serialNo.trim(),
   };
 
   if (idSale === 0) {

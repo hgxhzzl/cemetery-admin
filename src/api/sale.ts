@@ -17,6 +17,9 @@ export interface SaleModel {
   payerPhone: string;
   remark: string;
   payerIDCard: string;
+  // 收款人与编号字段 20260918 新增
+  payee: string;
+  serialNo: string;
   isDeleted: number;
   modifyDate: string;
   createDate: string;

@@ -30,6 +30,9 @@ export const INITIAL_SALE_DATA = {
   remark: '',
   // 付款人扩展字段 20260901 新增,
   payerIDCard: '',
+  // 收款人与编号字段 20260918 新增,
+  payee: '',
+  serialNo: '',
 };
 
 export interface SelectModel {

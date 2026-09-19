@@ -42,17 +42,25 @@
           <h1>{{ $t('pages.sale.realPrice') }}</h1>
           <span>{{ sale?.realPrice ? formatPrice(sale.realPrice) : display(sale?.realPrice) }}</span>
         </div>
+        <!-- 付款人电话：位于实收金额之后，与付款人互换位置 20260919 修改 -->
+        <div class="info-item">
+          <h1>{{ $t('pages.sale.phone') }}</h1>
+          <span>{{ display(sale?.payerPhone) }}</span>
+        </div>
+        <!-- 收款人：与经办人互换位置 20260919 修改 -->
+        <div class="info-item">
+          <h1>{{ $t('pages.sale.payee') }}</h1>
+          <span>{{ display(sale?.payee) }}</span>
+        </div>
+        <!-- 经办人：与收款人互换位置 20260919 修改 -->
         <div class="info-item">
           <h1>{{ $t('pages.sale.operator') }}</h1>
           <span>{{ display(sale?.operator) }}</span>
         </div>
+        <!-- 付款人：与付款人电话互换位置 20260919 修改 -->
         <div class="info-item">
           <h1>{{ $t('pages.sale.payer') }}</h1>
           <span>{{ display(sale?.payer) }}</span>
-        </div>
-        <div class="info-item">
-          <h1>{{ $t('pages.sale.phone') }}</h1>
-          <span>{{ display(sale?.payerPhone) }}</span>
         </div>
         <div class="info-item">
           <h1>{{ $t('pages.sale.payerIDCard') }}</h1>
@@ -61,6 +69,11 @@
         <div class="info-item">
           <h1>{{ $t('pages.sale.remark') }}</h1>
           <span>{{ display(sale?.remark) }}</span>
+        </div>
+        <!-- 创建日期：展示为 YYYY-MM-DD 20260919 新增 -->
+        <div class="info-item">
+          <h1>{{ $t('pages.sale.createDate') }}</h1>
+          <span>{{ sale?.createDate ? formatDate(sale.createDate) : display(sale?.createDate) }}</span>
         </div>
       </div>
     </t-card>
