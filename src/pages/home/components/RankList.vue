@@ -2,7 +2,17 @@
   <t-row :gutter="16" class="row-container">
     <t-col class="dashboard-col" :xs="12" :xl="6">
       <t-card :title="saleCardTitle" class="dashboard-rank-card" :bordered="false">
-        <t-table :data="saleTendData" :columns="WEEK_COLUMNS" row-key="idSale" :max-height="288" table-layout="fixed">
+        <template #actions>
+          <span class="dashboard-rank-week">{{ t('pages.dashboardBase.rankList.week') }}</span>
+        </template>
+        <t-table
+          :data="saleTendData"
+          :columns="WEEK_COLUMNS"
+          row-key="idSale"
+          size="small"
+          :max-height="288"
+          table-layout="fixed"
+        >
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
               {{ rowIndex + 1 }}
@@ -13,7 +23,17 @@
     </t-col>
     <t-col class="dashboard-col" :xs="12" :xl="6">
       <t-card :title="buyCardTitle" class="dashboard-rank-card" :bordered="false">
-        <t-table :data="buyTendData" :columns="WEEK_COLUMNS" row-key="idSale" :max-height="288" table-layout="fixed">
+        <template #actions>
+          <span class="dashboard-rank-week">{{ t('pages.dashboardBase.rankList.week') }}</span>
+        </template>
+        <t-table
+          :data="buyTendData"
+          :columns="WEEK_COLUMNS"
+          row-key="idSale"
+          size="small"
+          :max-height="288"
+          table-layout="fixed"
+        >
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
               {{ rowIndex + 1 }}
@@ -134,6 +154,12 @@ const getRankClass = (index: number) => {
   :deep(.t-card__title) {
     font: var(--td-font-title-large);
     font-weight: 400;
+  }
+
+  // 卡片头部右侧「本周」小字 20260919 新增
+  .dashboard-rank-week {
+    font-size: var(--td-font-size-body-small);
+    color: var(--td-text-color-secondary);
   }
 
   :deep(.t-card__body) {

@@ -32,23 +32,12 @@ echarts.use([TooltipComponent, LegendComponent, GridComponent, LineChart, Canvas
 
 const store = useSettingStore();
 
-// 图表文字/边框颜色：以当前显示模式（含 auto 跟随系统）的主题色板为基准，逐键校验 store 中持久化的 chartColors。
-// 水合可能恢复旧格式数据（如 CSS 变量字符串），而 echarts canvas 无法解析 CSS 变量，会导致文字颜色失效、
-// 与卡片背景同色而不可见；异常键回退主题默认值，同时以 displayMode 校正避免水合数据与 DOM 主题脱节 20260915 修复
-const chartColors = computed<TChartColor>(() => {
-  const base = store.displayMode === 'dark' ? DARK_CHART_COLORS : LIGHT_CHART_COLORS;
-  const stored = store.chartColors as TChartColor;
-  const safe = (key: keyof TChartColor) => {
-    const value = stored?.[key];
-    return typeof value === 'string' && value && !value.startsWith('var(') ? value : base[key];
-  };
-  return {
-    textColor: safe('textColor'),
-    placeholderColor: safe('placeholderColor'),
-    borderColor: safe('borderColor'),
-    containerColor: safe('containerColor'),
-  };
-});
+// 图表文字/边框颜色：只按当前显示模式（含 auto 跟随系统）取主题色板，不再读取持久化的 store.chartColors。
+// 水合恢复的旧数据可能与当前模式脱节（如亮色页面配上暗色色板的白色文字），造成文字与卡片背景同色、
+// 问题时有时无；placeholderColor 已与首页卡片小字色（--td-text-color-secondary）对齐 20260919 修复
+const chartColors = computed<TChartColor>(() =>
+  store.displayMode === 'dark' ? DARK_CHART_COLORS : LIGHT_CHART_COLORS,
+);
 
 // monitorChart
 let monitorContainer: HTMLElement;

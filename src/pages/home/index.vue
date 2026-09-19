@@ -62,11 +62,11 @@ onActivated(async () => {
 /* 第二行动态伸缩：销售数量统计折线图占满剩余高度（保底 220px：echarts grid 上下边距 76px + 折线区域 90px + 卡片边距） */
 .home-row--middle {
   flex: 1 1 auto;
-  min-height: 220px;
+  min-height: 260px;
 }
 
 /* 第三行固定高度：销售记录表格显示 5 条明细（超出表格内滚动） */
 .home-row--bottom {
-  height: 368px;
+  height: 328px;
 }
 </style>

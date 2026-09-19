@@ -101,7 +101,9 @@ export const useSettingStore = defineStore('setting', {
     },
   },
   persist: {
-    pick: [...keys(STYLE_CONFIG), 'colorList', 'chartColors'],
+    // chartColors 不再持久化：图表文字色改由 displayMode 实时决定，水合恢复的旧色板会与当前模式脱节、
+    // 导致图表文字与卡片背景同色（时有时无），且无其他消费者 20260919 修复
+    pick: [...keys(STYLE_CONFIG), 'colorList'],
   },
 });
 
