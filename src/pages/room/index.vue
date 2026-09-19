@@ -379,8 +379,9 @@ type RoomFormData = typeof INITIAL_DATA;
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活、查询数据丢失的问题 20260828 修复,
 useTabCacheName('Room');
 
-// 墓室模块权限对象按 idMenu(103101) 精确匹配，权限不足时兼容空对象避免运行时报错 20260823 修改,
-const userInfo = usePermission('103101');
+// 权限改按菜单 name 匹配：菜单 id 会因排序调整变化（room 已从 103101 调整为 103107），
+// 后端登录接口已下发 menuName，按稳定 name 匹配避免按钮因 id 变化失效 20260919 修改,
+const userInfo = usePermission('room');
 
 // 区域由墓区设置下的区域三级菜单经路由meta下发，挂载时读取一次；
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260831 新增,
