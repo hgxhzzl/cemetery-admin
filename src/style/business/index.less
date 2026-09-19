@@ -580,8 +580,10 @@
 // 表格最小宽度与列宽总和一致：容器足够时铺满适应屏幕，容器不足时横向滚动而非压缩截断
 // 设置在内部 table 而非 .t-table 容器：若设在容器上会把卡片撑破溢出，
 // 设在 table 上则走 .t-table__content 内部滚动，fixed 列保持正常吸附 20260915 修改
+// 选择器收窄到 .cms-query-table 类：父页 scoped 的 :deep 会穿透到共用详情组件 room-detail，
+// 把详情三张表也撑成 min-width 导致与墓区设置页渲染不一致 20260919 修改
 .cms-query-table-min-width(@width) {
-  :deep(.t-table table) {
+  :deep(.cms-query-table table) {
     min-width: @width;
   }
 }

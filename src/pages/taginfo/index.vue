@@ -68,6 +68,7 @@ export default {
 };
 </script>
 <script setup lang="ts">
+import type { AxiosError } from 'axios';
 import type { SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, ref } from 'vue';
@@ -161,7 +162,9 @@ const onSubmit = async (ctx: SubmitContext) => {
     MessagePlugin.success(translate('operate.createdSuccessPrompt'));
   } catch (e) {
     logError(e);
-    MessagePlugin.error(translate('operate.createdFailedPrompt'));
+    // 后端拒绝时展示具体原因(如无权限提示),否则回退到通用失败词条 20260918 修改
+    const errMsg = (e as AxiosError<{ error?: string }>)?.response?.data?.error;
+    MessagePlugin.error(errMsg || translate('operate.createdFailedPrompt'));
   }
 };
 

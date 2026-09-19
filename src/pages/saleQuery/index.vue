@@ -67,8 +67,10 @@
         </t-form>
 
         <!-- 表格高度随屏幕自适应：每页 40 条远超表格高度，滚动条必然出现 20260913 修改 -->
+        <!-- 列表表格加 .cms-query-table 类：供 min-width mixin 精准命中，避免穿透详情表格 20260919 修改 -->
         <t-table
           ref="tableRef"
+          class="cms-query-table"
           :data="data"
           :columns="COLUMNS"
           row-key="idSale"

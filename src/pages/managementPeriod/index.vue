@@ -68,6 +68,7 @@
         <!-- 表格高度随屏幕自适应：每页 40 条(约1920px)远超表格高度，滚动条必然出现，无需再封顶 20260913 修改 -->
         <t-table
           ref="tableRef"
+          class="cms-query-table"
           :data="data"
           :columns="COLUMNS"
           row-key="idRoom"
