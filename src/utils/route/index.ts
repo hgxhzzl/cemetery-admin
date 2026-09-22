@@ -303,7 +303,7 @@ function normalizeMenuRoutes(routeList: RouteItem[]): RouteItem[] {
 // 注意：glob 模式必须内联为字面量，rolldown 无法跨变量分析 import.meta.glob 的模式
 const dynamicViewsModules: Record<string, () => Promise<Recordable>> = {
   ...import.meta.glob<Recordable>(
-    '../../pages/{account,adminfee,adminfeeQuery,buried,buriedQuery,contacts,contactsQuery,contract,home,login,managementPeriod,operator,park,reserve,room,sale,saleQuery,taginfo,transferOut}/**/*.vue',
+    '../../pages/{account,adminfee,adminfeeQuery,buried,buriedQuery,contacts,contactsQuery,contract,home,login,managementPeriod,operator,park,receiptConfig,reserve,room,sale,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
   ),
 };
 

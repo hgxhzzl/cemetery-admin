@@ -212,7 +212,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ formTitle }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -470,6 +477,11 @@ const {
 } = useParkRoomFilter<TransferOutRoomRow>(formfindData, (park, region) => getTransferOutRoomList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 已迁出的墓位不展示（迁出为终态），列表仅保留未迁出墓位供“新建迁出”，
+// 迁出记录的修改/删除入口随之不可达 20260921 新增
+const visibleTransferOutRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格（缩放/分组补位/记录数）收敛于公共 useCardGrid，模板引用名保持不变
 const {
   zoom: transferOutZoom,
@@ -477,7 +489,7 @@ const {
   handleZoomOut,
   cardRows: transferOutCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleTransferOutRoomList);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位列表，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片

@@ -124,7 +124,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ t('pages.managementPeriod.modifyTitle') }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickModifyClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickModifyClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>

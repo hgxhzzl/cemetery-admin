@@ -3,7 +3,9 @@
     <!-- 墓穴信息卡片：标题与销售/下葬等卡片一致展示在卡片头部，返回按钮在头部右侧，不再单独突出显示 20260914 修改 -->
     <t-card :title="$t('pages.room.detailTitle')" :bordered="false">
       <template #actions>
-        <t-button theme="default" shape="square" variant="text" @click="handleClose">
+        <!-- 返回按钮：文字在前图标在后，样式统一用全局公共类 cms-back-btn 20260921 修改 -->
+        <t-button class="cms-back-btn" theme="default" variant="text" @click="handleClose">
+          {{ $t('operate.backDetail') }}
           <rollback-icon size="16px" />
         </t-button>
       </template>

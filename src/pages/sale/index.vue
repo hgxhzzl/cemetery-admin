@@ -74,7 +74,7 @@
                       class="sale-card"
                       :class="{
                         'sale-card--empty': card.placeholder,
-                        // 已销售卡片浅绿底区分，样式见 index.less 的 .sale-card--sold 20260919 新增
+                        // 已销售卡片浅灰底区分，样式见 index.less 的 .sale-card--sold 20260919 新增
                         'sale-card--sold':
                           !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.sold',
                       }"
@@ -198,7 +198,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ formTitle }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -320,12 +327,18 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="saleSubmitted" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
 
-              <t-button class="form-submit-cancel" theme="default" @click="onReset()">
-                {{ $t('operate.cancel') }}
+              <!-- 打印票据按钮：修改模式进入即显示（表单已回填可打印当前单据），新建提交成功后显示 20260922 修改 -->
+              <t-button
+                v-if="saleSubmitted || formSaleData.idSale !== 0"
+                class="form-submit-cancel"
+                theme="default"
+                @click="printReceipt()"
+              >
+                {{ $t('operate.printReceipt') }}
               </t-button>
             </div>
           </div>
@@ -347,6 +360,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { RoomModel } from '@/api/model/roomModel';
+import { getReceiptConfigForPrint } from '@/api/receiptConfig';
 import { getCanSaleList, getIdList } from '@/api/room';
 import { deleteSale, getSaleByRoom, insertSale, updateSale } from '@/api/sale';
 import RoomDetail from '@/components/room-detail/index.vue';
@@ -354,8 +368,11 @@ import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
+import { useUserStore } from '@/store';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
+import { buildReceiptHtml } from '@/utils/receipt';
 
 import { FIND_DATA, INITIAL_ROOM_DATA, INITIAL_SALE_DATA } from './constants';
 
@@ -377,7 +394,8 @@ const statusKey = (status?: string) => (status ? String(status).split('.').pop()
 type FilterFormData = typeof FIND_DATA;
 type RoomFormData = typeof INITIAL_ROOM_DATA;
 type SaleFormData = typeof INITIAL_SALE_DATA;
-type SaleSubmitData = Omit<SaleFormData, 'realPriceString'> & {
+// 提交数据排除实收金额字符串与创建日期：金额由数值字段提交，创建日期由后端审计自动写入 20260922 修改
+type SaleSubmitData = Omit<SaleFormData, 'realPriceString' | 'createDate'> & {
   realPrice: number;
 };
 
@@ -412,6 +430,12 @@ const {
 } = useParkRoomFilter<RoomModel>(formfindData, (park, region) => getCanSaleList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 迁出状态：已迁出。已迁出的墓位不展示（迁出为终态，其展示由迁出查询页负责）20260921 新增
+const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
+// 卡片列表过滤已迁出的墓位后再进入网格补位 20260921 新增
+const visibleSaleRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格：按排分组补位/缩放控制/记录数文案统一由 useCardGrid 提供 20260914 抽取
 const {
   zoom: saleZoom,
@@ -419,7 +443,7 @@ const {
   handleZoomOut,
   cardRows: saleCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleSaleRoomList);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求可售墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片 20260827 修改,
@@ -467,7 +491,11 @@ const ClickDetailClose = () => {
 const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formSaleData = ref<SaleFormData>({ ...INITIAL_SALE_DATA });
 
+// 新建提交成功后置灰确认按钮防重复提交，重新进入表单时重置 20260922 新增
+const saleSubmitted = ref(false);
+
 const resetSaleForm = (idRoom = 0) => {
+  saleSubmitted.value = false;
   formSaleData.value = {
     ...INITIAL_SALE_DATA,
     idRoom,
@@ -510,10 +538,67 @@ const getRoomID = async (id: number) => {
   }
 };
 
-// 取消：重置开单表单，保持当前墓位，实收金额恢复为墓位价格默认值 20260902 修改,
-const onReset = () => {
-  resetSaleForm(formRoomData.value.idRoom);
-  formSaleData.value.realPriceString = formatPrice(formRoomData.value.price);
+// ==================== 新建：票据打印 ====================
+// 经办人显示当前登录操作员姓名，开单保存时后端同样自动写入 20260921 新增
+const userStore = useUserStore();
+
+// 打印票据：校验付款人与金额后，点击手势内同步打开空白新标签页（原系统页不动），
+// 查询收据配制后把完整票据文档直接写入新标签页并唤起浏览器打印对话框，不经 SPA 页面加载无中间页闪现 20260922 修改
+const printReceipt = async () => {
+  const { realPriceString, payer } = formSaleData.value;
+  if (payer === undefined || payer.trim() === '') {
+    return MessagePlugin.warning(translate('pages.sale.payerPlaceholder'));
+  }
+  if (realPriceString === undefined || realPriceString === '') {
+    return MessagePlugin.warning(translate('pages.sale.realPricPlaceholder'));
+  }
+  const data: ReceiptData = {
+    payer: String(payer).trim(),
+    realPriceString: String(realPriceString),
+    payee: String(formSaleData.value.payee ?? '').trim(),
+    serialNo: String(formSaleData.value.serialNo ?? '').trim(),
+    // 票据编号前缀取销售创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
+    createDate: String(formSaleData.value.createDate ?? ''),
+    region: String(formRoomData.value.region ?? ''),
+    park: String(formRoomData.value.park ?? ''),
+    yNum: String(formRoomData.value.yNum ?? ''),
+    xNum: String(formRoomData.value.xNum ?? ''),
+    xyNumber: String(formRoomData.value.xyNumber ?? ''),
+    userName: String(userStore.userName ?? ''),
+  };
+  // 收据配制（标题前缀/地址/电话）：打印读取不属页面操作，失败回退空值不阻断打印 20260922 修改
+  let config: ReceiptConfigData = { prefix: '', phone: '', address: '' };
+  try {
+    const { list } = await getReceiptConfigForPrint(data.region);
+    const item = list?.[0];
+    if (item) {
+      config = { prefix: item.prefix ?? '', phone: item.phone ?? '', address: item.address ?? '' };
+    }
+  } catch (e) {
+    logError(e);
+  }
+  // 隐藏 iframe 打印会让打印预览覆盖系统页，改回新标签页方案：
+  // 打开空白新标签页（屏幕无任何内容）写入票据文档，加载完成后直接唤起打印预览，原系统页保持不变可随时切回 20260922 修改
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.sale.printBlockedPrompt'));
+  }
+  const printDoc = printWindow.document;
+  printDoc.open();
+  printDoc.write(buildReceiptHtml(data, config));
+  printDoc.close();
+  // 等票据文档完全加载后再唤起打印，避免打印预览因页面加载未完成而一闪即关 20260922 修改
+  const triggerPrint = () => {
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 100);
+  };
+  if (printDoc.readyState === 'complete') {
+    triggerPrint();
+  } else {
+    printWindow.onload = triggerPrint;
+  }
 };
 
 // 成交价失焦时格式化为千分位 20260828 梳理,
@@ -571,6 +656,8 @@ const fillSaleForm = async (idRoom: number) => {
       // 收款人与编号回填 20260918 新增
       payee: record.payee ?? '',
       serialNo: record.serialNo ?? '',
+      // 创建日期回填：票据编号取 yyyymmdd 前缀 20260922 新增
+      createDate: record.createDate ?? '',
     };
     return true;
   } catch (e) {
@@ -633,10 +720,10 @@ const ClickSubmit = async () => {
     formSaleData.value;
 
   if (realPriceString === undefined || realPriceString === '') {
-    return MessagePlugin.warning(translate('operate.realPricPlaceholder'));
+    return MessagePlugin.warning(translate('pages.sale.realPricPlaceholder'));
   }
   if (payer === undefined || payer.trim() === '') {
-    return MessagePlugin.warning(translate('operate.payerPlaceholder'));
+    return MessagePlugin.warning(translate('pages.sale.payerPlaceholder'));
   }
   if (payerPhone === undefined || payerPhone.trim() === '') {
     return MessagePlugin.warning(translate('operate.phonePlaceholder'));
@@ -644,7 +731,7 @@ const ClickSubmit = async () => {
 
   const realPrice = Number(realPriceString.replace(/,/g, ''));
   if (Number.isNaN(realPrice) || realPrice <= 0) {
-    return MessagePlugin.warning(translate('operate.realPricPlaceholder'));
+    return MessagePlugin.warning(translate('pages.sale.realPricPlaceholder'));
   }
 
   const payload: SaleSubmitData = {
@@ -666,18 +753,18 @@ const ClickSubmit = async () => {
       await insertSale(payload);
       MessagePlugin.success(translate('operate.createdSuccessPrompt'));
       await getRoomData();
-      ClickCreateClose();
+      // 新建提交成功不返回列表，留在表单页以便打印票据，确认按钮置灰防重复提交 20260922 修改
+      saleSubmitted.value = true;
     } catch (e) {
       logError(e);
       MessagePlugin.error(translate('operate.createdFailedPrompt'));
     }
   } else {
-    // 修改销售：idSale 非0 走更新接口 20260907 新增
+    // 修改销售：idSale 非0 走更新接口；提交成功不返回，留在表单页可继续调整或打印票据 20260922 修改
     try {
       await updateSale(payload);
       MessagePlugin.success(translate('operate.modifySuccessPrompt'));
       await getRoomData();
-      ClickCreateClose();
     } catch (e) {
       logError(e);
       MessagePlugin.error(translate('operate.modifyFailedPrompt'));

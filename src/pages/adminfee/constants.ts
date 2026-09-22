@@ -16,6 +16,8 @@ export const INITIAL_ROOM_DATA = {
   xNum: '',
   // 墓位编号，修改页墓位信息行展示 20260909 新增,
   xyNumber: '',
+  // 墓位卡号，票据编号后缀取该值 20260922 新增,
+  cardno: '',
   price: 0,
   specs: '',
   repairStatus: '',

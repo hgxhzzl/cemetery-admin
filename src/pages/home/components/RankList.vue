@@ -3,7 +3,11 @@
     <t-col class="dashboard-col" :xs="12" :xl="6">
       <t-card :title="saleCardTitle" class="dashboard-rank-card" :bordered="false">
         <template #actions>
-          <span class="dashboard-rank-week">{{ t('pages.dashboardBase.rankList.week') }}</span>
+          <!-- 今天/昨天切换：默认今天，点击分段控件切换对应日期明细 20260921 新增 -->
+          <t-radio-group v-model="saleRange" variant="default-filled" size="small">
+            <t-radio-button value="today">{{ t('pages.dashboardBase.rankList.today') }}</t-radio-button>
+            <t-radio-button value="yesterday">{{ t('pages.dashboardBase.rankList.yesterday') }}</t-radio-button>
+          </t-radio-group>
         </template>
         <t-table
           :data="saleTendData"
@@ -24,7 +28,11 @@
     <t-col class="dashboard-col" :xs="12" :xl="6">
       <t-card :title="buyCardTitle" class="dashboard-rank-card" :bordered="false">
         <template #actions>
-          <span class="dashboard-rank-week">{{ t('pages.dashboardBase.rankList.week') }}</span>
+          <!-- 今天/昨天切换：默认今天，点击分段控件切换对应日期明细 20260921 新增 -->
+          <t-radio-group v-model="buyRange" variant="default-filled" size="small">
+            <t-radio-button value="today">{{ t('pages.dashboardBase.rankList.today') }}</t-radio-button>
+            <t-radio-button value="yesterday">{{ t('pages.dashboardBase.rankList.yesterday') }}</t-radio-button>
+          </t-radio-group>
         </template>
         <t-table
           :data="buyTendData"
@@ -45,8 +53,9 @@
   </t-row>
 </template>
 <script setup lang="ts">
+import dayjs from 'dayjs';
 import type { TdBaseTableProps } from 'tdesign-vue-next';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import type { DashboardRegionModel, WeeklySaleModel } from '@/api/dashboard';
 import { t } from '@/locales';
@@ -57,11 +66,20 @@ const props = defineProps<{
   weeklySales?: WeeklySaleModel[];
 }>();
 
-// 本周销售记录明细行：按区域过滤（后端已按日期倒序），园区名称+编号拼一列、金额千分位 20260915 修改
-const toWeekRows = (region: string | undefined) => {
+// 今天与昨天日期串：后端 createDate 为 %Y-%m-%d 字符串，直接相等过滤 20260921 新增
+const todayStr = dayjs().format('YYYY-MM-DD');
+const yesterdayStr = dayjs().subtract(1, 'day').format('YYYY-MM-DD');
+
+// 两个卡片各自独立的今天/昨天选择，默认今天 20260921 新增
+const saleRange = ref<'today' | 'yesterday'>('today');
+const buyRange = ref<'today' | 'yesterday'>('today');
+
+// 销售记录明细行：按区域与所选日期（今天/昨天）过滤（后端已按日期倒序），园区名称+编号拼一列、金额千分位 20260915 修改 20260921 改今天/昨天切换
+const toRangeRows = (region: string | undefined, range: 'today' | 'yesterday') => {
   if (!region) return [];
+  const targetDate = range === 'today' ? todayStr : yesterdayStr;
   return (props.weeklySales ?? [])
-    .filter((item) => item.region === region)
+    .filter((item) => item.region === region && item.createDate === targetDate)
     .map((item) => ({
       ...item,
       parkNumber: `${item.park ?? ''}${item.xyNumber ?? ''}`,
@@ -69,9 +87,9 @@ const toWeekRows = (region: string | undefined) => {
     }));
 };
 
-const saleTendData = computed(() => toWeekRows(props.regions?.[0]?.label));
+const saleTendData = computed(() => toRangeRows(props.regions?.[0]?.label, saleRange.value));
 
-const buyTendData = computed(() => toWeekRows(props.regions?.[1]?.label));
+const buyTendData = computed(() => toRangeRows(props.regions?.[1]?.label, buyRange.value));
 
 // 卡片标题：区域名称 + 销售记录（如「九泉山销售记录」），无区域时回退默认标题
 const saleCardTitle = computed(() => {
@@ -156,10 +174,9 @@ const getRankClass = (index: number) => {
     font-weight: 400;
   }
 
-  // 卡片头部右侧「本周」小字 20260919 新增
-  .dashboard-rank-week {
+  // 卡片头部右侧「今天/昨天」选择项：小尺寸分段控件 20260921 新增
+  :deep(.t-radio-group) {
     font-size: var(--td-font-size-body-small);
-    color: var(--td-text-color-secondary);
   }
 
   :deep(.t-card__body) {

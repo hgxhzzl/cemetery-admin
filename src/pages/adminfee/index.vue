@@ -93,7 +93,7 @@
                           <span class="adminfee-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="adminfee-card__body">
-                          <!-- 购买人/下葬者/联系人/价格：卡片内容与下葬页完全一致 20260917 修改 -->
+                          <!-- 购买人/下葬者/联系人/期限：卡片价格信息改为期限信息（管理费结束日期）20260921 修改 -->
                           <div class="adminfee-card__meta">
                             <span class="adminfee-card__meta-label">{{ $t('pages.room.buyer') }}</span>
                             <!-- 购买人无值时默认显示“无” 20260917 新增 -->
@@ -121,10 +121,13 @@
                               {{ card.row.contacts || $t('common.none') }}
                             </span>
                           </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
+                          <!-- 价格信息已去除，改为期限信息（管理费结束日期），标签用短词条避免卡片内换行 20260921 修改 -->
                           <div class="adminfee-card__meta">
-                            <span class="adminfee-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="adminfee-card__meta-value">{{ formatPrice(card.row.price) }}</span>
+                            <span class="adminfee-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
+                            <!-- 期限无值时默认显示“无” 20260921 新增 -->
+                            <span class="adminfee-card__meta-value">{{
+                              formatDate(card.row.endDate) || $t('common.none')
+                            }}</span>
                           </div>
                           <!-- 销售/下葬状态两枚胶囊两端分布，与其余卡片页一致 20260917 修改 -->
                           <div class="adminfee-card__status">
@@ -210,7 +213,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ formTitle }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -365,12 +375,18 @@
         <div v-if="!isDeleteMode" class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="feeSubmitted" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
 
-              <t-button class="form-submit-cancel" theme="default" @click="onReset()">
-                {{ $t('operate.cancel') }}
+              <!-- 打印票据按钮：修改模式进入即显示（表单已回填可打印当前单据），新建提交成功后显示 20260922 修改 -->
+              <t-button
+                v-if="feeSubmitted || formFeeData.idAdminfee !== 0"
+                class="form-submit-cancel"
+                theme="default"
+                @click="printReceipt()"
+              >
+                {{ $t('operate.printReceipt') }}
               </t-button>
             </div>
           </div>
@@ -407,15 +423,18 @@ import { getBuriedList } from '@/api/buried';
 import type { AdminfeeModel } from '@/api/model/adminfeeModel';
 import type { BuriedModel } from '@/api/model/buriedModel';
 import type { RoomModel } from '@/api/model/roomModel';
+import { getReceiptConfigForPrint } from '@/api/receiptConfig';
 import { getIdList } from '@/api/room';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
+import { useUserStore } from '@/store';
 import { formatDate } from '@/utils/date';
-import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
+import { buildReceiptHtml } from '@/utils/receipt';
 
 import { FIND_DATA, INITIAL_FEE_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -482,6 +501,12 @@ const {
 } = useParkRoomFilter<RoomModel>(formfindData, (park, region) => getRoomList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 迁出状态：已迁出。已迁出的墓位不展示（迁出为终态，其展示由迁出查询页负责）20260921 新增
+const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
+// 卡片列表过滤已迁出的墓位后再进入网格补位 20260921 新增
+const visibleAdminfeeRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格（缩放/分组补位/记录数）收敛于公共 useCardGrid，模板引用名保持不变 20260914 抽取
 const {
   zoom: adminfeeZoom,
@@ -489,7 +514,7 @@ const {
   handleZoomOut,
   cardRows: adminfeeCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleAdminfeeRoomList);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片 20260909 新增,
@@ -575,11 +600,20 @@ const deleteColumns: PrimaryTableCol[] = [
 
 // 开始/结束日期在库中为 datetime，列表统一格式化为 yyyy-mm-dd 显示，收敛于公共 formatDate 20260914 抽取
 
+// 收款记录审计字段：票据打印用（收款人栏取操作人、编号前缀取创建日期），不随表单提交 20260922 新增
+const feeRecordAudit = ref<{ operator: string; createDate: string }>({ operator: '', createDate: '' });
+
+// 新建提交成功后置灰确认按钮防重复提交，重新进入表单时重置 20260922 新增
+const feeSubmitted = ref(false);
+
 const resetFeeForm = (idRoom = 0) => {
+  feeSubmitted.value = false;
   formFeeData.value = {
     ...INITIAL_FEE_DATA,
     idRoom,
   };
+  // 重置审计字段，新建模式无记录可打印旧值 20260922 新增
+  feeRecordAudit.value = { operator: '', createDate: '' };
 };
 
 // 用选中的收款记录回填表单（供修改），字段与 INITIAL_FEE_DATA 结构一致 20260909 新增
@@ -595,6 +629,8 @@ const fillFeeForm = (record: AdminfeeModel) => {
     termYears: record.termYears ?? 0,
     remark: record.remark ?? '',
   };
+  // 记录操作人与创建日期供票据打印：收款人栏取操作人、编号前缀取 yyyymmdd(创建日期) 20260922 新增
+  feeRecordAudit.value = { operator: record.operator ?? '', createDate: record.createDate ?? '' };
 };
 
 // 结束日期 = 开始日期顺延缴费年限年；开始日期或年限变化时自动重算 20260909 新增
@@ -655,11 +691,6 @@ const handleClickCreate = async (row: CardRowArg<RoomModel>) => {
   } catch (e) {
     logError(e);
   }
-};
-
-// 取消：重置收款表单，保持当前墓位 20260909 新增,
-const onReset = () => {
-  resetFeeForm(formRoomData.value.idRoom);
 };
 
 // 收款登记关闭：清空数据并回到列表 20260909 新增,
@@ -768,6 +799,74 @@ const onConfirmDelete = async () => {
   }
 };
 
+// ==================== 收款登记：票据打印 ====================
+// 经办人显示当前登录操作员姓名，收款保存时后端同样自动写入 20260922 新增
+const userStore = useUserStore();
+
+// 打印票据：校验付款人与金额后，点击手势内同步打开空白新标签页（原系统页不动），
+// 查询收据配制后把完整管理费票据文档直接写入新标签页并唤起浏览器打印对话框，不经 SPA 页面加载无中间页闪现 20260922 修改
+const printReceipt = async () => {
+  const { payer, payAmount } = formFeeData.value;
+  if (payer === undefined || String(payer).trim() === '') {
+    return MessagePlugin.warning(translate('pages.adminfee.payerPlaceholder'));
+  }
+  if (!payAmount || Number(payAmount) <= 0) {
+    return MessagePlugin.warning(translate('pages.adminfee.payAmountPlaceholder'));
+  }
+  const data: ReceiptData = {
+    payer: String(payer).trim(),
+    realPriceString: String(payAmount),
+    // 收款人栏取收款记录操作人（修改回填），新建未保存时回退当前登录操作员 20260922 新增
+    payee: feeRecordAudit.value.operator.trim() || String(userStore.userName ?? ''),
+    serialNo: '',
+    // 票据编号前缀取收款创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
+    createDate: feeRecordAudit.value.createDate,
+    region: String(formRoomData.value.region ?? ''),
+    park: String(formRoomData.value.park ?? ''),
+    yNum: String(formRoomData.value.yNum ?? ''),
+    xNum: String(formRoomData.value.xNum ?? ''),
+    xyNumber: String(formRoomData.value.xyNumber ?? ''),
+    userName: String(userStore.userName ?? ''),
+    // 管理费票据扩展：编号后缀取墓位卡号、起止日期行取收款起止日期 20260922 新增
+    cardno: String(formRoomData.value.cardno ?? ''),
+    startDate: String(formFeeData.value.startDate ?? ''),
+    endDate: String(formFeeData.value.endDate ?? ''),
+  };
+  // 收据配制（标题前缀/地址/电话）：打印读取不属页面操作，失败回退空值不阻断打印 20260922 修改
+  let config: ReceiptConfigData = { prefix: '', phone: '', address: '' };
+  try {
+    const { list } = await getReceiptConfigForPrint(data.region);
+    const item = list?.[0];
+    if (item) {
+      config = { prefix: item.prefix ?? '', phone: item.phone ?? '', address: item.address ?? '' };
+    }
+  } catch (e) {
+    logError(e);
+  }
+  // 隐藏 iframe 打印会让打印预览覆盖系统页，改回新标签页方案：
+  // 打开空白新标签页（屏幕无任何内容）写入票据文档，加载完成后直接唤起打印预览，原系统页保持不变可随时切回 20260922 修改
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.adminfee.printBlockedPrompt'));
+  }
+  const printDoc = printWindow.document;
+  printDoc.open();
+  printDoc.write(buildReceiptHtml(data, config, 'adminfee'));
+  printDoc.close();
+  // 等票据文档完全加载后再唤起打印，避免打印预览因页面加载未完成而一闪即关 20260922 修改
+  const triggerPrint = () => {
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 100);
+  };
+  if (printDoc.readyState === 'complete') {
+    triggerPrint();
+  } else {
+    printWindow.onload = triggerPrint;
+  }
+};
+
 // 提交收款登记：idAdminfee 为0走新增，否则走修改；成功后刷新列表 20260909 新增,
 
 const ClickSubmit = async () => {
@@ -789,17 +888,18 @@ const ClickSubmit = async () => {
       await insertAdminfee(formFeeData.value);
       MessagePlugin.success(translate('operate.createdSuccessPrompt'));
       await getRoomData();
-      ClickCreateClose();
+      // 新建提交成功不返回列表，留在表单页以便打印票据，确认按钮置灰防重复提交 20260922 修改
+      feeSubmitted.value = true;
     } catch (e) {
       logError(e);
       MessagePlugin.error(translate('operate.createdFailedPrompt'));
     }
   } else {
+    // 修改收款：idAdminfee 非0 走更新接口；提交成功不返回，留在表单页可继续调整或打印票据 20260922 修改
     try {
       await updateAdminfee(formFeeData.value);
       MessagePlugin.success(translate('operate.modifySuccessPrompt'));
       await getRoomData();
-      ClickCreateClose();
     } catch (e) {
       logError(e);
       MessagePlugin.error(translate('operate.modifyFailedPrompt'));

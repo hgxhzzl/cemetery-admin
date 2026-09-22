@@ -36,10 +36,11 @@
 .t-layout.t-layout--with-sider {
   > .t-layout {
     flex: 1;
-    // flex 子项默认 min-width:auto 会被卡片网格 max-content 内容逐层撑宽，
-    // 导致卡片区自身滚动条失效（scrollWidth==clientWidth）；限制为 0 后溢出由
-    // 滚动容器（卡片区/布局层）承接，卡片列表横向滚动条恢复 20260917 修复
-    min-width: 0;
+    // 内容区全局最小宽度保底：视口小于 侧边栏宽 + 该值时页面出现浏览器横向滚动条，
+    // 页面对象不再动态收缩适应窄屏（值见 variables.less @cms-layout-content-min-width）；
+    // 显式 min-width 同时替代 flex 子项默认 min-width:auto，卡片网格 max-content 不会撑宽布局层，
+    // 超宽卡片行仍由卡片区自身滚动条承接，与页面级滚动各司其职 20260921 恢复
+    min-width: @cms-layout-content-min-width;
   }
 }
 

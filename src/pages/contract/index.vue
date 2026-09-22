@@ -95,7 +95,8 @@
     <div v-if="isDetailShow" class="detail-base">
       <t-card :title="$t('pages.detailBase.baseInfo.title')" :bordered="false">
         <template #actions>
-          <t-button theme="default" shape="square" variant="text" @click="ClickDetailClose()">
+          <t-button class="cms-back-btn" theme="default" variant="text" @click="ClickDetailClose()">
+            {{ $t('operate.backDetail') }}
             <rollback-icon size="16px" />
           </t-button>
         </template>
@@ -124,13 +125,27 @@
           <div class="form-basic-item">
             <div v-show="isCreate" class="form-basic-container-title">
               {{ $t('pages.contract.creatTitle') }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
             <div v-show="isModify" class="form-basic-container-title">
               {{ $t('pages.contract.modifyTitle') }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>

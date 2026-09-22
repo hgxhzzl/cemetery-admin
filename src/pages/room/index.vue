@@ -125,9 +125,10 @@
                           <t-link v-if="isRoomDeletable(card.row)" theme="danger" @click="handleClickDelete(card.row)">
                             {{ $t('operate.delete') }}
                           </t-link>
-                          <t-link theme="danger" @click="handleClickModify(card.row)">{{
-                            $t('operate.modify')
-                          }}</t-link>
+                          <!-- 已迁出的墓位不可修改（迁出为终态）20260921 新增 -->
+                          <t-link v-if="isRoomModifiable(card.row)" theme="danger" @click="handleClickModify(card.row)">
+                            {{ $t('operate.modify') }}
+                          </t-link>
                         </div>
                       </template>
                     </div>
@@ -176,7 +177,14 @@
           <div class="form-basic-item">
             <div v-show="isCreate" class="form-basic-container-title">
               {{ $t('pages.room.creatTitle') }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -186,7 +194,14 @@
                 <t-radio value="1" @click="ClickSingleData"> {{ $t('pages.room.singleData') }} </t-radio>
                 <t-radio value="2" @click="ClickMultipleData"> {{ $t('pages.room.multipleData') }} </t-radio>
               </t-radio-group>
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -356,7 +371,7 @@ export default {
 </script>
 <script setup lang="ts">
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
@@ -391,6 +406,9 @@ const dialogHeader = translate('operate.deleteDataCPrompt');
 
 // 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260916 新增
 const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+
+// 迁出状态枚举 key：已迁出。设置页列表不展示已迁出的墓位，已迁出的墓位也不可修改 20260921 新增
+const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
 
 // 视图互斥显示：列表 / 详情 / 新建修改 20260828 梳理,
 const isListShow = ref(false);
@@ -467,6 +485,11 @@ const {
 } = useParkRoomFilter<RoomModel>(formfindData, (park, region) => getRoomList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 设置页不展示已迁出的墓位（迁出为终态，其展示由迁出查询页负责），
+// 原始查询数据保留在 searchRoomList 供多条修改范围校验使用 20260921 新增
+const visibleRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格：按排分组补位/缩放控制/记录数文案统一由 useCardGrid 提供 20260914 抽取
 const {
   zoom: roomZoom,
@@ -474,7 +497,7 @@ const {
   handleZoomOut,
   cardRows: roomCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleRoomList);
 
 const resetFilter = () => {
   formfindData.value = {
@@ -552,7 +575,7 @@ const onConfirmDelete = async () => {
   }
   resetIdx();
   confirmVisible.value = false;
-  MessagePlugin.success(translate('pages.operator.deleteSuccessPrompt'));
+  MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
 };
 
 // ==================== 列表：详情与修改入口 ====================
@@ -582,8 +605,17 @@ const handleClickDetail = async (row: CardRowArg<RoomModel>) => {
 };
 
 // 点击卡片修改：校验墓位可查后进入修改表单 20260828 修改,
+// 已迁出的墓位不可修改（迁出为终态）；旧数据 NULL 视为未迁出 20260921 新增
+const isRoomModifiable = (row: CardRowArg<RoomModel>) => {
+  const currentRow = row.row ?? row;
+  return currentRow.transferOutStatus !== TRANSFER_OUT_OUT;
+};
+
 const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   const currentRow = row.row ?? row;
+  if (!isRoomModifiable(currentRow)) {
+    return MessagePlugin.warning(translate('pages.room.transferOutNotModifiablePrompt'));
+  }
   const loaded = await getRoomID(currentRow.idRoom);
   if (!loaded) {
     return;
@@ -711,6 +743,21 @@ const ClickMultipleData = () => {
   formData.value.xNumTo = formData.value.xNum;
 };
 
+// 新建提交：成功后刷新列表并关闭新建视图；由 ClickSubmit 与“位置含已迁出记录”确认弹窗复用 20260921 抽取
+const doSubmitCreate = async (jsonbody: Partial<RoomModel>) => {
+  try {
+    await insertRoom(jsonbody);
+    MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+    // 如果单条，单独更新暂时不做，
+    getRoomData();
+
+    ClickCreateClose();
+  } catch (e) {
+    logError(e);
+    MessagePlugin.error(translate('operate.createdFailedPrompt'));
+  }
+};
+
 // 提交数据
 const ClickSubmit = async () => {
   // 将Proxy对象转换为JSON字符串,不转也可以
@@ -728,7 +775,7 @@ const ClickSubmit = async () => {
     formData.value.yNumTo = formData.value.yNum;
   }
   if (formData.value.xNum === undefined) {
-    return MessagePlugin.warning(translate('pages.room.yNumMessagePlugin'));
+    return MessagePlugin.warning(translate('pages.room.xNumMessagePlugin'));
   }
   if (formData.value.xNumTo === undefined || formData.value.xNumTo === '') {
     formData.value.xNumTo = formData.value.xNum;
@@ -757,10 +804,26 @@ const ClickSubmit = async () => {
   const endXNum = Number(formData.value.xNumTo);
 
   if (endYNum < startYNum) {
-    return MessagePlugin.warning('结束排号不能小于开始排号');
+    return MessagePlugin.warning(translate('pages.room.endYNumNotLessPrompt'));
   }
   if (endXNum < startXNum) {
-    return MessagePlugin.warning('结束序号不能小于开始序号');
+    return MessagePlugin.warning(translate('pages.room.endXNumNotLessPrompt'));
+  }
+  // 多条修改范围内含已迁出的墓位时禁止提交：迁出为终态，已迁出的墓位不可修改 20260921 新增
+  // 新建视图同样默认多条模式（formDataModify='2'），故加 idRoom !== 0 区分：新建允许在原已迁出位置登记（后续弹确认提示）20260921 修复
+  if (formDataModify.value === '2' && formData.value.idRoom !== 0) {
+    const hasTransferredOut = dataRoomList.value.some(
+      (item) =>
+        item.park === formData.value.park &&
+        Number(item.yNum) >= startYNum &&
+        Number(item.yNum) <= endYNum &&
+        Number(item.xNum) >= startXNum &&
+        Number(item.xNum) <= endXNum &&
+        item.transferOutStatus === TRANSFER_OUT_OUT,
+    );
+    if (hasTransferredOut) {
+      return MessagePlugin.warning(translate('pages.room.transferOutRangePrompt'));
+    }
   }
   // if formDataModify
 
@@ -775,17 +838,31 @@ const ClickSubmit = async () => {
   delete jsonbody.repairStatus;
 
   if (formData.value.idRoom === 0) {
-    try {
-      await insertRoom(jsonbody);
-      MessagePlugin.success(translate('operate.createdSuccessPrompt'));
-      // 如果单条，单独更新暂时不做，
-      getRoomData();
-
-      ClickCreateClose();
-    } catch (e) {
-      logError(e);
-      MessagePlugin.error(translate('operate.createdFailedPrompt'));
+    // 新建范围内存在已迁出的墓位记录时弹确认提示：该位置可重新登记新墓位，原迁出记录保留 20260921 新增
+    const hasTransferredOut = dataRoomList.value.some(
+      (item) =>
+        item.park === formData.value.park &&
+        Number(item.yNum) >= startYNum &&
+        Number(item.yNum) <= endYNum &&
+        Number(item.xNum) >= startXNum &&
+        Number(item.xNum) <= endXNum &&
+        item.transferOutStatus === TRANSFER_OUT_OUT,
+    );
+    if (hasTransferredOut) {
+      const confirmDialog = DialogPlugin.confirm({
+        header: translate('operate.confirm'),
+        body: translate('pages.room.transferOutCreateConfirmPrompt'),
+        onConfirm: () => {
+          confirmDialog.hide();
+          doSubmitCreate(jsonbody);
+        },
+        onClose: () => {
+          confirmDialog.hide();
+        },
+      });
+      return;
     }
+    await doSubmitCreate(jsonbody);
   } else {
     try {
       await updateRoom(jsonbody);

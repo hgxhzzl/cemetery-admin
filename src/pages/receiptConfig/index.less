@@ -1,0 +1,26 @@
+// ============================================================
+// 收据配制页样式：公共结构引自业务公共样式库（与园区设置页一致）
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 配置表单（标准版） ====================
+.form-basic-container {
+  .cms-form-basic();
+  .cms-form-title-gap();
+
+  // 收据配制仅 4 个表单项：压缩标题与行间上下间距，页面更紧凑 20260922 调整
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-m) 0 var(--td-comp-margin-m) 0;
+    }
+  }
+
+  :deep(.t-form__item) {
+    margin-bottom: var(--td-comp-margin-m);
+  }
+}
+
+.form-submit-container {
+  .cms-form-submit();
+  .cms-form-submit-upload();
+}

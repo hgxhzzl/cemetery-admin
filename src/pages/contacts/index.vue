@@ -211,7 +211,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ formTitle }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -419,6 +426,12 @@ const {
 } = useParkRoomFilter<RoomModel>(formfindData, (park, region) => getRoomList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 迁出状态：已迁出。已迁出的墓位不展示（迁出为终态，其展示由迁出查询页负责）20260921 新增
+const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
+// 卡片列表过滤已迁出的墓位后再进入网格补位 20260921 新增
+const visibleContactsRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格（缩放/分组补位/记录数）收敛于公共 useCardGrid，模板引用名保持不变 20260914 抽取
 const {
   zoom: contactsZoom,
@@ -426,7 +439,7 @@ const {
   handleZoomOut,
   cardRows: contactsCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleContactsRoomList);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片 20260909 新增,

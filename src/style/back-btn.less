@@ -1,0 +1,41 @@
+// ============================================================
+// 返回按钮公共样式：所有功能页的详情返回/登记表单关闭按钮统一使用
+// 文字与图标垂直居中、浅品牌色胶囊背景；text 变体 hover/focus/active
+// 默认灰色背景与点击波纹置为透明，仅保留胶囊自身背景 20260921 提取
+// ============================================================
+.cms-back-btn {
+  // 防止被父级 flex 容器（t-card 头部 actions 等）压缩导致“返回”文字被裁剪 20260921 新增
+  flex-shrink: 0;
+
+  // 点击波纹默认灰色（--td-bg-color-container-active），双类提升优先级置为透明，避免胶囊两侧露出灰色
+  &.cms-back-btn {
+    --ripple-color: transparent;
+  }
+
+  // TDesign 按钮内容容器 t-button__text 默认仅 inline-flex 无 align-items，显式居中
+  .t-button__text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 12px;
+    border-radius: var(--td-radius-default);
+    background-color: var(--td-brand-color-light);
+    color: var(--td-brand-color);
+    // 内容区不被压缩，文字与图标完整显示在胶囊内（TDesign 按钮根为 flex 容器，内容默认可收缩）
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  // 点击/悬停时移除 text 变体默认的灰色背景与边框层，仅保留胶囊自身的浅品牌色背景
+  &.cms-back-btn:hover,
+  &.cms-back-btn:focus-visible,
+  &.cms-back-btn:active {
+    background-color: transparent;
+    border-color: transparent;
+  }
+}
+
+// TDesign 卡片头部 actions 为可收缩 flex item（flex: 0 1 auto），标题过长时挤压右侧按钮区，置为不收缩 20260921 新增
+.t-card__actions {
+  flex-shrink: 0;
+}

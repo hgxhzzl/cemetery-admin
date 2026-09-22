@@ -95,7 +95,7 @@
                           <span class="buried-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="buried-card__body">
-                          <!-- 购买人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐 20260913 修改 -->
+                          <!-- 购买人/下葬者/联系人/期限：标签在左灰色、值在右深色两端对齐 20260913 修改 20260921 价格改期限 -->
                           <div class="buried-card__meta">
                             <span class="buried-card__meta-label">{{ $t('pages.room.buyer') }}</span>
                             <!-- 购买人无值时默认显示“无” 20260916 修改 -->
@@ -124,10 +124,13 @@
                               card.row.contacts || $t('common.none')
                             }}</span>
                           </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
+                          <!-- 价格信息已去除，改为期限信息（管理费结束日期），标签用短词条避免卡片内换行，与管理费收款页卡片一致 20260921 修改 -->
                           <div class="buried-card__meta">
-                            <span class="buried-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="buried-card__meta-value">{{ formatPrice(card.row.price) }}</span>
+                            <span class="buried-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
+                            <!-- 期限无值时默认显示“无” 20260921 新增 -->
+                            <span class="buried-card__meta-value">{{
+                              formatDate(card.row.endDate) || $t('common.none')
+                            }}</span>
                           </div>
                           <!-- 预定状态行已移除；销售/下葬状态改为两枚彩色胶囊标签两端分布 20260913 修改 -->
                           <div class="buried-card__status">
@@ -213,7 +216,14 @@
           <div class="form-basic-item">
             <div class="form-basic-container-title">
               {{ formTitle }}
-              <t-button style="float: right" theme="default" shape="square" variant="text" @click="ClickCreateClose()">
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="ClickCreateClose()"
+              >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -390,12 +400,13 @@
             <div class="form-basic-container-title">
               {{ $t('pages.buried.selectContactTitle') }}
               <t-button
+                class="cms-back-btn"
                 style="float: right"
                 theme="default"
-                shape="square"
                 variant="text"
                 @click="handleCloseContactsSelect()"
               >
+                {{ $t('operate.backDetail') }}
                 <rollback-icon size="16px" />
               </t-button>
             </div>
@@ -484,7 +495,6 @@ import type { CardRowArg } from '@/hooks';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
 import { formatDate } from '@/utils/date';
-import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
 import { FIND_DATA, INITIAL_ROOM_DATA, INITIAL_SALE_DATA } from './constants';
@@ -562,6 +572,12 @@ const {
 } = useParkRoomFilter<BuriedRoomRow>(formfindData, (park, region) => getRoomList(park, region));
 
 // ==================== 列表：卡片行分组与缩放 ====================
+// 迁出状态：已迁出。已迁出的墓位不展示（迁出为终态，其展示由迁出查询页负责）20260921 新增
+const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
+// 卡片列表过滤已迁出的墓位后再进入网格补位 20260921 新增
+const visibleBuriedRoomList = computed(() =>
+  searchRoomList.value.filter((item) => item.transferOutStatus !== TRANSFER_OUT_OUT),
+);
 // 卡片网格（缩放/分组补位/记录数）收敛于公共 useCardGrid，模板引用名保持不变 20260914 抽取
 const {
   zoom: buriedZoom,
@@ -569,7 +585,7 @@ const {
   handleZoomOut,
   cardRows: buriedCardRows,
   totalText: listTotalText,
-} = useCardGrid(searchRoomList);
+} = useCardGrid(visibleBuriedRoomList);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求可下葬墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片 20260907 修改,
