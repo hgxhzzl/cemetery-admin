@@ -87,7 +87,7 @@
               <t-link theme="primary" @click="handleClickDetail(row)">
                 {{ t('operate.detail') }}
               </t-link>
-              <!-- 修改按管理期限菜单(104102)权限门控：operator_power.useModify 20260915 新增 -->
+              <!-- 修改按管理期限菜单(managementPeriod)权限门控：operator_power.useModify 20260925 修改 -->
               <t-link v-if="userInfo.useModify === 1" theme="primary" @click="handleClickModify(row)">
                 {{ t('operate.modify') }}
               </t-link>
@@ -220,6 +220,7 @@ import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onMounted, ref } from 'vue';
+import { useRoute } from 'vue-router';
 
 import type { ManagementPeriodModel } from '@/api/managementPeriod';
 import { getManagementPeriodList, updateManagementPeriod } from '@/api/managementPeriod';
@@ -242,8 +243,8 @@ import { logError } from '@/utils/logger';
 // 不登记则 keep-alive 无法缓存本页，切换路由时 out-in 过渡会卡死导致其它页面打不开
 useTabCacheName('ManagementPeriod');
 
-// 管理期限权限对象按 idMenu(104102) 精确匹配，权限不足时兼容空对象避免运行时报错 20260915 新增
-const userInfo = usePermission('104102');
+// 管理期限权限对象按稳定菜单 name(managementPeriod) 匹配（菜单 id 已迁为 103109），权限不足时兼容空对象避免运行时报错 20260925 修改
+const userInfo = usePermission('managementPeriod');
 
 // 视图互斥显示：列表 / 详情 / 修改。列表始终挂载，
 // 详情/修改显示时列表通过 list-view-hidden 高度塌陷隐藏，无需单独的列表态标记
@@ -290,7 +291,10 @@ const searchForm: FormData = {
   endDate: dayjs().format('YYYY-MM-DD'),
 };
 
-const formData = ref<FormData>({ ...searchForm });
+// 区域由墓位管理下区域三级菜单经路由meta下发，挂载时读取一次预设筛选；
+// keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260925 新增,
+const menuRegion = (useRoute().meta.region as string) || '';
+const formData = ref<FormData>({ ...searchForm, region: menuRegion });
 const tableRef = ref();
 const dataRegionList = ref<Array<SelectModel>>([]);
 const dataParkList = ref<Array<ListParkModel>>([]);

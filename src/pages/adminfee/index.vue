@@ -18,7 +18,7 @@
               <t-col :span="10">
                 <!-- 筛选条件横向排列，条件之间空隙固定 24px，不随屏幕宽度变化 20260914 修改 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域由收费管理下区域三级菜单经路由下发，此处仅保留园区/排号筛选 20260909 新增 -->
+                  <!-- 区域由墓位管理下区域三级菜单经路由下发，此处仅保留园区/排号筛选 20260925 修改 -->
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -449,8 +449,8 @@ import { FIND_DATA, INITIAL_FEE_DATA, INITIAL_ROOM_DATA } from './constants';
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活的问题 20260909 新增,
 useTabCacheName('Adminfee');
 
-// 管理费收款权限对象按 idMenu(104101) 精确匹配，权限不足时兼容空对象避免运行时报错 20260909 新增
-const userInfo = usePermission('104101');
+// 管理费收款权限对象按稳定菜单 name(adminfee) 匹配（菜单 id 已迁为 103108），权限不足时兼容空对象避免运行时报错 20260925 修改
+const userInfo = usePermission('adminfee');
 
 // 下葬状态：未下葬用于区分卡片是否显示“新建/修改/删除”（管理费锚定首次下葬，未下葬无锚点）20260909 新增
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
@@ -491,8 +491,8 @@ const { controlPageShow } = usePageSwitch({
 });
 
 // ==================== 列表：状态与筛选下拉数据 ====================
-// 区域由收费管理下区域三级菜单经路由meta下发，挂载时读取一次；
-// keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260909 新增,
+// 区域由墓位管理下区域三级菜单经路由meta下发，挂载时读取一次；
+// keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260925 修改,
 const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const adminfeeCardViewport = ref<HTMLElement | null>(null);
