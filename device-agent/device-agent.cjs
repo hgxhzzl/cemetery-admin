@@ -12,7 +12,8 @@ const PORT = 19700;
 const ALLOWED_ORIGINS = [
   'http://localhost:3002',
   'http://127.0.0.1:3002',
-  // 生产站点 Origin 填到这里,如 'http://192.168.1.10:3002' 或 'https://admin.example.com',
+  // 生产站点 Origin:腾讯云轻量服务器直 IP 访问 20260925 部署,
+  'http://124.221.213.247',
 ];
 
 // 执行命令并取输出(wmic 默认输出 UTF-16LE,统一按 UTF-16 解码再容错 ASCII)
