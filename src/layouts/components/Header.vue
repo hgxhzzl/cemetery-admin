@@ -45,6 +45,14 @@
           </t-button>
           <t-dropdown :min-column-width="120" trigger="click">
             <template #dropdown>
+              <!-- 设备登记入口仅平台管理员可见:把当前电脑哈希写入登录白名单 20260924 设备白名单 -->
+              <t-dropdown-item
+                v-if="user.isAccount === 1"
+                class="operations-dropdown-container-item"
+                @click="bindCurrentDevice"
+              >
+                <secured-icon />{{ t('layout.header.bindDevice') }}
+              </t-dropdown-item>
               <t-dropdown-item class="operations-dropdown-container-item" @click="openPasswordDialog">
                 <lock-on-icon />{{ t('layout.header.changePassword') }}
               </t-dropdown-item>
@@ -112,13 +120,14 @@
   </div>
 </template>
 <script setup lang="ts">
-import { ChevronDownIcon, LockOnIcon, PoweroffIcon } from 'tdesign-icons-vue-next';
+import { ChevronDownIcon, LockOnIcon, PoweroffIcon, SecuredIcon } from 'tdesign-icons-vue-next';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { bindDevice } from '@/api/device';
 import { updatePassword } from '@/api/operator';
 import LogoFull from '@/assets/assets-logo-full.svg?component';
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
@@ -128,6 +137,7 @@ import { t } from '@/locales';
 import { getActive } from '@/router';
 import { useSettingStore, useUserStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
+import { getDeviceInfo } from '@/utils/device';
 import { logError } from '@/utils/logger';
 
 import MenuContent from './MenuContent.vue';
@@ -213,6 +223,22 @@ const handleLogout = () => {
     path: '/login',
     query: { redirect: router.currentRoute.value.fullPath },
   });
+};
+
+// 登记本机为指定电脑:取本机设备哈希写入白名单,需本机已装设备 Agent 20260924 设备白名单,
+const bindCurrentDevice = async () => {
+  const deviceInfo = await getDeviceInfo();
+  if (!deviceInfo) {
+    MessagePlugin.warning(t('layout.header.bindDeviceAgentMissing'));
+    return;
+  }
+  try {
+    await bindDevice(deviceInfo);
+    MessagePlugin.success(t('layout.header.bindDeviceSuccess'));
+  } catch (e) {
+    logError(e);
+    MessagePlugin.error((e as Error).message);
+  }
 };
 
 // 修改密码弹窗：旧密码验证 + 新密码 bcrypt 存储（后端 /api/operator-save/password，从 store 取当前用户 idOperator）20260917 新增

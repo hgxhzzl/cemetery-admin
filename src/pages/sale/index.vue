@@ -18,7 +18,21 @@
               <t-col :span="10">
                 <!-- 筛选条件横向排列，条件之间空隙固定 24px，不随屏幕宽度变化 20260914 修改 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域下拉框移除，改由墓区销售下区域三级菜单经路由下发 20260831 修改 -->
+                  <!-- 区域由墓区销售下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换）20260923 修改 -->
+                  <t-form-item
+                    :label="$t('pages.room.region')"
+                    name="region"
+                    class="cms-filter-item cms-filter-item-basic"
+                  >
+                    <t-select
+                      v-model="formfindData.region"
+                      class="demo-select-base cms-filter-control"
+                      disabled
+                      :placeholder="$t('pages.room.regionPlaceholder')"
+                    >
+                      <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+                    </t-select>
+                  </t-form-item>
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -74,9 +88,12 @@
                       class="sale-card"
                       :class="{
                         'sale-card--empty': card.placeholder,
-                        // 已销售卡片浅灰底区分，样式见 index.less 的 .sale-card--sold 20260919 新增
+                        // 已销售卡片红色外框区分，取消原浅灰底约定，样式见 index.less 的 .sale-card--sold 20260923 修改
                         'sale-card--sold':
                           !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.sold',
+                        // 未销售卡片绿色外框区分，样式见 .sale-card--unsold 20260923 新增
+                        'sale-card--unsold':
+                          !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.unsold',
                       }"
                     >
                       <template v-if="card.placeholder">

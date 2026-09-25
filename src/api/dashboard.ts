@@ -29,6 +29,30 @@ export interface WeeklySaleModel {
   createDate: string;
 }
 
+// 首页下葬记录明细行：今天与明天逐条下葬记录（按 burialDate）20260925 新增
+// 字段：idBuried（行主键）/区域（卡片过滤用）/园区/编号/安葬者/联系人/联系人电话
+export interface BuriedRecordModel {
+  idBuried: number;
+  region: string;
+  park: string;
+  xyNumber: string;
+  deceased: string;
+  contacts: string;
+  contactsphone: string;
+  burialDate: string;
+}
+
+// 首页管理到期记录行：endDate 已到期（<=当天）且未迁出的墓位 20260925 新增
+// 字段：idRoom（行主键）/区域（卡片过滤用）/园区/编号/到期日期/联系人
+export interface ExpiredRoomModel {
+  idRoom: number;
+  region: string;
+  park: string;
+  xyNumber: string;
+  endDate: string;
+  contacts: string;
+}
+
 // 首页指标按区域分解行：第一行卡片内的小字（如「九泉山：¥20,000」）20260915 新增
 export interface RegionStatModel {
   region: string;
@@ -45,6 +69,8 @@ export interface DashboardSummaryModel {
   reservedBuriedCount: number;
   monthlySales: MonthlySaleModel[];
   weeklySales: WeeklySaleModel[];
+  buriedRecords: BuriedRecordModel[];
+  expiredRooms: ExpiredRoomModel[];
   yearSalesByRegion: RegionStatModel[];
   yearFeesByRegion: RegionStatModel[];
   yearBuriedCountByRegion: RegionStatModel[];

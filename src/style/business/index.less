@@ -322,7 +322,9 @@
 .cms-card-hover-highlight(@prefix) {
   .@{prefix}-card {
     box-shadow: 0 1px 4px rgb(0 0 0 / 4%);
-    transition: border-color 0.2s linear, box-shadow 0.2s linear;
+    transition:
+      border-color 0.2s linear,
+      box-shadow 0.2s linear;
 
     &:hover {
       // 不上移，避免上边框被上方卡片阴影遮挡
@@ -890,6 +892,10 @@
 // TDesign bordered 仅提供表格外框，列之间的竖格线需自定义；最后一列不画右边框以免与外框重叠
 // ============================================================
 .cms-record-table-vertical() {
+  // 表格公共属性：外边框（宿主 t-table 根元素）内边距统一 16px 20260924 新增
+  padding-top: 16px;
+  padding-bottom: 16px;
+
   :deep(th),
   :deep(td) {
     border-right: 1px solid var(--td-border-level-1-color);

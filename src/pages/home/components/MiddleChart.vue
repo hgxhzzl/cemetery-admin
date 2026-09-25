@@ -1,6 +1,7 @@
 <template>
   <t-row :gutter="16" class="row-container">
-    <t-col class="dashboard-col" :xs="12" :xl="12">
+    <!-- 固定 span 12 不设响应式断点：窄视口下保持整行图表不堆叠，由全局内容区 min-width + 浏览器横向滚动条承接 20260925 修改 -->
+    <t-col class="dashboard-col" :span="12">
       <t-card :title="t('pages.dashboardBase.topPanel.analysis.title')" class="dashboard-chart-card" :bordered="false">
         <div id="monitorContainer" class="dashboard-chart-container" :style="{ width: '100%', height: '100%' }" />
       </t-card>

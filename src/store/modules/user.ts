@@ -42,6 +42,8 @@ export const useUserStore = defineStore('user', {
     userName: '',
     userId: 0,
     dataBaseName: '',
+    // 是否平台管理员账号（1管理员/0普通操作员），由登录响应透传 20260924 新增
+    isAccount: 0,
     userInfo: { ...InitUserInfo },
   }),
   getters: {
@@ -53,11 +55,13 @@ export const useUserStore = defineStore('user', {
     async login(userInfo: Record<string, unknown>) {
       const account = userInfo.account?.toString() || '';
       const password = userInfo.password?.toString() || '';
+      // 本机设备哈希随登录请求提交,后端设备白名单校验用 20260924 设备白名单,
+      const deviceHash = userInfo.deviceHash?.toString() || '';
 
       // 重新登录时清除上次会话打开的页签，避免残留上一个用户的页面与缓存
       useTabsRouterStore().resetTabRouterList();
 
-      const res = await login(account, password);
+      const res = await login(account, password, deviceHash);
       if (res.code === 0) {
         const roleItems = (res.data.userInfo?.roles || []).map((item: UserPermission) =>
           normalizePermissionRecord(item),
@@ -66,6 +70,7 @@ export const useUserStore = defineStore('user', {
         this.phone = res.data.userPhone || '';
         this.userName = res.data.userName || account;
         this.userId = res.data.userId || 0;
+        this.isAccount = res.data.isAccount ?? 0;
         this.dataBaseName =
           res.data.dataBaseName || `${roleItems.find((item: UserPermission) => item.dataBaseName)?.dataBaseName || ''}`;
         this.userInfo = {
@@ -153,6 +158,7 @@ export const useUserStore = defineStore('user', {
       this.userName = '';
       this.userId = 0;
       this.dataBaseName = '';
+      this.isAccount = 0;
       this.userInfo = { ...InitUserInfo };
     },
   },
@@ -162,7 +168,7 @@ export const useUserStore = defineStore('user', {
       permissionStore.initRoutes();
     },
     key: 'user',
-    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'userInfo'],
+    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'isAccount', 'userInfo'],
   },
 });
 

@@ -20,6 +20,16 @@
 // 四个操作链接两端对齐，间隙调小（与下葬页一致） 20260917 修改
 .cms-card-actions-between(adminfee, 2px);
 
+// 管理期已过期（结束日期早于当天）卡片外框标红，同“新建”链接字体色（--td-error-color）；
+// hover 保持红色不随公共 hover 变主题色，过期提醒优先于交互凸显 20260923 新增
+.adminfee-card--expired {
+  border-color: var(--td-error-color);
+
+  &:hover {
+    border-color: var(--td-error-color);
+  }
+}
+
 // 英文操作链接较长（Detail/Create/Modify/Delete 约166px）超过150px卡片内容区，
 // flex自动最小尺寸会把卡片撑宽，与只有2个链接的卡片宽度不一致；英文态统一加宽至200px保证同排等宽 20260917 修改
 .en_US .adminfee-card-layout .adminfee-card {

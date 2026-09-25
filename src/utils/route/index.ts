@@ -303,7 +303,7 @@ function normalizeMenuRoutes(routeList: RouteItem[]): RouteItem[] {
 // 注意：glob 模式必须内联为字面量，rolldown 无法跨变量分析 import.meta.glob 的模式
 const dynamicViewsModules: Record<string, () => Promise<Recordable>> = {
   ...import.meta.glob<Recordable>(
-    '../../pages/{account,adminfee,adminfeeQuery,buried,buriedQuery,contacts,contactsQuery,contract,home,login,managementPeriod,operator,park,receiptConfig,reserve,room,sale,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
+    '../../pages/{account,adminfee,adminfeeQuery,buried,buriedQuery,contacts,contactsQuery,contract,gravePlotBusiness,home,login,managementPeriod,operator,park,receiptConfig,reserve,room,roomQuery,sale,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
   ),
 };
 
@@ -321,7 +321,10 @@ function asyncImportRoute(routes: RouteItem[] | undefined) {
       } else {
         item.component = dynamicImport(dynamicViewsModules, component);
       }
-    } else if (name) {
+    } else if (name && (!children || children.length === 0)) {
+      // 仅无子路由的具名节点兜底空渲染；中间层级（如区域二级菜单）不挂组件：
+      // RouterView 会跳过无 components 的 matched 记录，叶子页面直接在内容区 router-view 渲染，
+      // keep-alive 仍按页面组件名缓存，避免空组件截断三级页面渲染 20260923 修改,
       item.component = PARENT_LAYOUT();
     }
 

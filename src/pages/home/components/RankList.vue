@@ -1,6 +1,6 @@
 <template>
   <t-row :gutter="16" class="row-container">
-    <t-col class="dashboard-col" :xs="12" :xl="6">
+    <t-col class="dashboard-col" :span="6">
       <t-card :title="saleCardTitle" class="dashboard-rank-card" :bordered="false">
         <template #actions>
           <!-- 今天/昨天切换：默认今天，点击分段控件切换对应日期明细 20260921 新增 -->
@@ -25,7 +25,7 @@
         </t-table>
       </t-card>
     </t-col>
-    <t-col class="dashboard-col" :xs="12" :xl="6">
+    <t-col class="dashboard-col" :span="6">
       <t-card :title="buyCardTitle" class="dashboard-rank-card" :bordered="false">
         <template #actions>
           <!-- 今天/昨天切换：默认今天，点击分段控件切换对应日期明细 20260921 新增 -->

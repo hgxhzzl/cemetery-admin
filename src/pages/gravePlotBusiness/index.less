@@ -1,0 +1,135 @@
+// ============================================================
+// 墓位业务基础页样式：公共结构引自业务公共样式库，本文件仅保留本页特有覆盖 20260923 新增
+// 与墓位销售页同构复制，前缀改为 gravePlotBusiness（红/绿状态框为销售页专属，本页不带）
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 卡片页公共结构（前缀 gravePlotBusiness） ====================
+.cms-list-panel(gravePlotBusiness);
+.cms-list-body(gravePlotBusiness);
+.cms-list-toolbar(gravePlotBusiness);
+.cms-no-data(gravePlotBusiness);
+.cms-card-layout(gravePlotBusiness);
+.cms-card-basic(gravePlotBusiness);
+.cms-card-empty-dashed(gravePlotBusiness);
+// 卡片统一迭代样式套件：与墓区设置页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐）
+.cms-card-hover-highlight(gravePlotBusiness);
+.cms-card-head-pill(gravePlotBusiness);
+.cms-card-meta-between(gravePlotBusiness);
+// 状态胶囊行已移除，cms-card-status-tags 不再调用 20260923 修改
+// 卡片操作行已移除，cms-card-actions-between 不再调用 20260923 修改
+// 信息行标题胶囊样式已取消，恢复 cms-card-meta-between 默认灰色文本标题 20260923 修改
+
+// 人员信息行标签（预定人/购买人/下葬者/联系人）已改为 t-link 操作按钮，
+// 主题绿/悬停浅蓝及可点击标题样式随标题方案一并移除 20260923 修改
+
+// 人员按钮字号与内容值对齐：t-link 用 font 简写（14px/22px）覆盖继承，需 :deep 显式改回信息行 12px/16px 20260923 新增
+.gravePlotBusiness-card__meta {
+  :deep(.t-link) {
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+.gravePlotBusiness-page-content {
+  .cms-page-content();
+}
+
+.operation-container {
+  .cms-operation-container-card();
+
+  justify-content: flex-end;
+}
+
+// 筛选条排序分段控件（升/降）：此前在 .t-radio-group 上设 font-size 一直不生效——组件库对 .t-radio-button
+// 用 font 简写显式声明字号（small 为 --td-font-body-small 12px），覆盖父容器继承；
+// 需直接对 .t-radio-button 覆盖 font 简写才能生效，字号取 body-medium（14px）20260925 修复后调小
+.gravePlotBusiness-list-panel {
+  :deep(.cms-card-filter-inline .t-radio-group .t-radio-button) {
+    font: var(--td-font-body-medium);
+  }
+}
+
+// 排序筛选项：分段控件内容窄（label 84px + 升/降两枚小按钮），不沿用 basic 的 286px 固定宽，
+// 按内容自适应收缩，避免 4 个条件项累计超宽触发筛选行换行窜行 20260925 新增
+.gravePlotBusiness-filter-item-sort {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+}
+
+// 区域/排号筛选项与下拉框收窄：本页筛选行 4 项（区域/园区/排号/排序），basic 286px 不可变，
+// 改用页面专属窄项——下拉框 120px，项宽 = label 84 + 控件 120 = 204px；
+// 总宽 204+284(basic 园区)+204+152(排序)+间距 24×3=916px < span=10 列宽约 1046px
+// （内容区最小宽 1320 - 卡片左右内边距 64 后 ×10/12），排序项稳定不窜行；
+// 页面 less 在公共库之后引入，同特异性下后声明的宽度覆盖 cms-filter-control 的 200px 20260925 新增
+.gravePlotBusiness-filter-item-narrow {
+  width: 204px;
+  max-width: 204px;
+}
+
+.gravePlotBusiness-filter-control-narrow {
+  width: 120px;
+}
+
+// ==================== 开单表单（紧凑版：尽量一屏展示） ====================
+.form-basic-container {
+  .cms-form-basic-compact();
+  // 输入框行固定宽度为销售页原有规则，随公共库拆分保留在本页
+  .cms-form-inputs-fixed();
+
+  // 下葬形态联系人输入框：固定 120px，按钮 margin-left:auto 贴 flex 容器右缘，整体右缘对齐容器右界；
+  // TDesign 的 class 透传到外层 t-input__wrap 而非 .t-input 根元素（此前选择器 .contacts-inline-input.t-input 不匹配致未生效）：
+  // wrap 定宽 120px，内部 .t-input 改 100% 填满 wrap，同时覆盖 cms-form-inputs-fixed 的 322px !important 强制宽 20260923 修改
+  :deep(.contacts-inline-input.t-input__wrap) {
+    width: 255px !important;
+  }
+
+  :deep(.contacts-inline-input .t-input) {
+    width: 100% !important;
+  }
+}
+
+.form-submit-container {
+  .cms-form-submit-compact();
+}
+
+// ==================== 下葬形态：逝者关系 + 备注同行（原备注行拆分，左逝者关系 322px，右备注占满余宽）20260925 新增 ====================
+.buried-relation-remark-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+
+  // 两个 t-form-item label 均在顶部，去掉 flex 拉伸使同行顶部对齐
+  > :deep(.t-form__item) {
+    flex: none;
+  }
+
+  // 备注 t-form-item 占满剩余宽度，多行输入框右缘对齐容器右界
+  > :deep(.t-form__item:last-child) {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+// ==================== 只读信息行（表单墓位信息，两列布局） ====================
+.info-block {
+  .cms-info-block();
+}
+
+// ==================== 下葬形态记录选择/联系人选择列表：外框 + 竖格线（同下葬页，代码独立）20260923 新增 ====================
+.buried-record-table {
+  .cms-record-table-vertical();
+
+  // 列表行高：表体单元格上下内边距 6px（默认 8px 压缩至 3px 后视觉过紧，回调至 6px；仅本页生效不影响下葬页）20260923 修改
+  :deep(td) {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  // 操作列“修改/删除”链接间距 20260923 新增
+  :deep(.record-op-links) {
+    display: inline-flex;
+    gap: 12px;
+  }
+}

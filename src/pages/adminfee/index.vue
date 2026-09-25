@@ -72,7 +72,10 @@
                       v-for="card in rowGroup.cards"
                       :key="`${rowGroup.yNum}-${card.xNum}`"
                       class="adminfee-card"
-                      :class="{ 'adminfee-card--empty': card.placeholder }"
+                      :class="{
+                        'adminfee-card--empty': card.placeholder,
+                        'adminfee-card--expired': isPeriodExpired(card.row?.endDate),
+                      }"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260909 新增 -->
@@ -453,6 +456,13 @@ const userInfo = usePermission('104101');
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
 // 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260917 新增
 const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+// 管理期过期判断：管理费结束日期早于当天（日粒度，当天到期不算过期）时卡片外框标红提醒续费 20260923 新增
+const isPeriodExpired = (endDate?: string | null) => {
+  if (!endDate) {
+    return false;
+  }
+  return dayjs(endDate).isBefore(dayjs(), 'day');
+};
 // 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容（与下葬页一致） 20260917 新增
 const truncateText = (value?: string | null) => {
   const text = String(value || '');

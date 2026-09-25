@@ -213,8 +213,8 @@ const handleClose = () => {
   emit('close');
 };
 
-// 下葬记录列表列定义：序号/安葬者/安葬者身份证号/下葬日期/联系人/联系人电话/备注/经办人/创建日期，
-// 各列左对齐；列宽 64/240/160/110/110/130/90/90/110，总宽 1104 与其它两表统一 20260912 修改
+// 下葬记录列表列定义：序号/安葬者/安葬者身份证号/下葬日期/联系人/联系人电话/逝者关系/经办人/创建日期，
+// 各列左对齐；列宽 64/240/160/110/110/130/90/90/110，总宽 1104 与其它两表统一 20260912 修改 20260925 备注改逝者关系,
 const buriedColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'serial-number', title: translate('pages.buried.index'), width: 50, align: 'left' },
   // 安葬者列宽 240：容纳约 15 个中文字符，与收款金额+缴费年限两列合计上下对齐 20260912 修改
@@ -239,8 +239,14 @@ const buriedColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
     align: 'left',
     ellipsis: true,
   },
-  // 备注列：与收款信息表格备注列上下对齐（同宽同位置） 20260912 修改
-  { colKey: 'remark', title: translate('pages.buried.remark'), width: 90, align: 'left', ellipsis: true },
+  // 逝者关系列：原备注列位置改展示逝者关系（下葬/销售形态录入 buried.deceasedRelation）20260925 修改
+  {
+    colKey: 'deceasedRelation',
+    title: translate('pages.buried.deceasedRelation'),
+    width: 90,
+    align: 'left',
+    ellipsis: true,
+  },
   // 经办人列：与收款信息表格经办人列上下对齐（同宽同位置） 20260912 新增
   { colKey: 'operator', title: translate('pages.buried.operator'), width: 90, align: 'left', ellipsis: true },
   // 创建日期列：与收款信息表格创建日期列上下对齐（同宽同位置） 20260912 新增
@@ -266,7 +272,7 @@ const buriedRows = computed(() =>
       burialDate: display(formatDate(row.burialDate)),
       contacts: display(row.contacts),
       contactsphone: display(row.contactsphone),
-      remark: display(row.remark),
+      deceasedRelation: display(row.deceasedRelation),
       operator: display(row.operator),
       createDate: display(formatDate(row.createDate)),
     })),

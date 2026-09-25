@@ -1,7 +1,8 @@
 <template>
   <t-row :gutter="[16, 16]">
-    <!-- 响应式断点：窄屏（<992px）2 列，视口 ≥992px（md）时前两卡 4 格（金额长文案）后两卡 2 格（纯数字短文案）20260917 修改 -->
-    <t-col v-for="(item, index) in PANE_LIST" :key="item.title" class="dashboard-col" :xs="6" :md="index < 2 ? 4 : 2">
+    <!-- 固定 span 不设响应式断点：媒体查询跟随视口而非内容区宽度，全局内容区已保底 min-width 1320px + 浏览器横向滚动条，
+         若保留 :xs/:md 断点，窄视口下即便内容区不缩窄卡片仍会窜行排成 2 行 20260925 修改 -->
+    <t-col v-for="(item, index) in PANE_LIST" :key="item.title" class="dashboard-col" :span="index < 2 ? 4 : 2">
       <t-card
         :title="t(item.title)"
         :bordered="false"

@@ -51,6 +51,7 @@ import { useRouter } from 'vue-router';
 
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
+import { getDeviceInfo } from '@/utils/device';
 import { logError } from '@/utils/logger';
 
 const userStore = useUserStore();
@@ -89,7 +90,9 @@ const onSubmit = async (ctx: SubmitContext) => {
         localStorage.removeItem(REMEMBER_ACCOUNT_KEY);
       }
 
-      await userStore.login(formData.value);
+      // 先取本机设备哈希再提交登录:未装 Agent 时为空串,后端设备白名单拒绝普通账号 20260924 设备白名单,
+      const deviceInfo = await getDeviceInfo();
+      await userStore.login({ ...formData.value, deviceHash: deviceInfo?.deviceHash || '' });
 
       MessagePlugin.success(t('pages.login.loginSuccess'));
       // 重新登录后统一回首页入口：清空旧 redirect 带来的历史业务页回跳，再由路由守卫跳转业务首页。

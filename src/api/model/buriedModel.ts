@@ -9,6 +9,8 @@ export interface BuriedModel {
   deceased: string;
   // 安葬者身份证号，原列名 burierIDCard，数据库列名改为 deceasedIDCard 20260912 修改,
   deceasedIDCard: string;
+  // 逝者关系（与安葬者关系），下葬/销售形态录入，详情表格展示 20260925 新增
+  deceasedRelation: string;
   burialDate: string;
   // 联系人电话：库中实际列名为 contactsphone(全小写)，SELECT * 返回同名键，模型字段与之对齐 20260909 修改,
   contactsphone: string;

@@ -1,9 +1,23 @@
 <template>
-  <!-- 三行布局布满一屏：第一/三行固定高度、第二行动态伸缩 20260915 修改 -->
+  <!-- 五行布局自然高度：第一/三/四/五行固定高度、第二行固定高度，不再限定一屏高，内容整体可上下滚动（外层布局层滚动承接）；
+       各行均为固定 span 栅格不设响应式断点，窄视口下内容区由全局 min-width 1320px 保底，
+       布局不窜行变形，超出部分由浏览器横向滚动条承接 20260925 修改 -->
   <div class="home-dashboard">
     <top-panel class="home-row home-row--top" :summary="summary" />
     <middle-chart class="home-row home-row--middle" :monthly-sales="summary?.monthlySales" />
     <rank-list class="home-row home-row--bottom" :regions="summary?.regions" :weekly-sales="summary?.weeklySales" />
+    <!-- 下葬记录：销售记录下方第四行，样式同销售记录，分区域两张卡、今天/明天切换 20260925 新增 -->
+    <buried-list
+      class="home-row home-row--buried"
+      :regions="summary?.regions"
+      :buried-records="summary?.buriedRecords"
+    />
+    <!-- 管理到期记录：下葬记录下方第五行，样式同销售记录，分区域两张卡、无日期选项 20260925 新增 -->
+    <expired-list
+      class="home-row home-row--expired"
+      :regions="summary?.regions"
+      :expired-rooms="summary?.expiredRooms"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -13,6 +27,8 @@ import type { DashboardSummaryModel } from '@/api/dashboard';
 import { getDashboardSummary } from '@/api/dashboard';
 import { logError } from '@/utils/logger';
 
+import BuriedList from './components/BuriedList.vue';
+import ExpiredList from './components/ExpiredList.vue';
 import MiddleChart from './components/MiddleChart.vue';
 import RankList from './components/RankList.vue';
 import TopPanel from './components/TopPanel.vue';
@@ -36,12 +52,10 @@ onActivated(async () => {
 .home-dashboard {
   display: flex;
   flex-direction: column;
-  /* 与查询页一致的自适应公式，偏移从 220px 收紧至 200px：常规桌面视口下三行内容（732px 最小）恰好布满不触发内层滚动条 20260917 修改 */
-  height: calc(100vh - 200px);
-  /* 窄屏下内容超出一屏时允许滚动，避免首行卡片/图表被压缩裁切 20260915 修改 */
-  overflow-y: auto;
-  /* 裁剪 t-row gutter 负 margin（左右各 -8px）导致的 8px 横向出血：列内对称 padding 已补偿，裁剪不影响视觉；
-     否则 overflow-y:auto 会把 overflow-x 隐式置为 auto，底部常显横向滚动条 20260917 修复 */
+  /* 取消 calc(100vh - 200px) 一屏高限制：自然高度随内容撑开，上下滚动交给外层布局层（.tdesign-starter-layout overflow-y:auto）承接，
+     不再产生内层滚动条 20260925 修改 */
+
+  /* 裁剪 t-row gutter 负 margin（左右各 -8px）导致的 8px 横向出血：列内对称 padding 已补偿，裁剪不影响视觉 20260917 修复 */
   overflow-x: hidden;
 }
 
@@ -54,19 +68,29 @@ onActivated(async () => {
   margin-top: 10px;
 }
 
-/* 第一行卡片：min-height 保底 124px；窄屏（<1200px）时 4 张卡片排成 2 行，允许撑高不被裁切 20260915 修改 */
+/* 第一行卡片：min-height 保底 124px；固定单行四卡布局（不再因窄屏断点排成 2 行）20260925 修改 */
 .home-row--top {
   min-height: 124px;
 }
 
-/* 第二行动态伸缩：销售数量统计折线图占满剩余高度（保底 220px：echarts grid 上下边距 76px + 折线区域 90px + 卡片边距） */
+/* 第二行固定高度：容器不再限高一屏，flex:1 无从伸缩，改为固定高度供折线图绘制
+   （原动态伸缩时常规视口下实际渲染约 360-400px，取 380px 居中值）20260925 修改 */
 .home-row--middle {
-  flex: 1 1 auto;
-  min-height: 260px;
+  height: 380px;
 }
 
 /* 第三行固定高度：销售记录表格显示 5 条明细（超出表格内滚动） */
 .home-row--bottom {
+  height: 328px;
+}
+
+/* 第四行固定高度：下葬记录与销售记录同结构同高度 20260925 新增 */
+.home-row--buried {
+  height: 328px;
+}
+
+/* 第五行固定高度：管理到期记录与销售记录同结构同高度 20260925 新增 */
+.home-row--expired {
   height: 328px;
 }
 </style>

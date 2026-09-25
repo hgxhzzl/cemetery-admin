@@ -20,6 +20,8 @@ export interface LoginResult {
     userPhone?: string;
     userName?: string;
     userId?: number;
+    // 操作员是否平台管理员账号：1 管理员 / 0 普通操作员 20260924 新增
+    isAccount?: number;
     dataBaseName?: string;
     userInfo?: {
       roles?: UserPermission[];
@@ -27,7 +29,8 @@ export interface LoginResult {
   };
 }
 
-export const login = (username: string, password: string): Promise<LoginResult> => {
+// 登录请求附带本机设备哈希:后端设备白名单校验用,非指定电脑/未装 Agent 时为空串被拒 20260924 新增,
+export const login = (username: string, password: string, deviceHash = ''): Promise<LoginResult> => {
   return new Promise((resolve, reject) => {
     const requestConfig: AxiosRequestConfig = {
       url: loginApiUrl,
@@ -35,6 +38,7 @@ export const login = (username: string, password: string): Promise<LoginResult> 
       data: {
         username,
         password,
+        deviceHash,
       },
       headers: {
         'Content-Type': 'application/json',
@@ -58,6 +62,9 @@ export const login = (username: string, password: string): Promise<LoginResult> 
         let msg = backendMsg || error.message;
         if (status === 401) {
           msg = '账号或密码错误，请重新输入';
+        } else if (status === 403) {
+          // 403 是设备白名单拒绝,后端 message 已是面向用户的提示,优先透传 20260924 设备白名单,
+          msg = backendMsg || '当前电脑未授权登录，请使用单位指定电脑';
         } else if (!backendMsg && error.message?.includes('Network Error')) {
           msg = '无法连接登录服务，请确认后端服务（端口 3000）已启动';
         }

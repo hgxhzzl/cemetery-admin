@@ -7,9 +7,15 @@
   // 防止被父级 flex 容器（t-card 头部 actions 等）压缩导致“返回”文字被裁剪 20260921 新增
   flex-shrink: 0;
 
-  // 点击波纹默认灰色（--td-bg-color-container-active），双类提升优先级置为透明，避免胶囊两侧露出灰色
-  &.cms-back-btn {
-    --ripple-color: transparent;
+  // TDesign text 变体按钮根自带左右 padding（长属性定义，与单类特异性相等且注入更晚），
+  // 使胶囊右缘与容器右缘存在 ~15px 间隙；!important 去除后胶囊右缘与所在容器（如列表/标题行）右缘完全对齐 20260923 新增
+  padding: 0 !important;
+
+  // 点击波纹默认灰色（--td-bg-color-container-active），TDesign 1.20.7 定义在
+  // .t-button:not(.t-is-disabled):not(.t-button--ghost)，特异性高于双类选择器，
+  // 需 :not 同构 + !important 压过，避免点击时胶囊两侧露出灰色波纹 20260923 修改
+  &.cms-back-btn:not(.t-is-disabled, .t-button--ghost) {
+    --ripple-color: transparent !important;
   }
 
   // TDesign 按钮内容容器 t-button__text 默认仅 inline-flex 无 align-items，显式居中

@@ -21,12 +21,23 @@
 .sale-page-content {
   .cms-page-content();
 }
-// 已销售卡片：浅灰底区分，未售/预定卡片保持白底，一眼区分 20260919 新增
+// 已销售卡片：外框标红区分（同“新建”链接字体色 --td-error-color），取消原浅灰底约定；
+// hover 保持红色不随公共 hover 变主题色，已销售标识优先于交互凸显 20260923 修改
 .sale-card--sold {
-  background-color: var(--td-bg-color-secondarycontainer);
+  border-color: var(--td-error-color);
 
   &:hover {
-    background-color: var(--td-bg-color-container-active);
+    border-color: var(--td-error-color);
+  }
+}
+
+// 未销售卡片：外框绿色区分（同“详情”链接字体色 --td-brand-color）；与已销售红框、空位灰底共同构成状态区分；
+// hover 保持绿色不随公共 hover 变主题色，未销售标识优先于交互凸显 20260923 新增
+.sale-card--unsold {
+  border-color: var(--td-brand-color);
+
+  &:hover {
+    border-color: var(--td-brand-color);
   }
 }
 .operation-container {
