@@ -1,15 +1,24 @@
 <template>
   <t-row :gutter="16" class="row-container">
-    <!-- 管理到期记录：样式与销售记录（RankList）一致，分区域两张卡，无日期选项；固定 span 不设响应式断点，窄视口不窜行 20260925 新增 -->
+    <!-- 管理到期记录：样式与销售记录（RankList）一致，分区域两张卡；标题右侧显示记录条数，
+         表格滚动到底自动加载下一页（每页 40 条，同墓位销售查询无限滚动方式）20260925 新增 20260926 改分页加载 -->
     <t-col class="dashboard-col" :span="6">
       <t-card :title="firstCardTitle" class="dashboard-expired-card" :bordered="false">
+        <!-- 标题靠右侧记录条数：接口返回 total，重载/翻页时刷新 20260926 新增 -->
+        <template #actions>
+          <span class="dashboard-expired-count">
+            {{ translate('operate.total') }}{{ firstPagination.total }}{{ translate('operate.records') }}
+          </span>
+        </template>
         <t-table
-          :data="firstTendData"
+          ref="firstTableRef"
+          :data="firstData"
           :columns="EXPIRED_COLUMNS"
           row-key="idRoom"
           size="small"
           :max-height="288"
           table-layout="fixed"
+          @scroll="firstHandleScroll"
         >
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
@@ -21,13 +30,20 @@
     </t-col>
     <t-col class="dashboard-col" :span="6">
       <t-card :title="secondCardTitle" class="dashboard-expired-card" :bordered="false">
+        <template #actions>
+          <span class="dashboard-expired-count">
+            {{ translate('operate.total') }}{{ secondPagination.total }}{{ translate('operate.records') }}
+          </span>
+        </template>
         <t-table
-          :data="secondTendData"
+          ref="secondTableRef"
+          :data="secondData"
           :columns="EXPIRED_COLUMNS"
           row-key="idRoom"
           size="small"
           :max-height="288"
           table-layout="fixed"
+          @scroll="secondHandleScroll"
         >
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
@@ -41,10 +57,12 @@
 </template>
 <script setup lang="ts">
 import type { TdBaseTableProps } from 'tdesign-vue-next';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import type { DashboardRegionModel, ExpiredRoomModel } from '@/api/dashboard';
-import { t } from '@/locales';
+import { getDashboardExpiredList } from '@/api/dashboard';
+import { useInfiniteScrollQuery } from '@/hooks';
+import { t, translate } from '@/locales';
 
 defineOptions({
   name: 'DashboardExpiredList',
@@ -52,23 +70,55 @@ defineOptions({
 
 const props = defineProps<{
   regions?: DashboardRegionModel[];
-  expiredRooms?: ExpiredRoomModel[];
 }>();
 
-// 管理到期明细行：按区域过滤（后端已按到期日期升序，最先到期在前），园区名称+编号拼一列 20260925 新增
-const toRegionRows = (region: string | undefined) => {
-  if (!region) return [];
-  return (props.expiredRooms ?? [])
-    .filter((item) => item.region === region)
-    .map((item) => ({
-      ...item,
-      parkNumber: `${item.park ?? ''}${item.xyNumber ?? ''}`,
-    }));
+// 表格行：接口字段 + 拼接列「园区名称+编号」20260926 新增
+type ExpiredRow = ExpiredRoomModel & { parkNumber: string };
+
+// 分页拉取工厂：按区域分页查询并拼接园区名称+编号列；
+// 区域未就绪时返回空（total 0），待 regions 下发后由 watch 触发重置加载 20260926 新增
+const makeFetchPage = (getRegion: () => string | undefined) => async (current: number, pageSize: number) => {
+  const region = getRegion();
+  if (!region) return { list: [] as ExpiredRow[], total: 0 };
+  const result = await getDashboardExpiredList({ region, current, pageSize });
+  return {
+    total: result.total,
+    list: result.list.map((item) => ({ ...item, parkNumber: `${item.park ?? ''}${item.xyNumber ?? ''}` })),
+  };
 };
 
-const firstTendData = computed(() => toRegionRows(props.regions?.[0]?.label));
+// 两张卡各自独立的滚动加载状态机：收敛于公共 useInfiniteScrollQuery（同销售查询页）20260926 新增
+const firstTableRef = ref();
+const {
+  data: firstData,
+  pagination: firstPagination,
+  onSubmit: firstOnSubmit,
+  handleScroll: firstHandleScroll,
+} = useInfiniteScrollQuery<ExpiredRow>(
+  makeFetchPage(() => props.regions?.[0]?.label),
+  firstTableRef,
+);
 
-const secondTendData = computed(() => toRegionRows(props.regions?.[1]?.label));
+const secondTableRef = ref();
+const {
+  data: secondData,
+  pagination: secondPagination,
+  onSubmit: secondOnSubmit,
+  handleScroll: secondHandleScroll,
+} = useInfiniteScrollQuery<ExpiredRow>(
+  makeFetchPage(() => props.regions?.[1]?.label),
+  secondTableRef,
+);
+
+// regions 随 summary 每次激活刷新下发（新数组引用）：首次就绪与每次切回首页均从第一页重载并滚动归零 20260926 新增
+watch(
+  () => props.regions,
+  () => {
+    if (props.regions?.[0]?.label) firstOnSubmit();
+    if (props.regions?.[1]?.label) secondOnSubmit();
+  },
+  { immediate: true },
+);
 
 // 卡片标题：区域名称 + 管理到期记录（如「九泉山管理到期记录」），无区域时回退默认标题 20260925 新增
 const firstCardTitle = computed(() => {
@@ -81,7 +131,7 @@ const secondCardTitle = computed(() => {
   return region ? `${region}${t('pages.dashboardBase.expiredList.title')}` : t('pages.dashboardBase.expiredList.title');
 });
 
-// 列：序号/园区名称+编号/到期日期/联系人（列宽总和 480，远小于最小列宽，不触发表内滚动）20260925 新增
+// 列：序号/园区名称+编号/到期日期/联系人（列宽总和 480，远小于最小列宽，不触发表内横向滚动）20260925 新增
 const EXPIRED_COLUMNS = computed<TdBaseTableProps['columns']>(() => [
   {
     align: 'center',
@@ -122,7 +172,7 @@ const getRankClass = (index: number) => {
   height: 100%;
 }
 
-// 卡片结构与销售记录（dashboard-rank-card）一致，无头部右侧日期切换 20260925 新增
+// 卡片结构与销售记录（dashboard-rank-card）一致，头部右侧由日期切换改为记录条数 20260925 新增 20260926 修改
 .dashboard-expired-card {
   height: 100%;
   display: flex;
@@ -156,6 +206,12 @@ const getRankClass = (index: number) => {
     padding: 0;
     margin-top: var(--td-comp-margin-l);
   }
+}
+
+// 标题靠右侧记录条数：小字次要色，与卡片头部基线对齐 20260926 新增
+.dashboard-expired-count {
+  font: var(--td-font-body-small);
+  color: var(--td-text-color-secondary);
 }
 
 .dashboard-rank__cell {

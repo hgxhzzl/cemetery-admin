@@ -110,8 +110,8 @@
                       class="gravePlotBusiness-card"
                       :class="{
                         'gravePlotBusiness-card--empty': card.placeholder,
+                        [cardStatusClass(card.row)]: !card.placeholder,
                       }"
-                      @dblclick="!card.placeholder && handleClickDetail(card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -124,15 +124,19 @@
                       </template>
                       <template v-else>
                         <div class="gravePlotBusiness-card__header">
-                          <!-- 排号改取 xyNumber 字段(自定义坐标名)，缺失时回退 yNum/xNum 拼接 20260923 修改 -->
-                          <div class="gravePlotBusiness-card__serial">
+                          <!-- 排号改取 xyNumber 字段(自定义坐标名)，缺失时回退 yNum/xNum 拼接 20260923 修改；
+                               编号点击进详情（悬停小手），原整卡双击事件已移除 20260926 修改 -->
+                          <div
+                            class="gravePlotBusiness-card__serial gravePlotBusiness-card__serial--clickable"
+                            @click="handleClickDetail(card.row)"
+                          >
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.xNum} 号` }}
                           </div>
                           <!-- 墓穴类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 20260923 修改 -->
                           <span class="gravePlotBusiness-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="gravePlotBusiness-card__body">
-                          <!-- 卡片信息内容参照墓区下葬页：预定人/购买人/下葬者/联系人/期限，标签在左灰色、值在右深色两端对齐 20260923 修改 -->
+                          <!-- 卡片信息内容参照墓区下葬页：预定人/购墓人/下葬者/联系人/期限，标签在左灰色、值在右深色两端对齐 20260923 修改 -->
                           <!-- 销售状态保留在卡片行数据 card.row.saleStatus 中（后续交互门控/背景区分等依据），仅在卡面上不渲染展示 20260923 新增 -->
                           <!-- 预定人：值为活动预定记录联查带出，有则显示人名、无预定显示“无”；按钮进入预定形态表单，已销售时禁用并恢复默认色 20260923 修改 20260924 修改 -->
                           <div class="gravePlotBusiness-card__meta">
@@ -155,11 +159,11 @@
                             }}</span>
                           </div>
                           <div class="gravePlotBusiness-card__meta">
-                            <!-- 购买人按钮：点击进入销售形态表单（同墓位销售页样式内容：有销售信息为“修改销售”、无则为“销售墓穴”；数据仍走自有接口）20260923 修改 -->
+                            <!-- 购墓人按钮：点击进入销售形态表单（同墓位销售页样式内容：有销售信息为“修改销售”、无则为“销售墓穴”；数据仍走自有接口）20260923 修改 -->
                             <t-link theme="primary" @click="handleClickBuyer(card.row)">
                               {{ $t('pages.room.buyer') }}
                             </t-link>
-                            <!-- 购买人无值时默认显示“无” 20260923 新增 -->
+                            <!-- 购墓人无值时默认显示“无” 20260923 新增 -->
                             <span class="gravePlotBusiness-card__meta-value">{{
                               card.row.buyer || $t('common.none')
                             }}</span>
@@ -215,13 +219,30 @@
             </div>
           </div>
 
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 20260828 修改 -->
+          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同首页销售数量统计图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
           <div v-if="hasQueried && businessCardRows.length" class="gravePlotBusiness-list-toolbar">
             <span>{{ listTotalText }}</span>
-            <span class="gravePlotBusiness-list-toolbar__zoom">
-              <zoom-in-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
+            <div class="gravePlotBusiness-list-toolbar__right">
+              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <div class="gravePlotBusiness-list-toolbar__legend">
+                <span class="gravePlotBusiness-legend-item">
+                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--sold" />
+                  {{ $t('statusType.saleStatusEnum.sold') }}
+                </span>
+                <span class="gravePlotBusiness-legend-item">
+                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--buried" />
+                  {{ $t('statusType.intoStatusEnum.buried') }}
+                </span>
+                <span class="gravePlotBusiness-legend-item">
+                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--expired" />
+                  {{ $t('pages.gravePlotBusiness.legendExpired') }}
+                </span>
+              </div>
+              <span class="gravePlotBusiness-list-toolbar__zoom">
+                <zoom-in-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomIn" />
+                <zoom-out-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomOut" />
+              </span>
+            </div>
           </div>
 
           <!-- 删除二次确认弹窗随卡片操作行一并移除 20260923 修改 -->
@@ -241,7 +262,7 @@
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->
-    <!-- 业务登记始（独立实现：点击购买人标题进入，走 gravePlotBusiness 自有接口与 graveplotbusiness 表，不与墓位销售混用）20260923 修改 -->
+    <!-- 业务登记始（独立实现：点击购墓人标题进入，走 gravePlotBusiness 自有接口与 graveplotbusiness 表，不与墓位销售混用）20260923 修改 -->
     <!-- 业务登记（独立实现）：销售形态存在销售记录且非平台管理员（isAccount=0）时表单只读，管理员可操作 20260924 修改 -->
     <div v-if="isCreateShow">
       <t-form
@@ -830,6 +851,7 @@ export default {
 };
 </script>
 <script setup lang="ts">
+import dayjs from 'dayjs';
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { Link, MessagePlugin } from 'tdesign-vue-next';
@@ -879,6 +901,25 @@ useTabCacheName('GravePlotBusiness');
 // 卡片状态胶囊行已移除，状态配色函数 statusKey 随之移除 20260923 修改,
 // 销售状态判定：已销售时预定人标题恢复默认灰色，不再应用主题绿 20260923 新增
 const isSold = (status?: string) => status === 'statusType.saleStatusEnum.sold';
+
+// 卡片外框状态色类名：管理到期浅红 > 已下葬蓝 > 已销售绿（优先级降序，同一卡片只取一种）20260926 新增
+const cardStatusClass = (row: GravePlotBusinessRoomRow | null | undefined) => {
+  if (!row) {
+    return '';
+  }
+  // 管理期结束日期早于今天（不含当天）即到期
+  if (row.endDate && dayjs(row.endDate).isBefore(dayjs(), 'day')) {
+    return 'gravePlotBusiness-card--expired';
+  }
+  // 已下葬：安葬者已写入 room.deceased
+  if (row.deceased) {
+    return 'gravePlotBusiness-card--buried';
+  }
+  if (isSold(row.saleStatus)) {
+    return 'gravePlotBusiness-card--sold';
+  }
+  return '';
+};
 // 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容 20260923 新增
 const truncateText = (value?: string | null) => {
   const text = String(value || '');
@@ -1042,7 +1083,7 @@ const resetBusinessForm = (idRoom = 0) => {
   };
 };
 
-// 表单模式：预定人按钮进入预定形态，购买人按钮进入销售形态，下葬者按钮进入下葬形态，
+// 表单模式：预定人按钮进入预定形态，购墓人按钮进入销售形态，下葬者按钮进入下葬形态，
 // 联系人按钮进入业务登记形态 20260923 修改
 const formMode = ref<'sale' | 'business' | 'reserve' | 'buried'>('business');
 
@@ -1097,7 +1138,7 @@ const contactsBusinessColumns: PrimaryTableCol[] = [
   },
 ];
 
-// 表单标题随模式切换：预定/销售/下葬形态新建与修改统一固定标题（“墓位预定”/“墓穴销售”/“墓穴下葬”，同既有页面）；
+// 表单标题随模式切换：预定/销售/下葬形态新建与修改统一固定标题（“墓位预定”/“墓穴销售”/“墓位下葬”，同既有页面）；
 // 联系人（业务登记）形态统一固定标题“墓位联系人” 20260923 修改 20260924 修改
 const formTitle = computed(() => {
   if (formMode.value === 'reserve') {
@@ -1123,7 +1164,7 @@ const handleClickPerson = async (row: GravePlotBusinessRoomRow) => {
   await loadContactsRecords(row.idRoom);
 };
 
-// 点击购买人按钮：进入销售形态表单——样式内容同墓位销售页（有销售信息“修改销售”、无则“销售墓穴”），
+// 点击购墓人按钮：进入销售形态表单——样式内容同墓位销售页（有销售信息“修改销售”、无则“销售墓穴”），
 // 但数据判定与读写仍走 graveplotbusiness 自有表，不碰 sale 20260923 新增
 const handleClickBuyer = async (row: GravePlotBusinessRoomRow) => {
   formMode.value = 'sale';
@@ -1206,7 +1247,7 @@ const fillBusinessForm = async (idRoom: number, type?: GravePlotBusinessFormType
       contacts: record.contacts ?? '',
       contactsphone: record.contactsphone ?? '',
       contactsIDCard: record.contactsIDCard ?? '',
-      // 创建日期回填：票据编号取 yyyymmdd 前缀 20260922 新增
+      // 创建日期回填：票据编号取 yyyymm 前缀 20260922 新增
       createDate: record.createDate ?? '',
     };
   } catch (e) {
@@ -1475,14 +1516,14 @@ const printReceipt = async () => {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
     payee: String(formBusinessData.value.payee ?? '').trim(),
-    serialNo: String(formBusinessData.value.serialNo ?? '').trim(),
+    // 票据编号后缀取墓位卡号（yyyyymm+卡号）20260926 修改
+    cardno: String(formRoomData.value.cardno ?? ''),
     // 票据编号前缀取业务创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
     createDate: String(formBusinessData.value.createDate ?? ''),
     region: String(formRoomData.value.region ?? ''),
     park: String(formRoomData.value.park ?? ''),
     yNum: String(formRoomData.value.yNum ?? ''),
     xNum: String(formRoomData.value.xNum ?? ''),
-    xyNumber: String(formRoomData.value.xyNumber ?? ''),
     userName: String(userStore.userName ?? ''),
   };
   // 收据配制（标题前缀/地址/电话）：打印读取不属页面操作，失败回退空值不阻断打印 20260922 修改

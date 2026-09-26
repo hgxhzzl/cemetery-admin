@@ -182,7 +182,7 @@ const displayKey = (key: string | null | undefined): string => {
 };
 
 // 墓穴信息字段：区域/园区/排号/序号/编号/墓穴类型/规格/安葬者/单价/管理费结束日期/预定状态/销售状态/下葬状态/迁出状态，
-// 与墓区设置页详情标准一致（不含修复状态） 20260912 修改 20260916 加迁出状态 20260917 去购买人,
+// 与墓区设置页详情标准一致（不含修复状态） 20260912 修改 20260916 加迁出状态 20260917 去购墓人,
 const detailData = computed<{ name: string; value: string }[]>(() => {
   const { room } = props;
   if (!room) return [];
@@ -196,7 +196,7 @@ const detailData = computed<{ name: string; value: string }[]>(() => {
     { name: translate('pages.room.xyNumber'), value: display(room.xyNumber) },
     { name: translate('pages.room.roomType'), value: displayKey(room.roomType) },
     { name: translate('pages.room.specs'), value: display(room.specs) },
-    // 购买人不再展示：销售信息卡片已有付款人字段，避免重复 20260917 移除；安葬者保留 20260912 新增
+    // 购墓人不再展示：销售信息卡片已有付款人字段，避免重复 20260917 移除；安葬者保留 20260912 新增
     { name: translate('pages.room.deceased'), value: display(room.deceased) },
     { name: translate('pages.room.price'), value: display(formatPrice(room.price)) },
     // 管理费结束日期：后端在下葬/收款事务中维护，详情统一展示并格式化为 YYYY-MM-DD 20260912 新增

@@ -20,7 +20,7 @@
 // 卡片操作行已移除，cms-card-actions-between 不再调用 20260923 修改
 // 信息行标题胶囊样式已取消，恢复 cms-card-meta-between 默认灰色文本标题 20260923 修改
 
-// 人员信息行标签（预定人/购买人/下葬者/联系人）已改为 t-link 操作按钮，
+// 人员信息行标签（预定人/购墓人/下葬者/联系人）已改为 t-link 操作按钮，
 // 主题绿/悬停浅蓝及可点击标题样式随标题方案一并移除 20260923 修改
 
 // 人员按钮字号与内容值对齐：t-link 用 font 简写（14px/22px）覆盖继承，需 :deep 显式改回信息行 12px/16px 20260923 新增
@@ -28,6 +28,79 @@
   :deep(.t-link) {
     font-size: 12px;
     line-height: 16px;
+  }
+}
+
+// 卡片编号可点击进详情：悬停小手，hover 品牌色提示可点（仅非空卡片，空位卡编号无点击事件）20260926 新增
+.gravePlotBusiness-card__serial--clickable {
+  cursor: pointer;
+
+  &:hover {
+    color: var(--td-brand-color);
+  }
+}
+
+// 卡片外框统一加粗为 2px：状态色外框更醒目，无状态/空位卡一并加粗保持整齐 20260926 新增
+.gravePlotBusiness-card {
+  border-width: 1px;
+}
+
+// 卡片外框状态色：已销售绿/已下葬蓝/管理到期浅红；外框状态色在 hover 下保持不变，
+// 覆盖公共 cms-card-hover-highlight 的 hover 品牌色（特异性相同，本页 less 后声明优先）20260926 新增,
+// 已下葬固定默认主题蓝 #0052D9（同 config/style 默认 brandTheme），不用 --td-brand-color：
+// 品牌主题色可在设置中切换，切换为绿色时蓝框会变成绿色、与已销售绿混淆 20260926 修复,
+.gravePlotBusiness-card--sold,
+.gravePlotBusiness-card--sold:hover {
+  border-color: var(--td-success-color);
+}
+
+.gravePlotBusiness-card--buried,
+.gravePlotBusiness-card--buried:hover {
+  border-color: #0052d9;
+}
+
+.gravePlotBusiness-card--expired,
+.gravePlotBusiness-card--expired:hover {
+  border-color: var(--td-error-color);
+}
+
+// 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
+.gravePlotBusiness-list-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+// 外框颜色图例（同首页销售数量统计图例样式：小矩形色块 + 12px 文字）20260926 新增
+.gravePlotBusiness-list-toolbar__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.gravePlotBusiness-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+
+  &__swatch {
+    width: 12px;
+    height: 4px;
+    border-radius: 1px;
+
+    &--sold {
+      background-color: var(--td-success-color);
+    }
+
+    &--buried {
+      background-color: #0052d9;
+    }
+
+    &--expired {
+      background-color: var(--td-error-color);
+    }
   }
 }
 

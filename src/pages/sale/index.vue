@@ -573,14 +573,14 @@ const printReceipt = async () => {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
     payee: String(formSaleData.value.payee ?? '').trim(),
-    serialNo: String(formSaleData.value.serialNo ?? '').trim(),
+    // 票据编号后缀取墓位卡号（yyyyymm+卡号）20260926 修改
+    cardno: String(formRoomData.value.cardno ?? ''),
     // 票据编号前缀取销售创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
     createDate: String(formSaleData.value.createDate ?? ''),
     region: String(formRoomData.value.region ?? ''),
     park: String(formRoomData.value.park ?? ''),
     yNum: String(formRoomData.value.yNum ?? ''),
     xNum: String(formRoomData.value.xNum ?? ''),
-    xyNumber: String(formRoomData.value.xyNumber ?? ''),
     userName: String(userStore.userName ?? ''),
   };
   // 收据配制（标题前缀/地址/电话）：打印读取不属页面操作，失败回退空值不阻断打印 20260922 修改
@@ -673,7 +673,7 @@ const fillSaleForm = async (idRoom: number) => {
       // 收款人与编号回填 20260918 新增
       payee: record.payee ?? '',
       serialNo: record.serialNo ?? '',
-      // 创建日期回填：票据编号取 yyyymmdd 前缀 20260922 新增
+      // 创建日期回填：票据编号取 yyyymm 前缀 20260922 新增
       createDate: record.createDate ?? '',
     };
     return true;

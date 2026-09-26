@@ -16,6 +16,8 @@ export const INITIAL_ROOM_DATA = {
   xNum: '',
   // 墓位编号，开单页墓位信息行展示 20260901 新增,
   xyNumber: '',
+  // 墓位卡号，票据编号后缀取该值 20260926 新增,
+  cardno: '',
   price: 0,
   specs: '',
   repairStatus: '',
@@ -33,7 +35,7 @@ export const INITIAL_SALE_DATA = {
   // 收款人与编号字段 20260918 新增,
   payee: '',
   serialNo: '',
-  // 销售创建日期：修改回填用，票据编号取 yyyymmdd 前缀 20260922 新增,
+  // 销售创建日期：修改回填用，票据编号取 yyyymm 前缀 20260922 新增,
   createDate: '',
 };
 

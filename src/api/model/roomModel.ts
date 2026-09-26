@@ -21,7 +21,7 @@ export interface RoomModel {
   yNumTo: string;
   // 墓位编号，卡片列表首行展示 20260831 新增,
   xyNumber: string;
-  // 购买人 varchar(20) 20260912 新增,
+  // 购墓人 varchar(20) 20260912 新增,
   buyer: string;
   // 安葬者 varchar(100)，可多人以空格分隔 20260912 新增,
   deceased: string;

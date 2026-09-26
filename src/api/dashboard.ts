@@ -2,6 +2,8 @@ import { request } from '@/utils/request';
 
 const Api = {
   querySummary: '/dashboard-query/summary',
+  // 管理到期记录独立分页：首页管理到期卡片滚动加载用（每页 40 条）20260926 新增
+  queryExpiredList: '/dashboard-query/expired-list',
 };
 
 // 首页区域名称行：用于两张销售记录卡片标题前缀 20260914 新增
@@ -18,7 +20,7 @@ export interface MonthlySaleModel {
 }
 
 // 首页周销售明细行：本周（周一至周日）逐条销售记录 20260915 修改
-// 字段：idSale（行主键）/区域（卡片过滤用）/园区/编号/实际价格/购买人/日期
+// 字段：idSale（行主键）/区域（卡片过滤用）/园区/编号/实际价格/购墓人/日期
 export interface WeeklySaleModel {
   idSale: number;
   region: string;
@@ -42,8 +44,8 @@ export interface BuriedRecordModel {
   burialDate: string;
 }
 
-// 首页管理到期记录行：endDate 已到期（<=当天）且未迁出的墓位 20260925 新增
-// 字段：idRoom（行主键）/区域（卡片过滤用）/园区/编号/到期日期/联系人
+// 首页管理到期记录行：endDate 已到期（<=当天）且未迁出的墓位 20260925 新增 20260926 改独立分页接口返回
+// 字段：idRoom（行主键）/区域/园区/编号/到期日期/联系人
 export interface ExpiredRoomModel {
   idRoom: number;
   region: string;
@@ -51,6 +53,12 @@ export interface ExpiredRoomModel {
   xyNumber: string;
   endDate: string;
   contacts: string;
+}
+
+// 管理到期记录分页结果：list 当前页数据，total 总记录数供卡片标题条数展示与滚动加载判断 20260926 新增
+export interface ExpiredListResult {
+  list: ExpiredRoomModel[];
+  total: number;
 }
 
 // 首页指标按区域分解行：第一行卡片内的小字（如「九泉山：¥20,000」）20260915 新增
@@ -70,7 +78,6 @@ export interface DashboardSummaryModel {
   monthlySales: MonthlySaleModel[];
   weeklySales: WeeklySaleModel[];
   buriedRecords: BuriedRecordModel[];
-  expiredRooms: ExpiredRoomModel[];
   yearSalesByRegion: RegionStatModel[];
   yearFeesByRegion: RegionStatModel[];
   yearBuriedCountByRegion: RegionStatModel[];
@@ -81,5 +88,13 @@ export interface DashboardSummaryModel {
 export function getDashboardSummary() {
   return request.get<DashboardSummaryModel>({
     url: Api.querySummary,
+  });
+}
+
+// 按区域分页查询管理到期记录（首页管理到期卡片滚动加载用）20260926 新增
+export function getDashboardExpiredList(params: Record<string, unknown>) {
+  return request.get<ExpiredListResult>({
+    url: Api.queryExpiredList,
+    params,
   });
 }

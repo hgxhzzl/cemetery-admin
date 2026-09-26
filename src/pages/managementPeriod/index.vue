@@ -15,19 +15,21 @@
           @submit="onSubmit"
         >
           <div class="cms-query-filter-row cms-query-filter-row-fixed-three">
+            <!-- 区域由墓位管理下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换，同墓位业务页）20260925 修改；
+                 区域内容窄，收窄至 120px（页面专属类），不沿用 basic 286px 固定宽 -->
             <t-form-item
               :label="t('pages.managementPeriod.region')"
               name="region"
-              class="cms-filter-item cms-filter-item-query cms-filter-item-basic"
+              class="cms-filter-item cms-filter-item-query managementPeriod-filter-item-narrow"
             >
               <t-select
                 v-model="formData.region"
-                class="cms-filter-control"
-                :options="regionOptions"
+                class="cms-filter-control managementPeriod-filter-control-narrow"
+                disabled
                 :placeholder="t('pages.managementPeriod.regionPlaceholder')"
-                clearable
-                @change="onRegionChange"
-              />
+              >
+                <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+              </t-select>
             </t-form-item>
 
             <t-form-item
@@ -77,7 +79,7 @@
           :bordered="false"
           lazy-load
           stripe
-          @scroll="handleScroll"
+          @scroll="onTableScroll"
         >
           <template #endDate="{ row }">
             {{ formatDate(row.endDate) }}
@@ -219,13 +221,13 @@ import dayjs from 'dayjs';
 import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { ManagementPeriodModel } from '@/api/managementPeriod';
 import { getManagementPeriodList, updateManagementPeriod } from '@/api/managementPeriod';
-import type { ListParkModel, SelectModel } from '@/api/model/parkModel';
-import { getParkList, getRegionList } from '@/api/park';
+import type { ListParkModel } from '@/api/model/parkModel';
+import { getParkList } from '@/api/park';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { QUERY_FORM_LABEL_WIDTH } from '@/constants';
 import { useInfiniteScrollQuery, useLayoutScrollRestore, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
@@ -296,7 +298,6 @@ const searchForm: FormData = {
 const menuRegion = (useRoute().meta.region as string) || '';
 const formData = ref<FormData>({ ...searchForm, region: menuRegion });
 const tableRef = ref();
-const dataRegionList = ref<Array<SelectModel>>([]);
 const dataParkList = ref<Array<ListParkModel>>([]);
 
 // 无限滚动加载状态机（分页/防抖/到底追加/查询重置滚动归零）收敛于公共 useInfiniteScrollQuery 20260914 抽取
@@ -306,7 +307,27 @@ const { data, pagination, loading, hasMore, fetchData, onSubmit, handleScroll } 
     tableRef,
   );
 
-const regionOptions = computed(() => dataRegionList.value.map((item) => ({ value: item.value, label: item.label })));
+// ==================== 表格滚动位置保持（tab 切换往返） ====================
+// 滚动容器为 t-table 内容区 .t-table__content：keep-alive 失活时 DOM 从文档移除，scrollTop 归零，
+// 切回 tab 会回到顶部；滚动时实时记录位置，onActivated（tab 切回）时恢复，同墓位业务页 20260926 新增
+const tableScrollTop = ref(0);
+const onTableScroll = (params: { e: WheelEvent }) => {
+  handleScroll(params);
+  tableScrollTop.value = (params.e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有数据时才恢复；详情/修改视图不处理
+  if (!isListShow.value || !data.value.length) {
+    return;
+  }
+  nextTick(() => {
+    const content = tableRef.value?.$el?.querySelector('.t-table__content');
+    if (content) {
+      content.scrollTop = tableScrollTop.value;
+    }
+  });
+});
 
 // 园区下拉随所选区域联动过滤（区域接口 value 即区域名）
 const parkOptions = computed(() => {
@@ -370,11 +391,6 @@ const handleExport = async () => {
   } finally {
     exporting.value = false;
   }
-};
-
-// 切换区域时清空园区选择，避免园区与区域不匹配
-const onRegionChange = () => {
-  formData.value.park = '';
 };
 
 // ==================== 详情：与其它业务页共用 room-detail 组件 ====================
@@ -498,16 +514,6 @@ const ClickSubmit = async () => {
   }
 };
 
-// 区域下拉数据加载
-const loadRegionOptions = async () => {
-  try {
-    const { list } = await getRegionList();
-    dataRegionList.value = list;
-  } catch (e) {
-    logError(e);
-  }
-};
-
 // 园区下拉数据加载
 const loadParkOptions = async () => {
   try {
@@ -519,7 +525,6 @@ const loadParkOptions = async () => {
 };
 
 onMounted(() => {
-  loadRegionOptions();
   loadParkOptions();
   fetchData(true);
 });

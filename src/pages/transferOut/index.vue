@@ -17,9 +17,24 @@
           >
             <t-row>
               <t-col :span="10">
-                <!-- 园区与排号直接相邻排列，间距由 flex gap 固定，消除栅格列内空白 -->
+                <!-- 筛选条件横向排列，间距由 flex gap 固定，消除栅格列内空白 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域由墓位迁出下区域三级菜单经路由下发 -->
+                  <!-- 区域由墓位迁出下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换，同墓位业务页）20260925 新增；
+                       本页筛选行 4 项，区域/排号下拉框收窄至 120px（页面专属类），避免排序项窜行 -->
+                  <t-form-item
+                    :label="$t('pages.room.region')"
+                    name="region"
+                    class="cms-filter-item transferOut-filter-item-narrow"
+                  >
+                    <t-select
+                      v-model="formfindData.region"
+                      class="demo-select-base cms-filter-control transferOut-filter-control-narrow"
+                      disabled
+                      :placeholder="$t('pages.room.regionPlaceholder')"
+                    >
+                      <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+                    </t-select>
+                  </t-form-item>
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -37,10 +52,14 @@
                       </t-option>
                     </t-select>
                   </t-form-item>
-                  <t-form-item :label="$t('pages.room.yNum')" name="yNum" class="cms-filter-item cms-filter-item-basic">
+                  <t-form-item
+                    :label="$t('pages.room.yNum')"
+                    name="yNum"
+                    class="cms-filter-item transferOut-filter-item-narrow"
+                  >
                     <t-select
                       v-model="formfindData.yNum"
-                      class="demo-select-base cms-filter-control"
+                      class="demo-select-base cms-filter-control transferOut-filter-control-narrow"
                       :placeholder="$t('pages.room.yNumSelectPlaceholder')"
                       clearable
                       @change="onSelectChange"
@@ -49,6 +68,17 @@
                         {{ item.label }}
                       </t-option>
                     </t-select>
+                  </t-form-item>
+                  <!-- 排序选项：对排号升/降序展示卡片行组，默认降序；分段控件样式同墓位业务页 20260925 新增 -->
+                  <t-form-item
+                    :label="$t('pages.gravePlotBusiness.sortOrder')"
+                    name="sortOrder"
+                    class="cms-filter-item transferOut-filter-item-sort"
+                  >
+                    <t-radio-group v-model="formfindData.sortOrder" variant="default-filled" size="small">
+                      <t-radio-button value="asc">{{ $t('pages.gravePlotBusiness.sortAsc') }}</t-radio-button>
+                      <t-radio-button value="desc">{{ $t('pages.gravePlotBusiness.sortDesc') }}</t-radio-button>
+                    </t-radio-group>
                   </t-form-item>
                 </div>
               </t-col>
@@ -68,7 +98,12 @@
           </div>
 
           <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-body">
-            <div ref="transferOutCardViewport" class="table-container transferOut-card-layout">
+            <!-- 卡片区滚动位置实时记录，tab 切回时 onActivated 恢复，同墓位业务页 20260926 新增 -->
+            <div
+              ref="transferOutCardViewport"
+              class="table-container transferOut-card-layout"
+              @scroll.passive="onCardViewportScroll"
+            >
               <div v-if="transferOutCardRows.length" class="transferOut-card-rows" :style="{ zoom: transferOutZoom }">
                 <div v-for="rowGroup in transferOutCardRows" :key="rowGroup.yNum" class="transferOut-card-row">
                   <div class="transferOut-card-grid">
@@ -76,7 +111,10 @@
                       v-for="card in rowGroup.cards"
                       :key="`${rowGroup.yNum}-${card.xNum}`"
                       class="transferOut-card"
-                      :class="{ 'transferOut-card--empty': card.placeholder }"
+                      :class="{
+                        'transferOut-card--empty': card.placeholder,
+                        [getCardStatusClass('transferOut', card.row)]: !card.placeholder,
+                      }"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 -->
@@ -97,7 +135,7 @@
                           <span class="transferOut-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="transferOut-card__body">
-                          <!-- 购买人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐 -->
+                          <!-- 购墓人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐 -->
                           <div class="transferOut-card__meta">
                             <span class="transferOut-card__meta-label">{{ $t('pages.room.buyer') }}</span>
                             <span class="transferOut-card__meta-value">{{ card.row.buyer || '--' }}</span>
@@ -181,13 +219,30 @@
             </div>
           </div>
 
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 -->
+          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
           <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-toolbar">
             <span>{{ listTotalText }}</span>
-            <span class="transferOut-list-toolbar__zoom">
-              <zoom-in-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
+            <div class="transferOut-list-toolbar__right">
+              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <div class="transferOut-list-toolbar__legend">
+                <span class="transferOut-legend-item">
+                  <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--sold" />
+                  {{ $t('statusType.saleStatusEnum.sold') }}
+                </span>
+                <span class="transferOut-legend-item">
+                  <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--buried" />
+                  {{ $t('statusType.intoStatusEnum.buried') }}
+                </span>
+                <span class="transferOut-legend-item">
+                  <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--expired" />
+                  {{ $t('pages.gravePlotBusiness.legendExpired') }}
+                </span>
+              </div>
+              <span class="transferOut-list-toolbar__zoom">
+                <zoom-in-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomIn" />
+                <zoom-out-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomOut" />
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -381,7 +436,7 @@ import dayjs from 'dayjs';
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { RoomModel } from '@/api/model/roomModel';
@@ -399,6 +454,7 @@ import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
+import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
@@ -463,6 +519,26 @@ const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const transferOutCardViewport = ref<HTMLElement | null>(null);
 
+// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
+// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
+// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行，同墓位业务页 20260926 新增
+const transferOutCardScrollTop = ref(0);
+const onCardViewportScroll = (e: Event) => {
+  transferOutCardScrollTop.value = (e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
+  if (!isListShow.value || !transferOutCardRows.value.length) {
+    return;
+  }
+  nextTick(() => {
+    if (transferOutCardViewport.value) {
+      transferOutCardViewport.value.scrollTop = transferOutCardScrollTop.value;
+    }
+  });
+});
+
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter
 const {
   searchRoomList,
@@ -487,9 +563,17 @@ const {
   zoom: transferOutZoom,
   handleZoomIn,
   handleZoomOut,
-  cardRows: transferOutCardRows,
+  cardRows: rawTransferOutCardRows,
   totalText: listTotalText,
 } = useCardGrid(visibleTransferOutRoomList);
+
+// 排序选项：对排号 yNum 升/降序，默认降序；useCardGrid 内行组固定按排号升序分组，
+// 降序时反转行组（组内序号顺序不变），升序保持原序，同墓位业务页 20260925 新增
+const transferOutCardRows = computed(() =>
+  formfindData.value.sortOrder === 'asc'
+    ? rawTransferOutCardRows.value
+    : rawTransferOutCardRows.value.slice().reverse(),
+);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位列表，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片

@@ -20,6 +20,63 @@
 // 卡片操作有三个链接，间距略小于默认以适配卡片宽度
 .cms-card-actions-between(room, var(--td-comp-margin-m));
 
+// 卡片外框状态色：已销售绿/已下葬蓝/管理到期浅红；hover 保持状态色不变，
+// 覆盖公共 cms-card-hover-highlight 的 hover 品牌色；已下葬固定默认主题蓝 #0052D9（同墓位业务页）20260926 新增
+.room-card--sold,
+.room-card--sold:hover {
+  border-color: var(--td-success-color);
+}
+
+.room-card--buried,
+.room-card--buried:hover {
+  border-color: #0052d9;
+}
+
+.room-card--expired,
+.room-card--expired:hover {
+  border-color: var(--td-error-color);
+}
+
+// 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
+.room-list-toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+// 外框颜色图例（同墓位业务页图例样式：小矩形色块 + 12px 文字）20260926 新增
+.room-list-toolbar__legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.room-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+
+  &__swatch {
+    width: 12px;
+    height: 4px;
+    border-radius: 1px;
+
+    &--sold {
+      background-color: var(--td-success-color);
+    }
+
+    &--buried {
+      background-color: #0052d9;
+    }
+
+    &--expired {
+      background-color: var(--td-error-color);
+    }
+  }
+}
+
 .room-page-content {
   .cms-page-content();
 }
@@ -28,6 +85,34 @@
   .cms-operation-container-card();
 
   justify-content: flex-end;
+}
+
+// 筛选条排序分段控件（升/降）：组件库对 .t-radio-button 用 font 简写显式声明字号（small 为 12px），
+// 覆盖父容器继承；需直接对 .t-radio-button 覆盖 font 简写才能生效，字号取 body-medium（14px）20260925 新增
+.room-list-panel {
+  :deep(.cms-card-filter-inline .t-radio-group .t-radio-button) {
+    font: var(--td-font-body-medium);
+  }
+}
+
+// 排序筛选项：分段控件内容窄（label 84px + 升/降两枚小按钮），不沿用 basic 的 286px 固定宽，
+// 按内容自适应收缩，避免 4 个条件项累计超宽触发筛选行换行窜行（同墓位业务页）20260925 新增
+.room-filter-item-sort {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+}
+
+// 区域/排号筛选项与下拉框收窄：本页筛选行 4 项（区域/园区/排号/排序），basic 286px 不可变，
+// 改用页面专属窄项——下拉框 120px，项宽 = label 84 + 控件 120 = 204px，排序项稳定不窜行；
+// 页面 less 在公共库之后引入，同特异性下后声明的宽度覆盖 cms-filter-control 的 200px 20260925 新增
+.room-filter-item-narrow {
+  width: 204px;
+  max-width: 204px;
+}
+
+.room-filter-control-narrow {
+  width: 120px;
 }
 
 // ==================== 新建/修改表单（紧凑版：与销售页开单表单一致） ====================

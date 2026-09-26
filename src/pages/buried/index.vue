@@ -95,10 +95,10 @@
                           <span class="buried-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="buried-card__body">
-                          <!-- 购买人/下葬者/联系人/期限：标签在左灰色、值在右深色两端对齐 20260913 修改 20260921 价格改期限 -->
+                          <!-- 购墓人/下葬者/联系人/期限：标签在左灰色、值在右深色两端对齐 20260913 修改 20260921 价格改期限 -->
                           <div class="buried-card__meta">
                             <span class="buried-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <!-- 购买人无值时默认显示“无” 20260916 修改 -->
+                            <!-- 购墓人无值时默认显示“无” 20260916 修改 -->
                             <span class="buried-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
                           </div>
                           <div class="buried-card__meta">

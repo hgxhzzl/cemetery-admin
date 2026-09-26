@@ -25,7 +25,6 @@
                 class="cms-filter-control"
                 :options="regionOptions"
                 :placeholder="t('pages.roomQuery.regionPlaceholder')"
-                clearable
                 @change="onRegionChange"
               />
             </t-form-item>
@@ -104,7 +103,7 @@
           :bordered="false"
           lazy-load
           stripe
-          @scroll="handleScroll"
+          @scroll="onTableScroll"
         >
           <template #createDate="{ row }">
             {{ formatDate(row.createDate) }}
@@ -148,7 +147,7 @@ export default {
 </script>
 <script setup lang="ts">
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 
 import type { ListParkModel, SelectModel } from '@/api/model/parkModel';
 import { getParkList, getRegionList } from '@/api/park';
@@ -183,11 +182,10 @@ const COLUMNS: PrimaryTableCol<TableRowData>[] = [
   { title: translate('pages.roomQuery.region'), align: 'left', width: 110, colKey: 'region', ellipsis: true },
   { title: translate('pages.roomQuery.park'), align: 'left', width: 200, colKey: 'park', ellipsis: true },
   { title: translate('pages.roomQuery.xyNumber'), width: 130, colKey: 'xyNumber', ellipsis: true },
-  { title: translate('pages.roomQuery.buyer'), width: 110, colKey: 'buyer', ellipsis: true },
-  { title: translate('pages.roomQuery.payerPhone'), width: 170, colKey: 'payerPhone', ellipsis: true },
+  { title: translate('pages.roomQuery.buyer'), width: 100, colKey: 'buyer', ellipsis: true },
   { title: translate('pages.roomQuery.createDate'), width: 120, colKey: 'createDate' },
-  { title: translate('pages.roomQuery.deceased'), width: 110, colKey: 'deceased', ellipsis: true },
-  { title: translate('pages.roomQuery.contacts'), width: 110, colKey: 'contacts', ellipsis: true },
+  { title: translate('pages.roomQuery.deceased'), width: 120, colKey: 'deceased', ellipsis: true },
+  { title: translate('pages.roomQuery.contacts'), width: 300, colKey: 'contacts', ellipsis: true },
   {
     title: translate('operate.operation'),
     align: 'left',
@@ -221,6 +219,7 @@ const searchForm: FormData = {
   notOut: false,
 };
 
+// 区域初值在区域列表加载后默认选第一项（本页菜单不在区域三级菜单下，路由不下发 region）20260925 修改,
 const formData = ref<FormData>({ ...searchForm });
 const tableRef = ref();
 const dataRegionList = ref<Array<SelectModel>>([]);
@@ -232,6 +231,28 @@ const { data, pagination, loading, hasMore, fetchData, onSubmit, handleScroll } 
     (current, pageSize) => getRoomQueryList(getQueryParams(current, pageSize)),
     tableRef,
   );
+
+// ==================== 表格滚动位置保持（tab 切换往返） ====================
+// 滚动容器为 t-table 内容区 .t-table__content：keep-alive 失活时 DOM 从文档移除，scrollTop 归零，
+// 切回 tab 会回到顶部；滚动时实时记录位置，onActivated（tab 切回）时恢复，同墓位业务页 20260926 新增
+const tableScrollTop = ref(0);
+const onTableScroll = (params: { e: WheelEvent }) => {
+  handleScroll(params);
+  tableScrollTop.value = (params.e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有数据时才恢复；详情视图不处理
+  if (isDetailShow.value || !data.value.length) {
+    return;
+  }
+  nextTick(() => {
+    const content = tableRef.value?.$el?.querySelector('.t-table__content');
+    if (content) {
+      content.scrollTop = tableScrollTop.value;
+    }
+  });
+});
 
 const regionOptions = computed(() => dataRegionList.value.map((item) => ({ value: item.value, label: item.label })));
 
@@ -254,7 +275,7 @@ const getQueryParams = (current: number, pageSize: number) => {
     park: formData.value.park,
     startDate,
     endDate,
-    // 关键词：按墓区编号/购买人/联系人/电话/安葬者拼串包含查找，为空时后端不拼接该条件 20260924 新增
+    // 关键词：按墓区编号/购墓人/联系人/电话/安葬者拼串包含查找，为空时后端不拼接该条件 20260924 新增
     keyword: formData.value.keyword,
     // 销售状态/迁出状态多选：一对复选框只勾其一时后端按该状态过滤，都勾或都不勾时不过滤 20260924 新增
     sold: formData.value.sold,
@@ -277,7 +298,7 @@ const handleExport = async () => {
   }
   exporting.value = true;
   try {
-    // 表头与表格列一致：序号/区域/园区/墓位编号/购买人/购买人电话/销售日期/安葬者/联系人 20260924 修改
+    // 表头与表格列一致：序号/区域/园区/墓位编号/购墓人/销售日期/安葬者/联系人（购墓人电话列已不显示）20260924 修改 20260926 修改
     await exportCsv<RoomQueryModel>({
       fileName: '墓位信息查询',
       headers: [
@@ -286,7 +307,6 @@ const handleExport = async () => {
         translate('pages.roomQuery.park'),
         translate('pages.roomQuery.xyNumber'),
         translate('pages.roomQuery.buyer'),
-        translate('pages.roomQuery.payerPhone'),
         translate('pages.roomQuery.createDate'),
         translate('pages.roomQuery.deceased'),
         translate('pages.roomQuery.contacts'),
@@ -299,7 +319,6 @@ const handleExport = async () => {
         row.park,
         row.xyNumber,
         row.buyer,
-        row.payerPhone,
         formatDate(row.createDate ?? undefined),
         row.deceased,
         row.contacts,
@@ -356,11 +375,15 @@ const ClickDetailClose = () => {
   });
 };
 
-// 区域下拉数据加载 20260924 新增
+// 区域下拉数据加载：加载后默认选中第一个区域作为初值（不可清除，用户可切换）20260925 修改,
 const loadRegionOptions = async () => {
   try {
     const { list } = await getRegionList();
     dataRegionList.value = list;
+    if (!formData.value.region && list.length > 0) {
+      // 接口实际返回 tagName 字符串，SelectModel 类型声明为 number，转换后赋值 20260925 修改,
+      formData.value.region = String(list[0].value);
+    }
   } catch (e) {
     logError(e);
   }
@@ -376,8 +399,9 @@ const loadParkOptions = async () => {
   }
 };
 
-onMounted(() => {
-  loadRegionOptions();
+onMounted(async () => {
+  // 先加载区域并赋初值，再执行首次查询，确保首页数据带区域过滤 20260925 修改,
+  await loadRegionOptions();
   loadParkOptions();
   fetchData(true);
 });

@@ -3,6 +3,8 @@ export const FIND_DATA = {
   region: '',
   park: '',
   yNum: '',
+  // 排序方向：对排号 yNum 升/降序，默认降序 20260925 新增
+  sortOrder: 'desc',
 };
 
 export const INITIAL_DATA = {
@@ -21,7 +23,7 @@ export const INITIAL_DATA = {
   xNumTo: '',
   // 墓位编号，单条修改时可编辑保存 20260831 新增,
   xyNumber: '',
-  // 购买人 varchar(20)，新建/修改可填写 20260912 新增,
+  // 购墓人 varchar(20)，新建/修改可填写 20260912 新增,
   buyer: '',
   // 安葬者 varchar(100)，新建/修改可填写 20260912 新增,
   deceased: '',

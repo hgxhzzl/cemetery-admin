@@ -6,6 +6,17 @@
 // 表格最小宽度与列宽总和(1024px)一致
 .cms-query-table-min-width(1024px);
 
+// 区域筛选项与下拉框收窄：区域已改为 disabled 仅展示当前区域（由路由下发），内容窄，
+// 不沿用 basic 286px 固定宽——下拉框 120px，项宽 = label 84 + 控件 120 = 204px（同墓位业务页窄项）20260925 新增
+.managementPeriod-filter-item-narrow {
+  width: 204px;
+  max-width: 204px;
+}
+
+.managementPeriod-filter-control-narrow {
+  width: 120px;
+}
+
 // ==================== 新建/修改：管理期限修改表单（紧凑版：与销售页开单表单一致） ====================
 .form-basic-container {
   .cms-form-basic-compact();

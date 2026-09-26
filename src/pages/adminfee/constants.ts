@@ -3,6 +3,8 @@ export const FIND_DATA = {
   region: '',
   park: '',
   roomType: '',
+  // 排序方向：对排号 yNum 升/降序，默认降序 20260925 新增
+  sortOrder: 'desc',
 };
 
 export const INITIAL_ROOM_DATA = {

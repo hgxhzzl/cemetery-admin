@@ -93,10 +93,10 @@
                           <div class="contacts-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="contacts-card__body">
-                          <!-- 购买人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐，与墓区下葬页卡片信息内容一致 20260917 修改 -->
+                          <!-- 购墓人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐，与墓区下葬页卡片信息内容一致 20260917 修改 -->
                           <div class="contacts-card__meta">
                             <span class="contacts-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <!-- 购买人无值时默认显示“无”，与下葬页一致 20260917 修改 -->
+                            <!-- 购墓人无值时默认显示“无”，与下葬页一致 20260917 修改 -->
                             <span class="contacts-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
                           </div>
                           <div class="contacts-card__meta">

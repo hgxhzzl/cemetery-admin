@@ -18,7 +18,22 @@
               <t-col :span="10">
                 <!-- 筛选条件横向排列，条件之间空隙固定 24px，不随屏幕宽度变化 20260914 修改 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域由墓位管理下区域三级菜单经路由下发，此处仅保留园区/排号筛选 20260925 修改 -->
+                  <!-- 区域由墓位管理下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换，同墓位业务页）20260925 新增；
+                       本页筛选行 4 项，区域/排号下拉框收窄至 120px（页面专属类），避免排序项窜行 -->
+                  <t-form-item
+                    :label="$t('pages.room.region')"
+                    name="region"
+                    class="cms-filter-item adminfee-filter-item-narrow"
+                  >
+                    <t-select
+                      v-model="formfindData.region"
+                      class="demo-select-base cms-filter-control adminfee-filter-control-narrow"
+                      disabled
+                      :placeholder="$t('pages.room.regionPlaceholder')"
+                    >
+                      <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+                    </t-select>
+                  </t-form-item>
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -36,10 +51,14 @@
                       </t-option>
                     </t-select>
                   </t-form-item>
-                  <t-form-item :label="$t('pages.room.yNum')" name="yNum" class="cms-filter-item cms-filter-item-basic">
+                  <t-form-item
+                    :label="$t('pages.room.yNum')"
+                    name="yNum"
+                    class="cms-filter-item adminfee-filter-item-narrow"
+                  >
                     <t-select
                       v-model="formfindData.yNum"
-                      class="demo-select-base cms-filter-control"
+                      class="demo-select-base cms-filter-control adminfee-filter-control-narrow"
                       :placeholder="$t('pages.room.yNumSelectPlaceholder')"
                       clearable
                       @change="onSelectChange"
@@ -48,6 +67,17 @@
                         {{ item.label }}
                       </t-option>
                     </t-select>
+                  </t-form-item>
+                  <!-- 排序选项：对排号升/降序展示卡片行组，默认降序；分段控件样式同墓位业务页 20260925 新增 -->
+                  <t-form-item
+                    :label="$t('pages.gravePlotBusiness.sortOrder')"
+                    name="sortOrder"
+                    class="cms-filter-item adminfee-filter-item-sort"
+                  >
+                    <t-radio-group v-model="formfindData.sortOrder" variant="default-filled" size="small">
+                      <t-radio-button value="asc">{{ $t('pages.gravePlotBusiness.sortAsc') }}</t-radio-button>
+                      <t-radio-button value="desc">{{ $t('pages.gravePlotBusiness.sortDesc') }}</t-radio-button>
+                    </t-radio-group>
                   </t-form-item>
                 </div>
               </t-col>
@@ -64,7 +94,12 @@
           <div v-if="hasQueried && !adminfeeCardRows.length" class="adminfee-no-data">暂无数据</div>
 
           <div v-if="hasQueried && adminfeeCardRows.length" class="adminfee-list-body">
-            <div ref="adminfeeCardViewport" class="table-container adminfee-card-layout">
+            <!-- 卡片区滚动位置实时记录，tab 切回时 onActivated 恢复，同墓位业务页 20260926 新增 -->
+            <div
+              ref="adminfeeCardViewport"
+              class="table-container adminfee-card-layout"
+              @scroll.passive="onCardViewportScroll"
+            >
               <div v-if="adminfeeCardRows.length" class="adminfee-card-rows" :style="{ zoom: adminfeeZoom }">
                 <div v-for="rowGroup in adminfeeCardRows" :key="rowGroup.yNum" class="adminfee-card-row">
                   <div class="adminfee-card-grid">
@@ -74,7 +109,7 @@
                       class="adminfee-card"
                       :class="{
                         'adminfee-card--empty': card.placeholder,
-                        'adminfee-card--expired': isPeriodExpired(card.row?.endDate),
+                        [getCardStatusClass('adminfee', card.row)]: !card.placeholder,
                       }"
                     >
                       <template v-if="card.placeholder">
@@ -96,10 +131,10 @@
                           <span class="adminfee-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="adminfee-card__body">
-                          <!-- 购买人/下葬者/联系人/期限：卡片价格信息改为期限信息（管理费结束日期）20260921 修改 -->
+                          <!-- 购墓人/下葬者/联系人/期限：卡片价格信息改为期限信息（管理费结束日期）20260921 修改 -->
                           <div class="adminfee-card__meta">
                             <span class="adminfee-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <!-- 购买人无值时默认显示“无” 20260917 新增 -->
+                            <!-- 购墓人无值时默认显示“无” 20260917 新增 -->
                             <span class="adminfee-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
                           </div>
                           <div class="adminfee-card__meta">
@@ -185,13 +220,30 @@
             </div>
           </div>
 
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 20260909 新增 -->
+          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
           <div v-if="hasQueried && adminfeeCardRows.length" class="adminfee-list-toolbar">
             <span>{{ listTotalText }}</span>
-            <span class="adminfee-list-toolbar__zoom">
-              <zoom-in-icon class="adminfee-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="adminfee-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
+            <div class="adminfee-list-toolbar__right">
+              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <div class="adminfee-list-toolbar__legend">
+                <span class="adminfee-legend-item">
+                  <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--sold" />
+                  {{ $t('statusType.saleStatusEnum.sold') }}
+                </span>
+                <span class="adminfee-legend-item">
+                  <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--buried" />
+                  {{ $t('statusType.intoStatusEnum.buried') }}
+                </span>
+                <span class="adminfee-legend-item">
+                  <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--expired" />
+                  {{ $t('pages.gravePlotBusiness.legendExpired') }}
+                </span>
+              </div>
+              <span class="adminfee-list-toolbar__zoom">
+                <zoom-in-icon class="adminfee-list-toolbar__zoom-icon" @click="handleZoomIn" />
+                <zoom-out-icon class="adminfee-list-toolbar__zoom-icon" @click="handleZoomOut" />
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -417,7 +469,7 @@ import dayjs from 'dayjs';
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { deleteAdminfee, getAdminfeeList, getRoomList, insertAdminfee, updateAdminfee } from '@/api/adminfee';
@@ -434,6 +486,7 @@ import type { CardRowArg } from '@/hooks';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
+import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatDate } from '@/utils/date';
 import { logError } from '@/utils/logger';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
@@ -456,13 +509,6 @@ const userInfo = usePermission('adminfee');
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
 // 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260917 新增
 const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
-// 管理期过期判断：管理费结束日期早于当天（日粒度，当天到期不算过期）时卡片外框标红提醒续费 20260923 新增
-const isPeriodExpired = (endDate?: string | null) => {
-  if (!endDate) {
-    return false;
-  }
-  return dayjs(endDate).isBefore(dayjs(), 'day');
-};
 // 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容（与下葬页一致） 20260917 新增
 const truncateText = (value?: string | null) => {
   const text = String(value || '');
@@ -497,6 +543,26 @@ const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const adminfeeCardViewport = ref<HTMLElement | null>(null);
 
+// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
+// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
+// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行，同墓位业务页 20260926 新增
+const adminfeeCardScrollTop = ref(0);
+const onCardViewportScroll = (e: Event) => {
+  adminfeeCardScrollTop.value = (e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
+  if (!isListShow.value || !adminfeeCardRows.value.length) {
+    return;
+  }
+  nextTick(() => {
+    if (adminfeeCardViewport.value) {
+      adminfeeCardViewport.value.scrollTop = adminfeeCardScrollTop.value;
+    }
+  });
+});
+
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter 20260914 抽取
 const {
   searchRoomList,
@@ -522,9 +588,15 @@ const {
   zoom: adminfeeZoom,
   handleZoomIn,
   handleZoomOut,
-  cardRows: adminfeeCardRows,
+  cardRows: rawAdminfeeCardRows,
   totalText: listTotalText,
 } = useCardGrid(visibleAdminfeeRoomList);
+
+// 排序选项：对排号 yNum 升/降序，默认降序；useCardGrid 内行组固定按排号升序分组，
+// 降序时反转行组（组内序号顺序不变），升序保持原序，同墓位业务页 20260925 新增
+const adminfeeCardRows = computed(() =>
+  formfindData.value.sortOrder === 'asc' ? rawAdminfeeCardRows.value : rawAdminfeeCardRows.value.slice().reverse(),
+);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片 20260909 新增,
@@ -639,7 +711,7 @@ const fillFeeForm = (record: AdminfeeModel) => {
     termYears: record.termYears ?? 0,
     remark: record.remark ?? '',
   };
-  // 记录操作人与创建日期供票据打印：收款人栏取操作人、编号前缀取 yyyymmdd(创建日期) 20260922 新增
+  // 记录操作人与创建日期供票据打印：收款人栏取操作人、编号前缀取 yyyymm(创建日期) 20260922 新增
   feeRecordAudit.value = { operator: record.operator ?? '', createDate: record.createDate ?? '' };
 };
 
@@ -828,14 +900,12 @@ const printReceipt = async () => {
     realPriceString: String(payAmount),
     // 收款人栏取收款记录操作人（修改回填），新建未保存时回退当前登录操作员 20260922 新增
     payee: feeRecordAudit.value.operator.trim() || String(userStore.userName ?? ''),
-    serialNo: '',
     // 票据编号前缀取收款创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
     createDate: feeRecordAudit.value.createDate,
     region: String(formRoomData.value.region ?? ''),
     park: String(formRoomData.value.park ?? ''),
     yNum: String(formRoomData.value.yNum ?? ''),
     xNum: String(formRoomData.value.xNum ?? ''),
-    xyNumber: String(formRoomData.value.xyNumber ?? ''),
     userName: String(userStore.userName ?? ''),
     // 管理费票据扩展：编号后缀取墓位卡号、起止日期行取收款起止日期 20260922 新增
     cardno: String(formRoomData.value.cardno ?? ''),

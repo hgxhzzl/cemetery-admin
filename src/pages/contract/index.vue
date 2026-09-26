@@ -521,13 +521,18 @@ const confirmVisible = ref(false);
 
 const onConfirmDelete = async () => {
   const { idContract } = data.value[deleteIdx.value];
-  data.value.splice(deleteIdx.value, 1);
   try {
+    // 先调接口删除，成功后再移除本地行，避免接口失败时列表数据已丢失 20260926 修改,
     await deleContract(idContract);
+    data.value.splice(deleteIdx.value, 1);
     controlPageShow('listTotal');
     MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
   } catch (e) {
     logError(e);
+  } finally {
+    // 无论成功失败都关闭确认弹窗并重置选中行，否则删除成功后弹窗不关闭 20260926 修复,
+    confirmVisible.value = false;
+    deleteIdx.value = -1;
   }
 };
 

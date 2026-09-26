@@ -12,12 +12,9 @@
       :regions="summary?.regions"
       :buried-records="summary?.buriedRecords"
     />
-    <!-- 管理到期记录：下葬记录下方第五行，样式同销售记录，分区域两张卡、无日期选项 20260925 新增 -->
-    <expired-list
-      class="home-row home-row--expired"
-      :regions="summary?.regions"
-      :expired-rooms="summary?.expiredRooms"
-    />
+    <!-- 管理到期记录：下葬记录下方第五行，样式同销售记录，分区域两张卡；
+         数据走 /expired-list 独立分页接口滚动加载，标题右侧显示记录条数 20260925 新增 20260926 改分页加载 -->
+    <expired-list class="home-row home-row--expired" :regions="summary?.regions" />
   </div>
 </template>
 <script setup lang="ts">

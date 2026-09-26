@@ -19,7 +19,22 @@
               <t-col :span="10">
                 <!-- 筛选条件横向排列，条件之间空隙固定 24px，不随屏幕宽度变化 20260914 修改 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域下拉框移除，改由墓区设置下区域三级菜单经路由下发 20260831 修改 -->
+                  <!-- 区域由墓区设置下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换，同墓位业务页）20260925 新增；
+                       本页筛选行 4 项，区域/排号下拉框收窄至 120px（页面专属类），避免排序项窜行 -->
+                  <t-form-item
+                    :label="$t('pages.room.region')"
+                    name="region"
+                    class="cms-filter-item room-filter-item-narrow"
+                  >
+                    <t-select
+                      v-model="formfindData.region"
+                      class="demo-select-base cms-filter-control room-filter-control-narrow"
+                      disabled
+                      :placeholder="$t('pages.room.regionPlaceholder')"
+                    >
+                      <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+                    </t-select>
+                  </t-form-item>
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -37,10 +52,14 @@
                       </t-option>
                     </t-select>
                   </t-form-item>
-                  <t-form-item :label="$t('pages.room.yNum')" name="yNum" class="cms-filter-item cms-filter-item-basic">
+                  <t-form-item
+                    :label="$t('pages.room.yNum')"
+                    name="yNum"
+                    class="cms-filter-item room-filter-item-narrow"
+                  >
                     <t-select
                       v-model="formfindData.yNum"
-                      class="demo-select-base cms-filter-control"
+                      class="demo-select-base cms-filter-control room-filter-control-narrow"
                       :placeholder="$t('pages.room.yNumSelectPlaceholder')"
                       clearable
                       @change="onSelectChange"
@@ -49,6 +68,17 @@
                         {{ item.label }}
                       </t-option>
                     </t-select>
+                  </t-form-item>
+                  <!-- 排序选项：对排号升/降序展示卡片行组，默认降序；分段控件样式同墓位业务页 20260925 新增 -->
+                  <t-form-item
+                    :label="$t('pages.gravePlotBusiness.sortOrder')"
+                    name="sortOrder"
+                    class="cms-filter-item room-filter-item-sort"
+                  >
+                    <t-radio-group v-model="formfindData.sortOrder" variant="default-filled" size="small">
+                      <t-radio-button value="asc">{{ $t('pages.gravePlotBusiness.sortAsc') }}</t-radio-button>
+                      <t-radio-button value="desc">{{ $t('pages.gravePlotBusiness.sortDesc') }}</t-radio-button>
+                    </t-radio-group>
                   </t-form-item>
                 </div>
               </t-col>
@@ -69,7 +99,8 @@
           <div v-if="hasQueried && !roomCardRows.length" class="room-no-data">暂无数据</div>
 
           <div v-if="hasQueried && roomCardRows.length" class="room-list-body">
-            <div class="table-container room-card-layout">
+            <!-- 卡片区滚动位置实时记录，tab 切回时 onActivated 恢复，同墓位业务页 20260926 新增 -->
+            <div ref="roomCardViewport" class="table-container room-card-layout" @scroll.passive="onCardViewportScroll">
               <div class="room-card-rows" :style="{ zoom: roomZoom }">
                 <div v-for="rowGroup in roomCardRows" :key="rowGroup.yNum" class="room-card-row">
                   <div class="room-card-grid">
@@ -77,7 +108,10 @@
                       v-for="card in rowGroup.cards"
                       :key="`${rowGroup.yNum}-${card.xNum}`"
                       class="room-card"
-                      :class="{ 'room-card--empty': card.placeholder }"
+                      :class="{
+                        'room-card--empty': card.placeholder,
+                        [getCardStatusClass('room', card.row)]: !card.placeholder,
+                      }"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -138,13 +172,30 @@
             </div>
           </div>
 
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 20260828 修改 -->
+          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
           <div v-if="hasQueried && roomCardRows.length" class="room-list-toolbar">
             <span>{{ listTotalText }}</span>
-            <span class="room-list-toolbar__zoom">
-              <zoom-in-icon class="room-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="room-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
+            <div class="room-list-toolbar__right">
+              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <div class="room-list-toolbar__legend">
+                <span class="room-legend-item">
+                  <i class="room-legend-item__swatch room-legend-item__swatch--sold" />
+                  {{ $t('statusType.saleStatusEnum.sold') }}
+                </span>
+                <span class="room-legend-item">
+                  <i class="room-legend-item__swatch room-legend-item__swatch--buried" />
+                  {{ $t('statusType.intoStatusEnum.buried') }}
+                </span>
+                <span class="room-legend-item">
+                  <i class="room-legend-item__swatch room-legend-item__swatch--expired" />
+                  {{ $t('pages.gravePlotBusiness.legendExpired') }}
+                </span>
+              </div>
+              <span class="room-list-toolbar__zoom">
+                <zoom-in-icon class="room-list-toolbar__zoom-icon" @click="handleZoomIn" />
+                <zoom-out-icon class="room-list-toolbar__zoom-icon" @click="handleZoomOut" />
+              </span>
+            </div>
           </div>
 
           <t-dialog
@@ -372,7 +423,7 @@ export default {
 <script setup lang="ts">
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { RoomModel } from '@/api/model/roomModel';
@@ -382,6 +433,7 @@ import { BUSINESS_BASIC_FORM_LABEL_WIDTH, TYPE_ROOM_TYPES } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import { useCardGrid, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
+import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
@@ -495,9 +547,36 @@ const {
   zoom: roomZoom,
   handleZoomIn,
   handleZoomOut,
-  cardRows: roomCardRows,
+  cardRows: rawRoomCardRows,
   totalText: listTotalText,
 } = useCardGrid(visibleRoomList);
+
+// 排序选项：对排号 yNum 升/降序，默认降序；useCardGrid 内行组固定按排号升序分组，
+// 降序时反转行组（组内序号顺序不变），升序保持原序，同墓位业务页 20260925 新增
+const roomCardRows = computed(() =>
+  formfindData.value.sortOrder === 'asc' ? rawRoomCardRows.value : rawRoomCardRows.value.slice().reverse(),
+);
+
+// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
+// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
+// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行，同墓位业务页 20260926 新增
+const roomCardViewport = ref<HTMLElement | null>(null);
+const roomCardScrollTop = ref(0);
+const onCardViewportScroll = (e: Event) => {
+  roomCardScrollTop.value = (e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
+  if (!isListShow.value || !roomCardRows.value.length) {
+    return;
+  }
+  nextTick(() => {
+    if (roomCardViewport.value) {
+      roomCardViewport.value.scrollTop = roomCardScrollTop.value;
+    }
+  });
+});
 
 const resetFilter = () => {
   formfindData.value = {

@@ -785,7 +785,7 @@
       "modifyTitle": "Modify Business",
       "saleTitle": "Sell Grave Plot",
       "reserveTitle": "Grave Plot Reservation",
-      "buriedTitle": "Grave Burial",
+      "buriedTitle": "Grave Plot Burial",
       "contactTitle": "Grave Plot Contact",
       "liaison": "Liaison",
       "liaisonPlaceholder": "please enter liaison",
@@ -829,7 +829,8 @@
       "createDate": "Create Date",
       "deleteInfoPrompt": " business information will be cleared and cannot be restored",
       "deleteBuriedInfoPrompt": " burial information will be cleared and cannot be restored",
-      "deleteContactsInfoPrompt": " contact information will be cleared and cannot be restored"
+      "deleteContactsInfoPrompt": " contact information will be cleared and cannot be restored",
+      "legendExpired": "Period Expired"
     },
     "sale": {
       "creatTitle": "Create Sale",
