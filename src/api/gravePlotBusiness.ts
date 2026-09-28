@@ -64,29 +64,72 @@ export interface ListGravePlotBusinessResult {
   list: GravePlotBusinessModel[];
 }
 
-// 新增接口（type 标识形态，后端据此选表：contacts 形态落 contacts 表）20260923 新增 20260924 修改
-export function insertGravePlotBusiness(data: Partial<GravePlotBusinessModel> & { type?: GravePlotBusinessFormType }) {
+// 安葬证设置记录数据模型（数据表 burial_cert：编号/持证人/电话/逝者关系/下葬与合葬日期/安葬者A-D/工作单位/单位电话/住址）20260927 新增
+export interface GravePlotBusinessCertModel {
+  // 主键 idCert，查询时别名 idBusiness 供前端判定新建/修改
+  idBusiness: number;
+  idRoom: number;
+  // 安葬证编号（varchar6，同销售页编号字段）
+  serialNo: string;
+  // 持证人/持证人电话
+  certHolder: string;
+  certHolderPhone: string;
+  // 逝者关系
+  deceasedRelation: string;
+  // 下葬日期/合葬日期
+  burialDate: string;
+  jointBurialDate: string;
+  // 安葬者A-D（burial_cert 表多安葬者列）
+  deceasedA: string;
+  deceasedB: string;
+  deceasedC: string;
+  deceasedD: string;
+  // 等分（安葬者B分位单选：1一分/2二分/3三分，smallint 可空）20260928 新增
+  equalDivision: number | null;
+  // 工作单位/单位电话/住址
+  workplace: string;
+  workPhone: string;
+  homeAddress: string;
+  isDeleted: number;
+  operator: string;
+  modifyDate: string;
+  createDate: string;
+}
+
+export interface ListGravePlotBusinessCertResult {
+  list: GravePlotBusinessCertModel[];
+}
+
+// 新增接口（type 标识形态，后端据此选表：contacts 形态落 contacts 表、certificate 形态落 burial_cert 表）20260923 新增 20260924 修改 20260927 修改
+export function insertGravePlotBusiness(
+  data: Partial<GravePlotBusinessModel & GravePlotBusinessCertModel> & { type?: GravePlotBusinessFormType },
+) {
   return request.post({
     url: Api.insertGravePlotBusiness,
     data,
   });
 }
 
-// 修改墓位业务接口（type=contacts 按 idContacts 更新 contacts 表记录）20260923 新增 20260924 修改
-export function updateGravePlotBusiness(data: Partial<GravePlotBusinessModel> & { type?: GravePlotBusinessFormType }) {
+// 修改墓位业务接口（type=contacts 按 idContacts 更新 contacts 表记录；type=certificate 按 idCert 更新 burial_cert 表记录）20260923 新增 20260924 修改 20260927 修改
+export function updateGravePlotBusiness(
+  data: Partial<GravePlotBusinessModel & GravePlotBusinessCertModel> & { type?: GravePlotBusinessFormType },
+) {
   return request.post({
     url: Api.updateGravePlotBusiness,
     data,
   });
 }
 
-// 业务形态：代码独立但数据表复用原有表——sale 落 sale 表、reserve 落 reserve 表、buried 落 buried 表、contacts 落 contacts 表、默认 graveplotbusiness 表 20260923 修改 20260924 修改
-export type GravePlotBusinessFormType = 'sale' | 'reserve' | 'buried' | 'contacts';
+// 业务形态：代码独立但数据表复用原有表——sale 落 sale 表、reserve 落 reserve 表、buried 落 buried 表、contacts 落 contacts 表、certificate 落 burial_cert 表（安葬证设置）、默认 graveplotbusiness 表 20260923 修改 20260924 修改 20260927 修改
+export type GravePlotBusinessFormType = 'sale' | 'reserve' | 'buried' | 'contacts' | 'certificate';
 
-// 按墓位查询当前活动业务记录，用于修改回填（type 决定查哪张数据表，主键统一别名 idBusiness）20260923 修改
-export function getGravePlotBusinessByRoom(idRoom: number, type?: GravePlotBusinessFormType) {
+// 按墓位查询当前活动业务记录，用于修改回填（type 决定查哪张数据表，主键统一别名 idBusiness；certificate 查 burial_cert 表）
+// 泛型 T 默认业务记录列表，certificate 形态由调用方显式指定 Cert 列表，避免联合类型回填不匹配 20260923 新增 20260927 修改
+export function getGravePlotBusinessByRoom<
+  T extends ListGravePlotBusinessResult | ListGravePlotBusinessCertResult = ListGravePlotBusinessResult,
+>(idRoom: number, type?: GravePlotBusinessFormType) {
   const query = `idRoom=${idRoom}${type ? `&type=${type}` : ''}`;
-  return request.get<ListGravePlotBusinessResult>({
+  return request.get<T>({
     url: `${Api.queryGravePlotBusiness}/get-by-room?${query}`,
   });
 }

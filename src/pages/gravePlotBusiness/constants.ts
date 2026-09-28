@@ -21,6 +21,8 @@ export const INITIAL_ROOM_DATA = {
   xyNumber: '',
   // 墓位卡号，票据编号后缀取该值 20260926 新增,
   cardno: '',
+  // 购墓人：安葬证设置只读字段“持证人”默认值取该列 20260928 新增,
+  buyer: '',
   price: 0,
   specs: '',
   repairStatus: '',
@@ -57,3 +59,26 @@ export interface SelectModel {
   value: string;
   label: string;
 }
+
+// 安葬证设置初始数据（数据表 burial_cert：编号/持证人/电话/逝者关系/下葬与合葬日期/安葬者A-D/工作单位/单位电话/住址）
+// idBusiness 承载 burial_cert 主键 idCert，0 为新建 20260927 新增
+export const INITIAL_CERT_DATA = {
+  idBusiness: 0,
+  idRoom: 0,
+  serialNo: '',
+  certHolder: '',
+  certHolderPhone: '',
+  deceasedRelation: '',
+  burialDate: '',
+  jointBurialDate: '',
+  deceasedA: '',
+  deceasedB: '',
+  // 等分（安葬者B分位单选：'1'一分/'2'二分/'3'三分）落 burial_cert.equalDivision，默认选一分
+  // （一分时安葬者C/D隐藏、二分时D隐藏、三分全显）20260928 修改
+  equalDivision: '1',
+  deceasedC: '',
+  deceasedD: '',
+  workplace: '',
+  workPhone: '',
+  homeAddress: '',
+};

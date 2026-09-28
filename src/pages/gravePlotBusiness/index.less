@@ -161,10 +161,52 @@
   :deep(.contacts-inline-input .t-input) {
     width: 100% !important;
   }
+
+  // 安葬者B/C/D 一行三列：输入框填满各自 8 列列宽（三个等宽填满整行，适合一行显示），
+  // 覆盖 cms-form-inputs-fixed 的 322px !important（同 contacts-inline-input 的 wrap+inner 双层覆盖模式）20260928 新增
+  :deep(.cert-deceased-bcd-input.t-input__wrap) {
+    width: 100% !important;
+  }
+
+  :deep(.cert-deceased-bcd-input .t-input) {
+    width: 100% !important;
+  }
+
+  // 安葬证设置：工作单位/住址整行（span=12）输入框宽度占满整行，
+  // 覆盖 cms-form-inputs-fixed 的 322px !important（同上 wrap+inner 双层覆盖模式）20260928 新增
+  :deep(.cert-fullrow-input.t-input__wrap) {
+    width: 100% !important;
+  }
+
+  :deep(.cert-fullrow-input .t-input) {
+    width: 100% !important;
+  }
 }
 
 .form-submit-container {
   .cms-form-submit-compact();
+
+  // 安葬证设置视图提交行右侧：打印模式单选 + 打印A/B 按钮同行垂直居中；
+  // 单选组禁止内部换行并收窄选项间距（默认 wrap+24px，窄容器会竖排堆叠）20260928 新增
+  .form-submit-right {
+    display: flex;
+    align-items: center;
+
+    :deep(.cert-print-type) {
+      flex-wrap: nowrap;
+      // 单选组位于打印A/B 两按钮之间，左右各留间距 20260928 修改
+      margin-left: var(--td-comp-margin-l);
+      margin-right: var(--td-comp-margin-l);
+
+      .t-radio {
+        margin-right: 8px;
+      }
+
+      .t-radio:last-child {
+        margin-right: 0;
+      }
+    }
+  }
 }
 
 // ==================== 下葬形态：逝者关系 + 备注同行（原备注行拆分，左逝者关系 322px，右备注占满余宽）20260925 新增 ====================
@@ -182,6 +224,40 @@
   > :deep(.t-form__item:last-child) {
     flex: 1;
     min-width: 0;
+  }
+}
+
+// ==================== 安葬证设置：安葬者B标题行（标题文字 + 分位单选框同行，单选靠右）20260928 新增 ====================
+// label 插槽内容与输入框同列宽，单选框贴该列右缘；单选组禁止内部换行并收窄选项间距，
+// 确保窄列（1/3 行宽）内标题与三个单选一行放下（默认 wrap+24px 间距会竖排堆叠）20260928 修改
+.cert-deceased-b-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  // 标题与单选组间距拉开：space-between 在窄列下单选组紧贴标题，固定 gap 充裕间隔 20260928 修改
+  gap: 24px;
+
+  :deep(.t-radio-group) {
+    flex-wrap: nowrap;
+  }
+
+  // small 单选字号 12px：与表单 label 字号一致不撑高标题行；间距收窄至 8px 20260928 修改
+  :deep(.t-radio) {
+    font: var(--td-font-body-small);
+    margin-right: 8px;
+  }
+
+  :deep(.t-radio:last-child) {
+    margin-right: 0;
+  }
+}
+
+// 安葬者C/D 无 label：控件上移会高于安葬者B输入框基线，
+// 按label-top 同高（--td-comp-margin-xxxl）下移控件，使三个输入框同行同高 20260928 新增
+.cert-deceased-cd-item {
+  :deep(.t-form__controls) {
+    margin-top: var(--td-comp-margin-xxxl);
   }
 }
 

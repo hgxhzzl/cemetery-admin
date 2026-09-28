@@ -393,7 +393,8 @@
                    联系人形态仅剩联系人列表管理，不再展示业务字段 20260923 修改 20260924 修改 -->
               <template v-if="formMode !== 'reserve' && formMode !== 'buried' && formMode !== 'business'">
                 <t-col :span="6">
-                  <t-form-item :label="$t('pages.gravePlotBusiness.serialNo')" name="serialNo">
+                  <!-- 编号输入框标题改为“证件编号”：仅销售形态，独立词条不影响安葬证设置表单的“编号” 20260928 修改 -->
+                  <t-form-item :label="$t('pages.gravePlotBusiness.certSerialNo')" name="serialNo">
                     <t-input
                       v-model="formBusinessData.serialNo"
                       :maxcharacter="6"
@@ -592,7 +593,8 @@
                   </t-form-item>
                 </t-col>
               </template>
-              <template v-if="formMode === 'buried' && buriedEditMode !== 'list'">
+              <!-- 下葬形态新增/修改视图字段（安葬者/身份证号/下葬日期/联系人三字段）；安葬证设置视图展示专属字段分支 20260924 新增 20260927 修改 -->
+              <template v-if="formMode === 'buried' && (buriedEditMode === 'add' || buriedEditMode === 'modify')">
                 <t-col :span="6">
                   <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
                     <t-input
@@ -673,11 +675,193 @@
                   </t-form-item>
                 </t-col>
               </template>
+              <!-- 安葬证设置视图字段（数据表 burial_cert，参照墓位销售页表单布局）：证件编号/持证人/电话/安葬者A/
+                   下葬日期/逝者关系/合葬日期/安葬者B-D/工作单位/单位电话/住址，数据读写走 gravePlotBusiness 自有接口 type=certificate 20260927 新增；
+                   证件编号与持证人只读，默认值取墓位信息 room.cardno / room.buyer（不随记录回填，始终跟当前墓位）；
+                   持证人电话/逝者关系/下葬日期/安葬者A默认值从关联业务表带出（仅空字段预填）；
+                   安葬者A与逝者关系互换、逝者关系与合葬日期互换、安葬者B与合葬日期互换、安葬者C与合葬日期互换
+                   （逝者关系上移至下葬日期右侧，安葬者B上移至逝者关系右侧，安葬者C上移至安葬者B右侧，合葬日期下移至安葬者C原位置）20260928 修改；
+                   安葬者B/C/D 并入一行：前置空占位列，B/C/D 各占 8 列，C/D 去标题，合葬日期与工作单位顺延至下两行 20260928 修改 -->
+              <template v-if="formMode === 'buried' && buriedEditMode === 'certificate'">
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.certSerialNo')" name="serialNo">
+                    <t-input
+                      v-model="formCertData.serialNo"
+                      disabled
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.serialNoPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.certHolder')" name="certHolder">
+                    <t-input
+                      v-model="formCertData.certHolder"
+                      disabled
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.certHolderPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.certHolderPhone')" name="certHolderPhone">
+                    <t-input
+                      v-model="formCertData.certHolderPhone"
+                      :maxcharacter="11"
+                      show-limit-number
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.certHolderPhonePlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <!-- 安葬者A上移至持证人电话右侧（原逝者关系位置，两框互换）20260928 修改 -->
+                  <t-form-item :label="$t('pages.gravePlotBusiness.deceasedA')" name="deceasedA">
+                    <t-input
+                      v-model="formCertData.deceasedA"
+                      :maxcharacter="20"
+                      show-limit-number
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.deceasedPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.burialDate')" name="burialDate">
+                    <t-date-picker
+                      v-model="formCertData.burialDate"
+                      :style="{ width: '322px' }"
+                      theme="primary"
+                      mode="date"
+                      separator="/"
+                      :placeholder="$t('pages.gravePlotBusiness.burialDatePlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <!-- 逝者关系上移至下葬日期右侧，合葬日期下移至逝者关系右侧（两框互换）20260928 修改 -->
+                  <t-form-item :label="$t('pages.gravePlotBusiness.deceasedRelation')" name="deceasedRelation">
+                    <t-input
+                      v-model="formCertData.deceasedRelation"
+                      :maxcharacter="20"
+                      show-limit-number
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.deceasedRelationPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <!-- 安葬者B/C/D 并入一行：外层整列（span=12）自然从新行开始，内部嵌套 t-row 三个 4 列
+                     （span=4，1/3 行宽）等宽占满整行；C/D 去标题（控件按 label 高度下移对齐 B 输入框基线）
+                     20260928 修改：嵌套行替代空占位列——flex wrap 按宽度累计换行，占位列(50%)+B(33%)同行后
+                     C 会被挤到下一行，无法实现三周一行；
+                     分位联动显示：一分只留B，二分星C，三分全显（B始终显示）20260928 修改 -->
+                <t-col :span="12">
+                  <t-row :gutter="[32, 5]">
+                    <t-col :span="4">
+                      <!-- 安葬者B：标题右侧分位单选框（一分/二分/三分，值1/2/3落 burial_cert.equalDivision）20260928 修改 -->
+                      <t-form-item name="deceasedB">
+                        <template #label>
+                          <div class="cert-deceased-b-label">
+                            <span>{{ $t('pages.gravePlotBusiness.deceasedB') }}</span>
+                            <t-radio-group v-model="formCertData.equalDivision" size="small">
+                              <t-radio value="1">{{ $t('pages.gravePlotBusiness.oneFen') }}</t-radio>
+                              <t-radio value="2">{{ $t('pages.gravePlotBusiness.twoFen') }}</t-radio>
+                              <t-radio value="3">{{ $t('pages.gravePlotBusiness.threeFen') }}</t-radio>
+                            </t-radio-group>
+                          </div>
+                        </template>
+                        <t-input
+                          v-model="formCertData.deceasedB"
+                          class="cert-deceased-bcd-input"
+                          :maxcharacter="20"
+                          show-limit-number
+                          :placeholder="$t('pages.gravePlotBusiness.deceasedPlaceholder')"
+                        />
+                      </t-form-item>
+                    </t-col>
+                    <t-col v-if="formCertData.equalDivision !== '1'" :span="4">
+                      <!-- 安葬者C：去标题，仅二分/三分显示（一分隐藏）20260928 修改 -->
+                      <t-form-item name="deceasedC" class="cert-deceased-cd-item">
+                        <t-input
+                          v-model="formCertData.deceasedC"
+                          class="cert-deceased-bcd-input"
+                          :maxcharacter="20"
+                          show-limit-number
+                          :placeholder="$t('pages.gravePlotBusiness.deceasedPlaceholder')"
+                        />
+                      </t-form-item>
+                    </t-col>
+                    <t-col v-if="formCertData.equalDivision === '3'" :span="4">
+                      <!-- 安葬者D：去标题，仅三分显示（一分/二分隐藏）20260928 修改 -->
+                      <t-form-item name="deceasedD" class="cert-deceased-cd-item">
+                        <t-input
+                          v-model="formCertData.deceasedD"
+                          class="cert-deceased-bcd-input"
+                          :maxcharacter="20"
+                          show-limit-number
+                          :placeholder="$t('pages.gravePlotBusiness.deceasedPlaceholder')"
+                        />
+                      </t-form-item>
+                    </t-col>
+                  </t-row>
+                </t-col>
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.jointBurialDate')" name="jointBurialDate">
+                    <t-date-picker
+                      v-model="formCertData.jointBurialDate"
+                      :style="{ width: '322px' }"
+                      theme="primary"
+                      mode="date"
+                      separator="/"
+                      :placeholder="$t('pages.gravePlotBusiness.jointBurialDatePlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="6">
+                  <!-- 单位电话上移至合葬日期右侧，使工作单位与住址单独成一行（两框互换）20260928 修改 -->
+                  <t-form-item :label="$t('pages.gravePlotBusiness.workPhone')" name="workPhone">
+                    <t-input
+                      v-model="formCertData.workPhone"
+                      :maxcharacter="11"
+                      show-limit-number
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.workPhonePlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <!-- 工作单位整行（span=12）单独一行，输入框宽度占满整行；住址同 20260928 修改 -->
+                <t-col :span="12">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.workplace')" name="workplace">
+                    <t-input
+                      v-model="formCertData.workplace"
+                      class="cert-fullrow-input"
+                      :maxcharacter="50"
+                      show-limit-number
+                      :placeholder="$t('pages.gravePlotBusiness.workplacePlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <t-col :span="12">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.homeAddress')" name="homeAddress">
+                    <t-input
+                      v-model="formCertData.homeAddress"
+                      class="cert-fullrow-input"
+                      :maxcharacter="50"
+                      show-limit-number
+                      :placeholder="$t('pages.gravePlotBusiness.homeAddressPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+              </template>
             </t-row>
             <!-- 备注改回单行输入框，宽度与联系人电话输入框右缘对齐（实测681），字数限制50并在输入框右侧计数，同电话 20260916 修改；
                  下葬形态例外：仅新增/修改视图展示（列表视图不显示输入框），原备注行拆为两个输入框——
                  左侧逝者关系（单行，同列宽 322px），右侧备注（多行 height 124）20260923 修改 20260924 修改 20260925 修改 -->
-            <div v-if="formMode === 'buried' && buriedEditMode !== 'list'" class="buried-relation-remark-row">
+            <!-- 下葬形态备注行仅新增/修改视图展示（安葬证设置视图无备注列，burial_cert 表无 remark）20260923 修改 20260924 修改 20260925 修改 20260927 修改 -->
+            <div
+              v-if="formMode === 'buried' && (buriedEditMode === 'add' || buriedEditMode === 'modify')"
+              class="buried-relation-remark-row"
+            >
               <t-form-item :label="$t('pages.gravePlotBusiness.deceasedRelation')" name="deceasedRelation">
                 <t-input
                   v-model="formBusinessData.deceasedRelation"
@@ -712,7 +896,8 @@
           </div>
         </div>
 
-        <!-- 提交区：下葬形态列表视图（纯列表）与联系人形态列表视图（纯联系人列表）不展示提交/取消按钮，仅新增/修改视图展示 20260924 修改 -->
+        <!-- 提交区：下葬形态列表视图（纯列表）与联系人形态列表视图（纯联系人列表）不展示提交/取消按钮，
+             仅新增/修改视图及安葬证设置视图（暂时同修改视图）展示 20260924 修改 20260927 修改 -->
         <div
           v-if="
             (formMode !== 'buried' || buriedEditMode !== 'list') &&
@@ -731,9 +916,13 @@
                 {{ $t('operate.confirm') }}
               </t-button>
 
-              <!-- 取消按钮：下葬形态重置表单保持当前墓位；联系人新增/修改视图退出并回列表视图 20260923 修改 20260924 修改 -->
+              <!-- 取消按钮：下葬形态重置表单保持当前墓位（安葬证设置视图除外，由安葬证打印A替代）；
+                   联系人新增/修改视图退出并回列表视图 20260923 修改 20260924 修改 20260928 修改 -->
               <t-button
-                v-if="formMode === 'buried' || (formMode === 'business' && contactsEditMode !== 'list')"
+                v-if="
+                  (formMode === 'buried' && buriedEditMode !== 'certificate') ||
+                  (formMode === 'business' && contactsEditMode !== 'list')
+                "
                 class="form-submit-cancel"
                 theme="default"
                 @click="onCancelBuriedOrContacts()"
@@ -758,6 +947,23 @@
                 @click="printReceipt()"
               >
                 {{ $t('operate.printReceipt') }}
+              </t-button>
+            </div>
+            <!-- 安葬证打印A/B：安葬证设置视图提交行右侧并列（form-submit-sub 为 space-between，
+                 右侧容器自然贴右缘）；A/B 分别复刻原 PB d_room_card_print / d_room_card_printb
+                 两套套打版式，B 按单选正常/合葬切换字段集；打印为只读操作，
+                 :disabled=false 使组件级 disabled 优先于表单级（同打印票据按钮）20260928 新增 20260928 修改 -->
+            <div v-if="formMode === 'buried' && buriedEditMode === 'certificate'" class="form-submit-right">
+              <t-button class="form-submit-cancel" theme="default" :disabled="false" @click="printBurialCertA()">
+                {{ $t('pages.gravePlotBusiness.printBurialCertA') }}
+              </t-button>
+              <!-- 打印A右侧打印模式单选：正常打印（默认）/合葬打印，界面暂存不落库 20260928 新增 20260928 修改 -->
+              <t-radio-group v-model="printCertType" class="cert-print-type">
+                <t-radio value="normal">{{ $t('pages.gravePlotBusiness.normalPrint') }}</t-radio>
+                <t-radio value="joint">{{ $t('pages.gravePlotBusiness.jointPrint') }}</t-radio>
+              </t-radio-group>
+              <t-button class="form-submit-cancel" theme="default" :disabled="false" @click="printBurialCertB()">
+                {{ $t('pages.gravePlotBusiness.printBurialCertB') }}
               </t-button>
             </div>
           </div>
@@ -859,10 +1065,12 @@ import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type {
+  GravePlotBusinessCertModel,
   GravePlotBusinessContactsModel,
   GravePlotBusinessFormType,
   GravePlotBusinessModel,
   GravePlotBusinessRoomRow,
+  ListGravePlotBusinessCertResult,
 } from '@/api/gravePlotBusiness';
 import {
   deleteGravePlotBusiness,
@@ -878,13 +1086,15 @@ import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, useRoomDetail, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
+import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
+import { buildRoomCardOverlayBHtml, buildRoomCardOverlayHtml } from '@/utils/burialCertificate';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
-import { buildReceiptHtml } from '@/utils/receipt';
+import { buildReceiptHtml, numToChinese } from '@/utils/receipt';
 
-import { FIND_DATA, INITIAL_BUSINESS_DATA, INITIAL_ROOM_DATA } from './constants';
+import { FIND_DATA, INITIAL_BUSINESS_DATA, INITIAL_CERT_DATA, INITIAL_ROOM_DATA } from './constants';
 
 // ============================================================
 // 墓位业务基础页：列表卡片（人员信息）+ 详情 + 业务登记，前后端与墓位销售完全独立 20260923 修改,
@@ -945,6 +1155,15 @@ type BusinessFormData = typeof INITIAL_BUSINESS_DATA;
 // type 标识业务形态决定后端落哪张数据表（sale/reserve/默认 graveplotbusiness）20260923 修改
 type BusinessSubmitData = Omit<BusinessFormData, 'realPriceString' | 'createDate'> & {
   realPrice: number;
+  type?: GravePlotBusinessFormType;
+};
+
+// 安葬证设置表单数据（burial_cert 表字段）：idBusiness 承载主键 idCert，0 为新建 20260927 新增
+type CertFormData = typeof INITIAL_CERT_DATA;
+// 提交数据排除创建/修改日期（后端审计自动写入），type=certificate 后端据此落 burial_cert 表；
+// 等分转为 smallint 数值（未选中转 null）20260927 新增 20260928 修改
+type CertSubmitData = Omit<CertFormData, 'equalDivision'> & {
+  equalDivision: number | null;
   type?: GravePlotBusinessFormType;
 };
 
@@ -1092,18 +1311,28 @@ const formMode = ref<'sale' | 'business' | 'reserve' | 'buried'>('business');
 const buriedRecords = ref<GravePlotBusinessModel[]>([]);
 // 下葬形态三视图：list=列表视图（墓穴信息+记录列表，无输入框）、add=新增视图（空表单，无列表）、
 // modify=修改视图（数据带入，无列表）；点表头“新增”/行内“修改”进入，提交/取消/返回回列表视图 20260924 修改
-const buriedEditMode = ref<'list' | 'add' | 'modify'>('list');
+// certificate=安葬证设置视图（点表头“证件”进入）：暂时内容同修改视图（数据带入，后续将调整）20260927 新增
+const buriedEditMode = ref<'list' | 'add' | 'modify' | 'certificate'>('list');
+// 安葬证打印模式：'normal'正常打印（默认）/'joint'合葬打印；界面暂存供后续打印A逻辑取值，不落库 20260928 新增
+const printCertType = ref<'normal' | 'joint'>('normal');
+// 证件按钮词条：提前取出缩短表头渲染行（单行调用超 prettier 120 行宽与列表换行规则冲突）20260927 新增
+const buriedCertificateText = translate('pages.gravePlotBusiness.certificate');
 const buriedRecordColumns: PrimaryTableCol[] = [
   { title: translate('pages.gravePlotBusiness.deceased'), colKey: 'deceased' },
   // 安葬者身份证号列加宽至 200px，确保 18 位号码完整显示（同下葬页）
   { title: translate('pages.gravePlotBusiness.deceasedIDCard'), colKey: 'deceasedIDCard', width: 200 },
   { title: translate('pages.gravePlotBusiness.burialDate'), colKey: 'burialDate' },
-  // 操作列表头改为“新增”按钮：样式与行内“修改”链接一致（t-link），点击清空表单新增下葬记录；整列内容居中 20260923 修改
+  // 操作列表头改为“新增”“证件”两个链接按钮（同款 t-link，间距同行内操作列）：
+  // 新增点击清空表单新增下葬记录；证件进入安葬证设置视图（内容暂时同修改视图，后续调整）20260923 修改 20260927 修改
   {
     colKey: 'op',
     width: 110,
     align: 'center',
-    title: (h) => h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add')),
+    title: (h) =>
+      h('div', { class: 'record-op-links' }, [
+        h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add')),
+        h(Link, { theme: 'primary', onClick: handleClickBuriedCertificate }, () => buriedCertificateText),
+      ]),
   },
 ];
 
@@ -1148,6 +1377,10 @@ const formTitle = computed(() => {
     return translate('pages.gravePlotBusiness.saleTitle');
   }
   if (formMode.value === 'buried') {
+    // 安葬证设置视图：标题改为“安葬证设置”（内容暂时同修改视图，后续调整）20260927 新增
+    if (buriedEditMode.value === 'certificate') {
+      return translate('pages.gravePlotBusiness.certificateTitle');
+    }
     return translate('pages.gravePlotBusiness.buriedTitle');
   }
   return translate('pages.gravePlotBusiness.contactTitle');
@@ -1483,6 +1716,110 @@ const handleClickBuriedAdd = () => {
   onResetBuried();
 };
 
+// ==================== 安葬证设置（数据表 burial_cert，参照墓位销售方式读写）20260927 新增 ====================
+// 安葬证设置表单数据（独立于业务登记表单）：idBusiness 承载 burial_cert 主键 idCert，0 为新建
+const formCertData = ref<CertFormData>({ ...INITIAL_CERT_DATA });
+
+// 用安葬证设置记录回填表单（查询返回记录，含主键 idBusiness=idCert）
+const fillCertFormRecord = (record: GravePlotBusinessCertModel, idRoom: number) => {
+  // 等分回填：库中 smallint 可空，空值回落默认一分（单选框默认选中一分，空串已不会出现）20260928 修改
+  const equalDivision =
+    record.equalDivision === null || record.equalDivision === undefined ? '1' : String(record.equalDivision);
+  formCertData.value = {
+    idBusiness: record.idBusiness,
+    idRoom,
+    serialNo: record.serialNo ?? '',
+    certHolder: record.certHolder ?? '',
+    certHolderPhone: record.certHolderPhone ?? '',
+    deceasedRelation: record.deceasedRelation ?? '',
+    burialDate: record.burialDate ?? '',
+    jointBurialDate: record.jointBurialDate ?? '',
+    deceasedA: record.deceasedA ?? '',
+    deceasedB: record.deceasedB ?? '',
+    equalDivision,
+    deceasedC: record.deceasedC ?? '',
+    deceasedD: record.deceasedD ?? '',
+    workplace: record.workplace ?? '',
+    workPhone: record.workPhone ?? '',
+    homeAddress: record.homeAddress ?? '',
+  };
+};
+
+// 表头“证件”：进入安葬证设置视图——按墓位查 burial_cert 活动记录（倒序取最新一条）回填，无记录则空表单新建；
+// 表单字段/提交/取消/返回交互同下葬新增/修改视图（参照墓位销售方式），仅读写 burial_cert 本表不联动 20260927 修改
+const handleClickBuriedCertificate = async () => {
+  const idRoom = formRoomData.value.idRoom;
+  formCertData.value = { ...INITIAL_CERT_DATA, idRoom };
+  try {
+    const { list } = await getGravePlotBusinessByRoom<ListGravePlotBusinessCertResult>(idRoom, 'certificate');
+    if (list && list.length > 0) {
+      fillCertFormRecord(list[0], idRoom);
+    }
+  } catch (e) {
+    logError(e);
+  }
+  // 只读字段同步墓位信息：证件编号/持证人始终取当前墓位值，不随记录回填 20260928 新增
+  syncCertReadonlyFromRoom();
+  // 持证人电话/逝者关系/下葬日期/安葬者A从关联业务表带默认值（仅空字段预填）20260928 新增
+  await syncCertDefaultsFromRelated();
+  buriedEditMode.value = 'certificate';
+};
+
+// 安葬证设置提交成功后：重查记录回填并停留本视图（连续调整无需重新进入）；点“返回”才回下葬列表视图 20260927 新增
+const refreshCertStay = async () => {
+  const idRoom = formRoomData.value.idRoom;
+  formCertData.value = { ...INITIAL_CERT_DATA, idRoom };
+  try {
+    const { list } = await getGravePlotBusinessByRoom<ListGravePlotBusinessCertResult>(idRoom, 'certificate');
+    if (list && list.length > 0) {
+      fillCertFormRecord(list[0], idRoom);
+    }
+  } catch (e) {
+    logError(e);
+  }
+  // 只读字段同步墓位信息：证件编号/持证人始终取当前墓位值，不随记录回填 20260928 新增
+  syncCertReadonlyFromRoom();
+};
+
+// 只读字段同步墓位信息：证件编号取 room.cardno、持证人取 room.buyer，两个输入框只读不可改，
+// 有记录回填后也覆盖为当前墓位值（墓位购墓人/卡号变更时安葬证设置跟随最新值）20260928 新增
+const syncCertReadonlyFromRoom = () => {
+  formCertData.value.serialNo = String(formRoomData.value.cardno ?? '').trim();
+  formCertData.value.certHolder = String(formRoomData.value.buyer ?? '').trim();
+};
+
+// 安葬证设置默认值从关联业务表带出（仅空字段预填，已保存记录的值优先）：
+// 持证人电话取 sale 表付款人电话（idRoom 条件）；逝者关系/下葬日期/安葬者A取销售开单联动的
+// 下葬记录（buried.idSale 与销售单匹配，倒序取最新）；查询失败不阻断进入表单 20260928 新增
+const syncCertDefaultsFromRelated = async () => {
+  const idRoom = formRoomData.value.idRoom;
+  try {
+    const saleRes = await getGravePlotBusinessByRoom(idRoom, 'sale');
+    const sale = saleRes.list?.[0];
+    if (sale && (formCertData.value.certHolderPhone ?? '').trim() === '') {
+      formCertData.value.certHolderPhone = String(sale.payerPhone ?? '').trim();
+    }
+    const buriedRes = await getGravePlotBusinessByRoom(idRoom, 'buried');
+    // 销售联动的下葬记录：优先与当前销售单 idSale 匹配，无销售单时取任一 idSale 有值的最新记录
+    const linked =
+      (buriedRes.list ?? []).find((item) => sale && item.idSale === sale.idBusiness) ??
+      (buriedRes.list ?? []).find((item) => item.idSale != null);
+    if (linked) {
+      if ((formCertData.value.deceasedRelation ?? '').trim() === '') {
+        formCertData.value.deceasedRelation = String(linked.deceasedRelation ?? '').trim();
+      }
+      if (!formCertData.value.burialDate) {
+        formCertData.value.burialDate = linked.burialDate ?? '';
+      }
+      if ((formCertData.value.deceasedA ?? '').trim() === '') {
+        formCertData.value.deceasedA = String(linked.deceased ?? '').trim();
+      }
+    }
+  } catch (e) {
+    logError(e);
+  }
+};
+
 // 取消（下葬形态）：新增/修改视图下退出并回填最新记录（回到含列表的下葬页）20260924 修改
 const onCancelBuried = () => {
   buriedEditMode.value = 'list';
@@ -1561,6 +1898,79 @@ const printReceipt = async () => {
   }
 };
 
+// 安葬证套打开窗公共流程：点击手势内同步开新标签页，写入文档加载完成后唤起打印预览
+// （原系统页不动）；套打A/B 复用，打印票据 printReceipt 保持原实现 20260928 新增
+const openOverlayPrintWindow = (html: string) => {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.gravePlotBusiness.printBlockedPrompt'));
+  }
+  const printDoc = printWindow.document;
+  printDoc.open();
+  printDoc.write(html);
+  printDoc.close();
+  const triggerPrint = () => {
+    setTimeout(() => {
+      printWindow.focus();
+      printWindow.print();
+    }, 100);
+  };
+  if (printDoc.readyState === 'complete') {
+    triggerPrint();
+  } else {
+    printWindow.onload = triggerPrint;
+  }
+};
+
+// 安葬证打印A（套打）：预印证书纸固定版式，按原 PB d_room_card_print 位置填三个字段——
+// 经办人取当前登录用户（原 room_card.operate）、发证日期取当天（原 dateoperate，yyyy mm dd）、
+// 卡号取当前墓位 cardno；打印模式单选（printCertType）当前两种模式内容一致，
+// 合葬打印差异版式后续接入时在此分支处理 20260928 新增
+const printBurialCertA = () => {
+  const data: RoomCardOverlayData = {
+    operate: String(userStore.userName ?? '').trim(),
+    // 原 PB editmask "yyyy  mm dd"：年月日空格分隔 20260928 新增
+    dateoperate: dayjs().format('YYYY  MM DD'),
+    cardno: String(formRoomData.value.cardno ?? '').trim(),
+  };
+  openOverlayPrintWindow(buildRoomCardOverlayHtml(data));
+};
+
+// 安葬证打印B（套打）：按原 PB d_room_card_printb 位置填字段——持证人/逝者关系/工作单位/住址/
+// 安葬者A/安葬日期取当前安葬证表单，墓穴位置取墓位信息拼装（园区名+排号/座号汉字）；
+// 正常打印仅 PB 可见字段，合葬打印补安葬者B/C/D与合葬日期（PB 隐藏列）；
+// 安葬/合葬日期空值或无效回退当天（原 PB editmask "yyyy  mm   dd"）20260928 新增
+const printBurialCertB = () => {
+  const azDate =
+    formCertData.value.burialDate && dayjs(formCertData.value.burialDate).isValid()
+      ? dayjs(formCertData.value.burialDate)
+      : dayjs();
+  const hzDate =
+    formCertData.value.jointBurialDate && dayjs(formCertData.value.jointBurialDate).isValid()
+      ? dayjs(formCertData.value.jointBurialDate)
+      : dayjs();
+  const data: RoomCardOverlayBData = {
+    cardman: String(formCertData.value.certHolder ?? '').trim(),
+    relation: String(formCertData.value.deceasedRelation ?? '').trim(),
+    company: String(formCertData.value.workplace ?? '').trim(),
+    address: String(formCertData.value.homeAddress ?? '').trim(),
+    usernamea: String(formCertData.value.deceasedA ?? '').trim(),
+    dateazrq: azDate.format('YYYY  MM   DD'),
+    // 墓穴位置行拆两段：园区名右对齐自适应；排座号段左端锚定（排号右缘与安葬日期
+    // mm 两位右缘对齐，对齐计算在工具样式内）；“排”“号”两字预印纸已印好，
+    // 套打不重复打字但用全角空格（\u3000，宋体下与汉字等宽）占位 20260928 新增 20260928 修改
+    park: String(formRoomData.value.park ?? '').trim(),
+    rowSeat: `${numToChinese(String(formRoomData.value.yNum ?? ''))}\u3000${numToChinese(
+      String(formRoomData.value.xNum ?? ''),
+    )}\u3000`,
+    datehzrq: hzDate.format('YYYY  MM   DD'),
+    usernameb: String(formCertData.value.deceasedB ?? '').trim(),
+    usernamec: String(formCertData.value.deceasedC ?? '').trim(),
+    usernamed: String(formCertData.value.deceasedD ?? '').trim(),
+  };
+  openOverlayPrintWindow(buildRoomCardOverlayBHtml(data, printCertType.value, formCertData.value.equalDivision));
+};
+
 // 成交价失焦时格式化为千分位 20260828 梳理,
 const changeNumberFocus = (value: string, number: string) => {
   if (value === 'price') {
@@ -1572,10 +1982,11 @@ const changeNumberFocus = (value: string, number: string) => {
 };
 
 // 开单关闭：清空数据并回到列表 20260828 梳理,
-// 下葬/联系人形态的记录表格与选择数据随表单关闭一并清空，三视图回默认列表视图 20260923 新增 20260924 修改
+// 下葬/联系人形态的记录表格与选择数据、安葬证设置表单随表单关闭一并清空，三视图回默认列表视图 20260923 新增 20260924 修改 20260927 修改
 const ClickCreateClose = () => {
   formRoomData.value = { ...INITIAL_ROOM_DATA };
   resetBusinessForm();
+  formCertData.value = { ...INITIAL_CERT_DATA };
   buriedRecords.value = [];
   contactsRecords.value = [];
   buriedEditMode.value = 'list';
@@ -1630,6 +2041,40 @@ const ClickSubmit = async () => {
       logError(e);
       MessagePlugin.error(
         idContacts === 0 ? translate('operate.createdFailedPrompt') : translate('operate.modifyFailedPrompt'),
+      );
+    }
+    return;
+  }
+
+  // 安葬证设置视图：确认按钮保存安葬证设置记录（burial_cert 表，参照墓位销售方式：
+  // 持证人必填，新建/修改由 idBusiness(=idCert) 是否为 0 区分），成功后停留本视图刷新回填 20260927 新增
+  if (formMode.value === 'buried' && buriedEditMode.value === 'certificate') {
+    const { idRoom, idBusiness, certHolder, certHolderPhone } = formCertData.value;
+    if (certHolder === undefined || certHolder.trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.certHolderPlaceholder'));
+    }
+    // 等分落 burial_cert.equalDivision（smallint）：选中值转数值（默认一分，异常空串兑底转 null）20260928 修改
+    const equalDivisionRaw = formCertData.value.equalDivision;
+    const certPayload: CertSubmitData = {
+      ...formCertData.value,
+      equalDivision: equalDivisionRaw === '' ? null : Number(equalDivisionRaw),
+      certHolder: certHolder.trim(),
+      certHolderPhone: certHolderPhone.trim(),
+      type: 'certificate',
+    };
+    try {
+      if (idBusiness === 0) {
+        await insertGravePlotBusiness(certPayload);
+        MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+      } else {
+        await updateGravePlotBusiness(certPayload);
+        MessagePlugin.success(translate('operate.modifySuccessPrompt'));
+      }
+      await refreshCertStay();
+    } catch (e) {
+      logError(e);
+      MessagePlugin.error(
+        idBusiness === 0 ? translate('operate.createdFailedPrompt') : translate('operate.modifyFailedPrompt'),
       );
     }
     return;
