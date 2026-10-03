@@ -186,6 +186,8 @@ const COLUMNS: PrimaryTableCol<TableRowData>[] = [
   { title: translate('pages.roomQuery.createDate'), width: 120, colKey: 'createDate' },
   { title: translate('pages.roomQuery.deceased'), width: 120, colKey: 'deceased', ellipsis: true },
   { title: translate('pages.roomQuery.contacts'), width: 300, colKey: 'contacts', ellipsis: true },
+  // 备注列（room.remark）：位于联系人之后、操作列之前，过长省略展示 20261003 新增
+  { title: translate('pages.roomQuery.remark'), align: 'left', width: 200, colKey: 'remark', ellipsis: true },
   {
     title: translate('operate.operation'),
     align: 'left',
@@ -275,7 +277,7 @@ const getQueryParams = (current: number, pageSize: number) => {
     park: formData.value.park,
     startDate,
     endDate,
-    // 关键词：按墓区编号/购墓人/联系人/电话/安葬者拼串包含查找，为空时后端不拼接该条件 20260924 新增
+    // 关键词：按墓区编号/购墓人/联系人/电话/安葬者/备注拼串包含查找，为空时后端不拼接该条件 20260924 新增 20261003 加备注
     keyword: formData.value.keyword,
     // 销售状态/迁出状态多选：一对复选框只勾其一时后端按该状态过滤，都勾或都不勾时不过滤 20260924 新增
     sold: formData.value.sold,
@@ -298,7 +300,7 @@ const handleExport = async () => {
   }
   exporting.value = true;
   try {
-    // 表头与表格列一致：序号/区域/园区/墓位编号/购墓人/销售日期/安葬者/联系人（购墓人电话列已不显示）20260924 修改 20260926 修改
+    // 表头与表格列一致：序号/区域/园区/墓位编号/购墓人/销售日期/安葬者/联系人/备注（购墓人电话列已不显示）20260924 修改 20260926 修改 20261003 加备注
     await exportCsv<RoomQueryModel>({
       fileName: '墓位信息查询',
       headers: [
@@ -310,6 +312,7 @@ const handleExport = async () => {
         translate('pages.roomQuery.createDate'),
         translate('pages.roomQuery.deceased'),
         translate('pages.roomQuery.contacts'),
+        translate('pages.roomQuery.remark'),
       ],
       fetchPage: (current, pageSize) => getRoomQueryList(getQueryParams(current, pageSize)),
       // 序号从 1 连续编号；日期与列表一致格式化 20260924 修改
@@ -322,6 +325,7 @@ const handleExport = async () => {
         formatDate(row.createDate ?? undefined),
         row.deceased,
         row.contacts,
+        row.remark,
       ],
     });
   } catch (e) {

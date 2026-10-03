@@ -262,11 +262,6 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
-      :hide-reserve-status="true"
-      :show-room-remark="true"
-      :hide-yx-num="true"
-      :hide-transfer-out-status="true"
-      :show-room-serial-no="true"
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->

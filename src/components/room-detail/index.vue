@@ -156,17 +156,6 @@ const props = defineProps<{
   adminfees?: AdminfeeModel[];
   // 该墓位的联系人记录（可能多条），null/未传表示无联系人记录，不展示联系人卡片 20260912 新增
   contacts?: ContactsModel[];
-  // 墓位业务页详情定制：隐藏墓位信息中的预定状态、在墓位信息末尾增加 room.remark 备注；
-  // 其它页面不传则保持默认（展示预定状态、不展示备注）20261003 新增
-  hideReserveStatus?: boolean;
-  showRoomRemark?: boolean;
-  // 墓位业务页详情定制：隐藏墓位信息中的排号（room.yNum）与序号（room.xNum），位置（room.xyNumber）保留；
-  // 其它页面不传则保持默认展示 20261003 新增
-  hideYxNum?: boolean;
-  // 墓位业务页详情定制：隐藏墓位信息中的迁出状态（room.transferOutStatus）；其它页面不传则保持默认展示 20261003 新增
-  hideTransferOutStatus?: boolean;
-  // 墓位业务页详情定制：在墓位信息末尾（迁出状态原位）增加 room.serialNo 编号；其它页面不传则不展示 20261003 新增
-  showRoomSerialNo?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -193,9 +182,8 @@ const displayKey = (key: string | null | undefined): string => {
   return translate(String(key));
 };
 
-// 墓位信息字段：区域/园区/排号/序号/编号/墓位类型/规格/安葬者/单价/管理费结束日期/预定状态/销售状态/下葬状态/迁出状态，
-// 与墓区设置页详情标准一致（不含修复状态） 20260912 修改 20260916 加迁出状态 20260917 去购墓人,
-// 排号/序号/预定状态/迁出状态可按页隐藏、备注与编号可按页追加（由调用方传 prop 控制，默认行为不变）20261003 修改,
+// 墓位信息字段：区域/园区/位置/墓位类型/规格/安葬者/单价/管理费结束日期/销售状态/下葬状态/编号/备注，
+// 15 个页面详情统一展示（不含修复状态）；排号/序号/预定状态/迁出状态均不再展示、编号（room.serialNo）与备注（room.remark）统一展示 20261003 统一为默认,
 const detailData = computed<{ name: string; value: string }[]>(() => {
   const { room } = props;
   if (!room) return [];
@@ -203,14 +191,7 @@ const detailData = computed<{ name: string; value: string }[]>(() => {
     // 区域：详情第一字段展示 20260912 新增
     { name: translate('pages.room.region'), value: display(room.region) },
     { name: translate('pages.room.park'), value: display(room.park) },
-    // 排号/序号：墓位业务页详情不展示（hideYxNum），其它页保留 20261003 修改
-    ...(props.hideYxNum
-      ? []
-      : [
-          { name: translate('pages.room.yNum'), value: display(room.yNum) },
-          { name: translate('pages.room.xNum'), value: display(room.xNum) },
-        ]),
-    // 墓区编号：墓区设置/销售/预定/下葬/联系/管理费/销售查询页详情统一展示 20260912 新增
+    // 位置（墓区编号）：详情统一展示 20260912 新增；排号（yNum）/序号（xNum）不再展示 20261003 统一
     { name: translate('pages.room.xyNumber'), value: display(room.xyNumber) },
     { name: translate('pages.room.roomType'), value: displayKey(room.roomType) },
     { name: translate('pages.room.specs'), value: display(room.specs) },
@@ -219,21 +200,13 @@ const detailData = computed<{ name: string; value: string }[]>(() => {
     { name: translate('pages.room.price'), value: display(formatPrice(room.price)) },
     // 管理费结束日期：后端在下葬/收款事务中维护，详情统一展示并格式化为 YYYY-MM-DD 20260912 新增
     { name: translate('pages.room.endDate'), value: display(formatDate(room.endDate)) },
-    // 预定状态：墓位业务页详情不展示（hideReserveStatus），其它页保留 20261003 修改
-    ...(props.hideReserveStatus
-      ? []
-      : [{ name: translate('pages.room.reserveStatus'), value: displayKey(room.reserveStatus) }]),
+    // 预定状态不再展示（与销售/下葬状态语义重叠）20261003 统一
     { name: translate('pages.room.saleStatus'), value: displayKey(room.saleStatus) },
     { name: translate('pages.room.intoStatus'), value: displayKey(room.intoStatus) },
-    // 迁出状态：库表新增字段，详情统一展示，旧数据 NULL 展示“未填写” 20260916 新增；
-    // 墓位业务页详情不展示（hideTransferOutStatus）20261003 修改
-    ...(props.hideTransferOutStatus
-      ? []
-      : [{ name: translate('pages.room.transferOutStatus'), value: displayKey(room.transferOutStatus) }]),
-    // 编号（room.serialNo）：墓位业务页详情在原迁出状态位置展示（showRoomSerialNo），其它页不展示 20261003 新增
-    ...(props.showRoomSerialNo ? [{ name: translate('pages.room.serialNo'), value: display(room.serialNo) }] : []),
-    // 备注（room.remark）：墓位业务页详情在末尾增加展示（showRoomRemark），其它页不展示 20261003 新增
-    ...(props.showRoomRemark ? [{ name: translate('pages.room.remark'), value: display(room.remark) }] : []),
+    // 编号（room.serialNo）：原迁出状态位置，15 页详情统一展示 20261003 统一；迁出状态不再展示
+    { name: translate('pages.room.serialNo'), value: display(room.serialNo) },
+    // 备注（room.remark）：详情末尾统一展示 20261003 统一
+    { name: translate('pages.room.remark'), value: display(room.remark) },
   ];
 });
 

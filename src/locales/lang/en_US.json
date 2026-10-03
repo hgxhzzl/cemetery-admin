@@ -681,7 +681,7 @@
       "parkPlaceholder": "Please select a park",
       "saleDate": "Sale Date",
       "keyword": "Keyword",
-      "keywordPlaceholder": "Enter/plot no./buyer/contact/phone/deceased",
+      "keywordPlaceholder": "Enter/plot no./buyer/contact/phone/deceased/remark",
       "startDatePlaceholder": "Start Date",
       "endDatePlaceholder": "End Date",
       "xyNumber": "Location",
@@ -689,6 +689,7 @@
       "createDate": "Sale Date",
       "deceased": "Deceased",
       "contacts": "Contact",
+      "remark": "Remark",
       "loading": "Loading...",
       "noMore": "No more data"
     },

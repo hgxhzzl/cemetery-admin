@@ -681,7 +681,7 @@
       "parkPlaceholder": "请选择园区",
       "saleDate": "销售日期",
       "keyword": "关键词",
-      "keywordPlaceholder": "请输入/墓区编号/购墓人/联系人/电话/安葬者",
+      "keywordPlaceholder": "请输入/墓区编号/购墓人/联系人/电话/安葬者/备注",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
       "xyNumber": "位置",
@@ -689,6 +689,7 @@
       "createDate": "销售日期",
       "deceased": "安葬者",
       "contacts": "联系人",
+      "remark": "备注",
       "loading": "加载中...",
       "noMore": "没有更多数据了"
     },

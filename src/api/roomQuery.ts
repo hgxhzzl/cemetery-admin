@@ -16,6 +16,8 @@ export interface RoomQueryModel {
   createDate: string | null;
   deceased: string;
   contacts: string;
+  // 备注（room.remark）：列表新增备注列并参与关键词查找 20261003 新增
+  remark: string;
   // 接口返回迁出状态供勾选过滤定位，列表不展示该列 20260924 修改
   transferOutStatus: string;
 }
