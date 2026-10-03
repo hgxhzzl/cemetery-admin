@@ -28,7 +28,8 @@ export interface RoomModel {
   // 联系人 varchar(200)，存所有联系人 20260913 新增,
   contacts: string;
   price: number;
-  cardno: string;
+  // 墓位编号：原列 cardno（卡号），20261003 数据库 room 列重命名为 serialNo，字段标题统一"编号",
+  serialNo: string;
   operator: string;
   modifyDate: string;
   createDate: string;
@@ -47,4 +48,6 @@ export interface RoomModel {
   // 管理费开始/结束日期：后端在下葬/收款事务中维护（开始=最早下葬日期，结束=收款顺延），前端仅展示 20260910 新增,
   startDate: string;
   endDate: string;
+  // 备注：墓位业务页卡片底部展示 20261002 新增,
+  remark: string;
 }

@@ -89,7 +89,7 @@
                           <div class="contacts-card__serial">
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
                           </div>
-                          <!-- 墓穴类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
+                          <!-- 墓位类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
                           <div class="contacts-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="contacts-card__body">
@@ -249,7 +249,7 @@
                 <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
               </t-col>
 
-              <!-- 修改/删除模式：墓穴信息下方以列表展示全部联系人记录；修改用单选列回填表单，删除用操作列逐行删除 20260909 新增 -->
+              <!-- 修改/删除模式：墓位信息下方以列表展示全部联系人记录；修改用单选列回填表单，删除用操作列逐行删除 20260909 新增 -->
               <t-col v-if="isModifyMode || isDeleteMode" :span="12">
                 <t-form-item name="idContacts">
                   <t-table
@@ -484,7 +484,7 @@ const ClickDetailClose = () => {
 };
 
 // ==================== 联系人登记：新建 / 修改 / 删除 ====================
-// 删除模式：复用联系人登记视图，仅展示墓穴信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260909 新增
+// 删除模式：复用联系人登记视图，仅展示墓位信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260909 新增
 const isDeleteMode = ref(false);
 // 表单标题随模式切换：删除 > 修改 > 新建 20260909 新增
 const formTitle = computed(() => {
@@ -496,7 +496,7 @@ const formTitle = computed(() => {
     : translate('pages.contacts.creatTitle');
 });
 
-// 修改模式下在墓穴信息下方以列表展示“选择联系人记录”；contactsRecords 为该墓位全部活动联系人记录（后端按 idContacts DESC，[0] 为最新）20260909 新增
+// 修改模式下在墓位信息下方以列表展示“选择联系人记录”；contactsRecords 为该墓位全部活动联系人记录（后端按 idContacts DESC，[0] 为最新）20260909 新增
 const isModifyMode = ref(false);
 const contactsRecords = ref<ContactsModel[]>([]);
 // 列表单选选中的联系人记录 idContacts（默认最新一条），及展示完整信息的列定义 20260909 新增
@@ -600,7 +600,7 @@ const onSelectContactsRecord = (keys: Array<string | number>) => {
   }
 };
 
-// 点击卡片“修改”：进入修改页，墓穴信息下方列出全部联系人记录，默认选中最后一条（最新）20260909 新增,
+// 点击卡片“修改”：进入修改页，墓位信息下方列出全部联系人记录，默认选中最后一条（最新）20260909 新增,
 const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   const currentRow = row.row ?? row;
   try {
@@ -623,7 +623,7 @@ const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
-// 点击卡片“删除”：进入删除页（复用联系人登记视图 isDeleteMode），墓穴信息下方列出全部联系人记录，操作列逐行删除 20260909 新增
+// 点击卡片“删除”：进入删除页（复用联系人登记视图 isDeleteMode），墓位信息下方列出全部联系人记录，操作列逐行删除 20260909 新增
 const handleClickDelete = async (row: CardRowArg<RoomModel>) => {
   const currentRow = row.row ?? row;
   try {

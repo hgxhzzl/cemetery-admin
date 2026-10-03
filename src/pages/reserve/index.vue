@@ -87,7 +87,7 @@
                         <div class="reserve-card__header">
                           <!-- 卡片首行改为展示xyNumber编号字段，与墓区设置/销售页一致 20260917 修改 -->
                           <div class="reserve-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓穴类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
+                          <!-- 墓位类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
                           <div class="reserve-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="reserve-card__body">

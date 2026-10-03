@@ -11,13 +11,13 @@ export interface ReceiptData {
   payer: string;
   realPriceString: string;
   payee: string;
-  // 墓位卡号：票据编号后缀 yyyymm+卡号，销售/管理费票据统一取该值 20260926 修改
-  cardno: string;
+  // 墓位编号（原卡号 cardno，20261003 随 room 列重命名）：票据编号后缀 yyyymm+编号，销售/管理费票据统一取该值 20260926 修改
+  serialNo: string;
   // 销售记录创建日期，票据编号取 yyyymm 前缀；新建未保存时为空回退当天日期 20260922 新增
   createDate: string;
   region: string;
   park: string;
-  // 排/号：墓穴位置行第三/五栏数字转汉字展示（如 37→三十七），替代原拼接编号 20260926 修改
+  // 排/号：墓位位置行第三/五栏数字转汉字展示（如 37→三十七），替代原拼接编号 20260926 修改
   yNum: string;
   xNum: string;
   userName: string;
@@ -76,8 +76,8 @@ export const numToChinese = (value: string): string => {
 
 // 组装票据内容片段（不含文档骨架与样式）20260922 新增
 // 版式参照原系统 PowerBuilder 专用票据：标题/日期+No 行/四行表格（外框粗内线细）/单行页脚 20260926 修改
-// 标题取收据配制前缀、金额行三栏（人民币大写/小写/元）、墓穴位置行六栏（园区名称/区/排号汉字/排/座号汉字/号，占用七列网格后六列）、页脚地址电话取配制 20260926 修改
-// 管理费票据：标题后缀改“管理费票据”、编号后缀取墓位卡号、墓穴位置行下增加起止日期两行 20260922 修改
+// 标题取收据配制前缀、金额行三栏（人民币大写/小写/元）、墓位位置行六栏（园区名称/区/排号汉字/排/座号汉字/号，占用七列网格后六列）、页脚地址电话取配制 20260926 修改
+// 管理费票据：标题后缀改“管理费票据”、编号后缀取墓位卡号、墓位位置行下增加起止日期两行 20260922 修改
 export const buildReceiptBody = (
   data: ReceiptData,
   config: ReceiptConfigData = { prefix: '', phone: '', address: '' },
@@ -87,15 +87,15 @@ export const buildReceiptBody = (
   const amountText = Number.isFinite(realPrice)
     ? realPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     : String(data.realPriceString ?? '');
-  // 票据编号 = 创建日期 yyyymm + 墓位卡号，创建日期为空时回退当天日期 20260926 修改
+  // 票据编号 = 创建日期 yyyymm + 墓位编号，创建日期为空时回退当天日期 20260926 修改
   const serialDate = data.createDate ? dayjs(data.createDate).format('YYYYMM') : dayjs().format('YYYYMM');
-  const serialText = `${serialDate}${String(data.cardno ?? '').trim()}`;
+  const serialText = `${serialDate}${String(data.serialNo ?? '').trim()}`;
   // 标题 = 收据配制前缀 + 票据名（销售“专用票据”/管理费“管理费票据”）20260922 修改
   const titleText = `${escapeHtml(config.prefix)}${kind === 'adminfee' ? '管理费票据' : '专用票据'}`;
-  // 墓穴位置行六栏（园区名称/区/排号汉字/排/座号汉字/号）直接占用外层七列网格后六列：栏数与分隔线同原系统专用票据版式 20260926 修改
+  // 墓位位置行六栏（园区名称/区/排号汉字/排/座号汉字/号）直接占用外层七列网格后六列：栏数与分隔线同原系统专用票据版式 20260926 修改
   const positionRow = `
       <tr>
-        <th>墓穴位置</th>
+        <th>墓位位置</th>
         <td class="receipt__position-area">${escapeHtml(data.park)}</td>
         <td>区</td>
         <td>${escapeHtml(numToChinese(data.yNum))}</td>
@@ -113,11 +113,11 @@ export const buildReceiptBody = (
     const text = String(value ?? '').trim();
     return text && dayjs(text).isValid() ? dayjs(text).format('YYYY-MM-DD') : text;
   };
-  // 表格统一七列网格：金额行大写跨 3 列/小写跨 2 列/元 1 列，墓穴位置行六栏占后六列，其余行值栏 colspan 覆盖六值栏；
+  // 表格统一七列网格：金额行大写跨 3 列/小写跨 2 列/元 1 列，墓位位置行六栏占后六列，其余行值栏 colspan 覆盖六值栏；
   // 金额行与位置行在园区|排、排号座号|号两处竖线共用（同 PB x=2144/2725 贯穿线）20260926 修改
   const isAdminfee = kind === 'adminfee';
   // 管理费票据开始/结束日期一行四栏（PB 版式）：开始值 864 PBU≈216px 映射列2、结束日期标签 626 PBU≈156px 映射列3+4、
-  // 结束值 786 PBU≈196px 映射列5+6+7（PB x=2725 竖线仅至位置行底 y=744，日期行结束值直达右框 x=2930），位于墓穴位置行下方 20260926 修改
+  // 结束值 786 PBU≈196px 映射列5+6+7（PB x=2725 竖线仅至位置行底 y=744，日期行结束值直达右框 x=2930），位于墓位位置行下方 20260926 修改
   const adminfeeDateRow = isAdminfee
     ? `
       <tr>
@@ -210,7 +210,7 @@ const RECEIPT_STYLE = `
   .receipt--adminfee table.receipt__table td { height: 32px; }
   table.receipt__table td.receipt__date-value { text-align: center; }
   table.receipt__table td.receipt__date-cap { text-align: center; }
-  /* 墓穴位置行六栏直接占用外层七列网格后六列：园区名称左对齐、其余居中，排号/座号数字转汉字 20260926 修改 */
+  /* 墓位位置行六栏直接占用外层七列网格后六列：园区名称左对齐、其余居中，排号/座号数字转汉字 20260926 修改 */
   table.receipt__table td.receipt__position-area { text-align: left; }
   /* 页脚单行 10pt/行高 15px：地址占余宽、电话/单位盖章/经办人定宽，距表格 17px 同原系统票据页脚 20260926 修改 */
   .receipt__footer { display: flex; align-items: center; margin-top: 17px; font-size: 10pt; line-height: 15px; }

@@ -31,19 +31,9 @@ export interface TransferOutModel {
   createDate: string;
 }
 
-export interface ListTransferOutResult {
-  list: TransferOutModel[];
-  // 总记录数，供滚动加载判断是否还有下一页
-  total: number;
-}
-
-// 按区域/园区/迁出时间段分页查询迁出记录明细 20260916 新增
-export function getTransferOutList(params: Record<string, unknown>) {
-  return request.get<ListTransferOutResult>({
-    url: `${Api.queryTransferOut}/list`,
-    params,
-  });
-}
+// 分页查询迁出记录明细的旧封装（getTransferOutList + ListTransferOutResult）已被独立接口
+// @/api/transferOutQuery -> getTransferOutQueryList 取代，前端零调用，20261003 清理删除
+// （后端 /transferOut-query/list 路由随之成为孤儿接口，待后端侧确认处置）20261003 备注
 
 // 按区域+园区查询墓位列表（与下葬页一致，区域必传由路由 meta 下发）20260916 新增
 export function getTransferOutRoomList(park: string, region: string) {

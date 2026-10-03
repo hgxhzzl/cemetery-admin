@@ -91,7 +91,7 @@
                           <div class="buried-card__serial">
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
                           </div>
-                          <!-- 墓穴类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 20260913 修改 -->
+                          <!-- 墓位类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 20260913 修改 -->
                           <span class="buried-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="buried-card__body">
@@ -255,7 +255,7 @@
                 <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
               </t-col>
 
-              <!-- 修改/删除模式：墓穴信息下方以列表展示全部下葬记录；修改用单选列回填表单，删除用操作列逐行删除 20260908 修改 -->
+              <!-- 修改/删除模式：墓位信息下方以列表展示全部下葬记录；修改用单选列回填表单，删除用操作列逐行删除 20260908 修改 -->
               <t-col v-if="isModifyMode || isDeleteMode" :span="12">
                 <t-form-item name="idBuried">
                   <t-table
@@ -392,7 +392,7 @@
       </t-form>
     </div>
     <!-- 下葬登记结束 -->
-    <!-- 联系人选择页：样式复用墓穴下葬删除页（墓穴信息 + 记录表格 + 操作列），操作列为“选择”，点击把联系人/电话回填下葬表单并返回 20260909 新增 -->
+    <!-- 联系人选择页：样式复用墓位下葬删除页（墓位信息 + 记录表格 + 操作列），操作列为“选择”，点击把联系人/电话回填下葬表单并返回 20260909 新增 -->
     <div v-if="isContactsSelectShow">
       <t-form class="base-form" :data="formBuriedData" label-align="top" :label-width="100">
         <div class="form-basic-container">
@@ -630,7 +630,7 @@ const ClickDetailClose = () => {
 };
 
 // ==================== 下葬登记：新建 / 修改 / 删除 ====================
-// 删除模式：复用下葬登记视图，仅展示墓穴信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260908 新增
+// 删除模式：复用下葬登记视图，仅展示墓位信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260908 新增
 const isDeleteMode = ref(false);
 // 表单标题随模式切换：删除 > 修改 > 新建 20260908 修改
 const formTitle = computed(() => {
@@ -642,7 +642,7 @@ const formTitle = computed(() => {
     : translate('pages.buried.creatTitle');
 });
 
-// 修改模式下在墓穴信息下方以列表展示“选择下葬记录”；buriedRecords 为该墓位全部活动下葬记录（后端按 idBuried DESC，[0] 为最新）20260907 修改
+// 修改模式下在墓位信息下方以列表展示“选择下葬记录”；buriedRecords 为该墓位全部活动下葬记录（后端按 idBuried DESC，[0] 为最新）20260907 修改
 const isModifyMode = ref(false);
 const buriedRecords = ref<BuriedModel[]>([]);
 // 列表单选选中的下葬记录 idBuried（默认最新一条），及展示完整信息的列定义 20260907 新增
@@ -800,7 +800,7 @@ const onSelectBuriedRecord = (keys: Array<string | number>) => {
   }
 };
 
-// 点击卡片“修改”：进入修改页，墓穴信息下方列出全部下葬记录，默认选中最后一条（最新）20260907 修改,
+// 点击卡片“修改”：进入修改页，墓位信息下方列出全部下葬记录，默认选中最后一条（最新）20260907 修改,
 const handleClickModify = async (row: CardRowArg<BuriedRoomRow>) => {
   const currentRow = row.row ?? row;
   try {
@@ -823,7 +823,7 @@ const handleClickModify = async (row: CardRowArg<BuriedRoomRow>) => {
   }
 };
 
-// 点击卡片“删除”：进入删除页（复用下葬登记视图 isDeleteMode），墓穴信息下方列出全部下葬记录，操作列逐行删除 20260908 修改
+// 点击卡片“删除”：进入删除页（复用下葬登记视图 isDeleteMode），墓位信息下方列出全部下葬记录，操作列逐行删除 20260908 修改
 const handleClickDelete = async (row: CardRowArg<BuriedRoomRow>) => {
   const currentRow = row.row ?? row;
   try {

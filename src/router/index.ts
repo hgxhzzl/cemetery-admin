@@ -1,5 +1,4 @@
 import isObject from 'lodash/isObject';
-import uniq from 'lodash/uniq';
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -35,29 +34,7 @@ export function mapModuleRouterList(modules: Record<string, unknown>): Array<Rou
   return routerList;
 }
 
-/**
- *
- * @deprecated 未使用
- */
-export const getRoutesExpanded = () => {
-  const expandedRoutes: Array<string> = [];
-
-  fixedRouterList.forEach((item) => {
-    if (item.meta && item.meta.expanded) {
-      expandedRoutes.push(item.path);
-    }
-    if (item.children && item.children.length > 0) {
-      item.children
-        .filter((child) => child.meta && child.meta.expanded)
-        .forEach((child: RouteRecordRaw) => {
-          expandedRoutes.push(item.path);
-          expandedRoutes.push(`${item.path}/${child.path}`);
-        });
-    }
-  });
-  return uniq(expandedRoutes);
-};
-
+// 高亮当前菜单层级：按路径段截到 maxLevel 层
 export const getActive = (maxLevel = 3): string => {
   // 非组件内调用必须通过Router实例获取当前路由
   const route = router.currentRoute.value;

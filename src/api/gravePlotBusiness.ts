@@ -120,8 +120,8 @@ export function updateGravePlotBusiness(
   });
 }
 
-// 业务形态：代码独立但数据表复用原有表——sale 落 sale 表、reserve 落 reserve 表、buried 落 buried 表、contacts 落 contacts 表、certificate 落 burial_cert 表（安葬证设置）、默认 graveplotbusiness 表 20260923 修改 20260924 修改 20260927 修改
-export type GravePlotBusinessFormType = 'sale' | 'reserve' | 'buried' | 'contacts' | 'certificate';
+// 业务形态：代码独立但数据表复用原有表——sale 落 sale 表、reserve 落 reserve 表、buried 落 buried 表、contacts 落 contacts 表、certificate 落 burial_cert 表（安葬证设置）、remark 直接更新 room.remark（墓位备注）、默认 graveplotbusiness 表 20260923 修改 20260924 修改 20260927 修改 20261002 修改
+export type GravePlotBusinessFormType = 'sale' | 'reserve' | 'buried' | 'contacts' | 'certificate' | 'remark';
 
 // 按墓位查询当前活动业务记录，用于修改回填（type 决定查哪张数据表，主键统一别名 idBusiness；certificate 查 burial_cert 表）
 // 泛型 T 默认业务记录列表，certificate 形态由调用方显式指定 Cert 列表，避免联合类型回填不匹配 20260923 新增 20260927 修改

@@ -34,6 +34,20 @@
               @enter="onEnterTeam"
             />
           </t-form-item>
+          <!-- 逝者关系：样式及动作同团队设置，标签背景用主题浅蓝 #0594FA（固定色值，不随品牌色切换，
+               颜色由本页 less 硬编码覆盖）；数据存 taginfo 表 tagType=deceasedRelation，
+               数量上限取 tagset.deceasedRelationNumber 20261003 新增 20261003 改色 #0594FA -->
+          <t-form-item :label="$t('pages.taginfo.deceasedRelation')" name="deceasedRelation">
+            <t-tag-input
+              v-model="deceasedRelation"
+              class="deceased-relation-tag-input"
+              :placeholder="$t('pages.taginfo.deceasedRelationPlaceholder')"
+              :tag-props="{ theme: 'primary' }"
+              :max="tagMax.deceasedRelationNumber"
+              :maxcharacter="12"
+              @enter="onEnterDeceasedRelation"
+            />
+          </t-form-item>
           <t-form-item :label="$t('pages.taginfo.region')" name="region">
             <t-tag-input
               v-model="region"
@@ -81,9 +95,13 @@ import { FORM_RULES, INITIAL_DATA, INITIAL_TAGJSON, INITIAL_TAGMAX } from './con
 
 let dutiesNumber: number = 0;
 let teamNumber: number = 0;
+// 逝者关系标签数量上限（tagset.deceasedRelationNumber）20261003 新增
+let deceasedRelationNumber: number = 0;
 let regionNumber: number = 0;
 const duties = ref<string[]>([]);
 const team = ref<string[]>([]);
+// 逝者关系标签列表 20261003 新增
+const deceasedRelation = ref<string[]>([]);
 const region = ref<string[]>([]);
 
 const isFormShow = ref(false);
@@ -99,9 +117,12 @@ const fetchData = async () => {
     const { list } = await getSetList();
     dutiesNumber = list[0].dutiesNumber;
     teamNumber = list[0].teamNumber;
+    // 逝者关系上限：旧库无该列时兜底 5，避免 max=undefined 导致输入被意外限制 20261003 新增
+    deceasedRelationNumber = list[0].deceasedRelationNumber ?? 5;
     regionNumber = list[0].regionNumber;
     tagMax.value.dutiesNumber = dutiesNumber;
     tagMax.value.teamNumber = teamNumber;
+    tagMax.value.deceasedRelationNumber = deceasedRelationNumber;
     tagMax.value.regionNumber = regionNumber;
   } catch (e) {
     logError(e);
@@ -111,6 +132,7 @@ const fetchData = async () => {
     const { list } = await getTagList();
     duties.value.length = 0;
     team.value.length = 0;
+    deceasedRelation.value.length = 0;
     region.value.length = 0;
     list.forEach((item: { tagName: string; tagType: string }) => {
       if (item.tagType === 'duties') {
@@ -118,6 +140,10 @@ const fetchData = async () => {
       }
       if (item.tagType === 'team') {
         team.value.push(item.tagName);
+      }
+      // 逝者关系标签回填 20261003 新增
+      if (item.tagType === 'deceasedRelation') {
+        deceasedRelation.value.push(item.tagName);
       }
       if (item.tagType === 'region') {
         region.value.push(item.tagName);
@@ -150,6 +176,14 @@ const onSubmit = async (ctx: SubmitContext) => {
     tag.push(json);
   });
 
+  // 逝者关系提交：同团队设置动作，全量重建 taginfo 表中 tagType=deceasedRelation 记录 20261003 新增
+  deceasedRelation.value.forEach((item) => {
+    const json = { ...INITIAL_TAGJSON };
+    json.tagName = item;
+    json.tagType = 'deceasedRelation';
+    tag.push(json);
+  });
+
   region.value.forEach((item) => {
     const json = { ...INITIAL_TAGJSON };
     json.tagName = item;
@@ -178,6 +212,15 @@ const onEnterTeam = (value: Array<string | number>, { inputValue }: { inputValue
   team.value = Array.from(new Set(team.value));
   if (value.length >= teamNumber && inputValue) {
     MessagePlugin.warning(translate('pages.taginfo.tagAtMost') + teamNumber + translate('pages.taginfo.tag'));
+  }
+};
+// 逝者关系回车去重与上限提醒：动作同团队设置 20261003 新增
+const onEnterDeceasedRelation = (value: Array<string | number>, { inputValue }: { inputValue: string }) => {
+  deceasedRelation.value = Array.from(new Set(deceasedRelation.value));
+  if (value.length >= deceasedRelationNumber && inputValue) {
+    MessagePlugin.warning(
+      translate('pages.taginfo.tagAtMost') + deceasedRelationNumber + translate('pages.taginfo.tag'),
+    );
   }
 };
 const onEnterRegion = (value: Array<string | number>, { inputValue }: { inputValue: string }) => {

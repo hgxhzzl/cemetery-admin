@@ -113,8 +113,11 @@
                       class="transferOut-card"
                       :class="{
                         'transferOut-card--empty': card.placeholder,
-                        [getCardStatusClass('transferOut', card.row)]: !card.placeholder,
+                        'transferOut-card--clickable': !card.placeholder,
+                        // 未销售叠加浅橙底态（withUnsold）：与墓位业务页共用公共 cms-card-status-frame 的 --unsold 规则 20261003 新增
+                        [getCardStatusClass('transferOut', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
+                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 -->
@@ -131,7 +134,7 @@
                           <div class="transferOut-card__serial">
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
                           </div>
-                          <!-- 墓穴类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 -->
+                          <!-- 墓位类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 -->
                           <span class="transferOut-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="transferOut-card__body">
@@ -223,8 +226,12 @@
           <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-toolbar">
             <span>{{ listTotalText }}</span>
             <div class="transferOut-list-toolbar__right">
-              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售 -->
               <div class="transferOut-list-toolbar__legend">
+                <span class="transferOut-legend-item">
+                  <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--unsold" />
+                  {{ $t('statusType.saleStatusEnum.unsold') }}
+                </span>
                 <span class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -312,7 +319,7 @@
                 <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
               </t-col>
 
-              <!-- 修改/删除模式：墓穴信息下方以列表展示全部迁出记录；修改用单选列回填表单，删除用操作列逐行删除 20260916 新增 -->
+              <!-- 修改/删除模式：墓位信息下方以列表展示全部迁出记录；修改用单选列回填表单，删除用操作列逐行删除 20260916 新增 -->
               <t-col v-if="isModifyMode || isDeleteMode" :span="12">
                 <t-form-item name="idTransfer">
                   <t-table
@@ -611,6 +618,14 @@ const handleClickDetail = async (row: CardRowArg<TransferOutRoomRow>) => {
   }
 };
 
+// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/新建/修改/删除等操作链接自身点击
+// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
+const onCardClick = (event: MouseEvent, row: TransferOutRoomRow | null) => {
+  if (!row) return;
+  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
+  handleClickDetail(row);
+};
+
 // 详情关闭：清空详情数据并回到列表
 const ClickDetailClose = () => {
   clearDetail();
@@ -618,7 +633,7 @@ const ClickDetailClose = () => {
 };
 
 // ==================== 迁出登记：新建 / 修改 / 删除 ====================
-// 删除模式：复用迁出登记视图，仅展示墓穴信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260916 新增
+// 删除模式：复用迁出登记视图，仅展示墓位信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260916 新增
 const isDeleteMode = ref(false);
 // 表单标题随模式切换：删除 > 修改 > 新建 20260916 新增
 const formTitle = computed(() => {
@@ -630,7 +645,7 @@ const formTitle = computed(() => {
     : translate('pages.transferOut.creatTitle');
 });
 
-// 修改模式下在墓穴信息下方以列表展示“选择迁出记录”；transferOutRecords 为该墓位全部活动迁出记录（后端按 idTransfer DESC，[0] 为最新）20260916 新增
+// 修改模式下在墓位信息下方以列表展示“选择迁出记录”；transferOutRecords 为该墓位全部活动迁出记录（后端按 idTransfer DESC，[0] 为最新）20260916 新增
 const isModifyMode = ref(false);
 const transferOutRecords = ref<TransferOutModel[]>([]);
 // 列表单选选中的迁出记录 idTransfer（默认最新一条），及展示完整信息的列定义 20260916 新增
@@ -737,7 +752,7 @@ const onSelectTransferOutRecord = (keys: Array<string | number>) => {
   }
 };
 
-// 点击卡片“修改”：进入修改页，墓穴信息下方列出全部迁出记录，默认选中最后一条（最新）20260916 新增,
+// 点击卡片“修改”：进入修改页，墓位信息下方列出全部迁出记录，默认选中最后一条（最新）20260916 新增,
 const handleClickModify = async (row: CardRowArg<TransferOutRoomRow>) => {
   const currentRow = row.row ?? row;
   try {
@@ -760,7 +775,7 @@ const handleClickModify = async (row: CardRowArg<TransferOutRoomRow>) => {
   }
 };
 
-// 点击卡片“删除”：进入删除页（复用迁出登记视图 isDeleteMode），墓穴信息下方列出全部迁出记录，操作列逐行删除 20260916 新增
+// 点击卡片“删除”：进入删除页（复用迁出登记视图 isDeleteMode），墓位信息下方列出全部迁出记录，操作列逐行删除 20260916 新增
 const handleClickDelete = async (row: CardRowArg<TransferOutRoomRow>) => {
   const currentRow = row.row ?? row;
   try {

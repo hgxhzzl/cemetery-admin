@@ -15,6 +15,8 @@ export const FORM_RULES: Record<string, FormRule[]> = {
 export const INITIAL_DATA = {
   dutiesNumber: 0,
   teamNumber: 0,
+  // 逝者关系标签数量上限（tagset.deceasedRelationNumber）20261003 新增
+  deceasedRelationNumber: 0,
   regionNumber: 0,
   partyB: '',
   signDate: '',
@@ -29,6 +31,8 @@ export const INITIAL_DATA = {
 export const INITIAL_TAGMAX = {
   dutiesNumber: 0,
   teamNumber: 0,
+  // 逝者关系标签数量上限 20261003 新增
+  deceasedRelationNumber: 0,
   regionNumber: 0,
 };
 
@@ -36,17 +40,5 @@ export const INITIAL_TAGJSON = {
   tagName: '',
   tagType: '',
 };
-
-export const INITIAL_TAGLIST = [{ tagName: '', tagType: '' }];
-
-export const PARTY_A_OPTIONS = [
-  { label: 'Company A', value: '1' },
-  { label: 'Company B', value: '2' },
-  { label: 'Company C', value: '3' },
-];
-
-export const PARTY_B_OPTIONS = [
-  { label: 'Company A', value: '1' },
-  { label: 'Company B', value: '2' },
-  { label: 'Company C', value: '3' },
-];
+// 模板演示残留零引用，20261003 清理删除：INITIAL_TAGLIST（标签列表占位，现由接口驱动）
+// 与 PARTY_A_OPTIONS / PARTY_B_OPTIONS（Company A/B 甲方乙方选项，属合同演示页搬到本页的无效残留）

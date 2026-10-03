@@ -31,7 +31,8 @@
   }
 }
 
-// 卡片编号可点击进详情：悬停小手，hover 品牌色提示可点（仅非空卡片，空位卡编号无点击事件）20260926 新增
+// 卡片编号可点击进详情：悬停小手，hover 品牌色提示可点（仅非空卡片，空位卡编号无点击事件）20260926 新增；
+// 20261003 整卡已可点击进入详情，本类仅作编号文本的可点提示（点击事件已上提到卡片根节点）
 .gravePlotBusiness-card__serial--clickable {
   cursor: pointer;
 
@@ -40,29 +41,13 @@
   }
 }
 
-// 卡片外框统一加粗为 2px：状态色外框更醒目，无状态/空位卡一并加粗保持整齐 20260926 新增
-.gravePlotBusiness-card {
-  border-width: 1px;
-}
-
-// 卡片外框状态色：已销售绿/已下葬蓝/管理到期浅红；外框状态色在 hover 下保持不变，
-// 覆盖公共 cms-card-hover-highlight 的 hover 品牌色（特异性相同，本页 less 后声明优先）20260926 新增,
-// 已下葬固定默认主题蓝 #0052D9（同 config/style 默认 brandTheme），不用 --td-brand-color：
-// 品牌主题色可在设置中切换，切换为绿色时蓝框会变成绿色、与已销售绿混淆 20260926 修复,
-.gravePlotBusiness-card--sold,
-.gravePlotBusiness-card--sold:hover {
-  border-color: var(--td-success-color);
-}
-
-.gravePlotBusiness-card--buried,
-.gravePlotBusiness-card--buried:hover {
-  border-color: #0052d9;
-}
-
-.gravePlotBusiness-card--expired,
-.gravePlotBusiness-card--expired:hover {
-  border-color: var(--td-error-color);
-}
+// 卡片外框状态色（已销售绿/已下葬蓝/管理到期红/未销售浅橙底）与整卡可点击光标：
+// 原为本页逐字声明、并被墓位设置/收管理费/墓位迁出三页复制，20261003 抽取为公共 mixin；
+// 调用需位于 cms-card-hover-highlight 之后，以保持状态色覆盖 hover 品牌色的声明顺序；
+// 卡片信息行数变化时最小高度同步调整：去预定人一行时曾收紧 152→134，
+// 20261002 底部新增备注行（room.remark）回到 5 行，恢复公共 mixin 默认 152px，原覆盖声明移除
+.cms-card-status-frame(gravePlotBusiness);
+.cms-card-clickable(gravePlotBusiness);
 
 // 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
 .gravePlotBusiness-list-toolbar__right {
@@ -89,6 +74,11 @@
     width: 12px;
     height: 4px;
     border-radius: 1px;
+
+    // 未销售：同卡片外框橙色 #fca678，位于已销售图例左侧 20261002 新增
+    &--unsold {
+      background-color: #fca678;
+    }
 
     &--sold {
       background-color: var(--td-success-color);
@@ -179,6 +169,15 @@
   }
 
   :deep(.cert-fullrow-input .t-input) {
+    width: 100% !important;
+  }
+
+  // 墓位备注形态：备注整行（span=12）输入框占满行宽，右缘与返回按钮对齐（同 cert-fullrow-input 覆盖模式）20261002 新增
+  :deep(.remark-fullrow-input.t-input__wrap) {
+    width: 100% !important;
+  }
+
+  :deep(.remark-fullrow-input .t-input) {
     width: 100% !important;
   }
 }

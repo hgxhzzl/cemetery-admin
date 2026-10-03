@@ -20,22 +20,10 @@
 // 卡片操作有三个链接，间距略小于默认以适配卡片宽度
 .cms-card-actions-between(room, var(--td-comp-margin-m));
 
-// 卡片外框状态色：已销售绿/已下葬蓝/管理到期浅红；hover 保持状态色不变，
-// 覆盖公共 cms-card-hover-highlight 的 hover 品牌色；已下葬固定默认主题蓝 #0052D9（同墓位业务页）20260926 新增
-.room-card--sold,
-.room-card--sold:hover {
-  border-color: var(--td-success-color);
-}
-
-.room-card--buried,
-.room-card--buried:hover {
-  border-color: #0052d9;
-}
-
-.room-card--expired,
-.room-card--expired:hover {
-  border-color: var(--td-error-color);
-}
+// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红，各含同色浅底）与整卡可点击光标：
+// 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，四页与墓位业务页完全同色 20260926 新增 20261003 抽取
+.cms-card-status-frame(room);
+.cms-card-clickable(room);
 
 // 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
 .room-list-toolbar__right {
@@ -62,6 +50,11 @@
     width: 12px;
     height: 4px;
     border-radius: 1px;
+
+    // 未销售：同卡片外框橙色 #fca678，位于已销售图例左侧（同墓位业务页）20261003 新增
+    &--unsold {
+      background-color: #fca678;
+    }
 
     &--sold {
       background-color: var(--td-success-color);

@@ -1,24 +1,5 @@
-// 合同状态枚举
-export const CONTRACT_STATUS = {
-  FAIL: 0,
-  AUDIT_PENDING: 1,
-  EXEC_PENDING: 2,
-  EXECUTING: 3,
-  FINISH: 4,
-};
-
-// 合同类型枚举
-export const CONTRACT_TYPES = {
-  MAIN: 0,
-  SUB: 1,
-  SUPPLEMENT: 2,
-};
-
-// 合同收付类型枚举
-export const CONTRACT_PAYMENT_TYPES = {
-  PAYMENT: 0,
-  RECEIPT: 1,
-};
+// 模板遗留的数字枚举（CONTRACT_STATUS / CONTRACT_TYPES / CONTRACT_PAYMENT_TYPES）已废弃：
+// 业务状态与类型改为向库中存 i18n 键字符串、显示时走 statusType.* 词条，20261003 清理删除
 
 export const TYPE_USE_STATUS = [
   { label: 'statusType.useStatusEnum.use', value: 'statusType.useStatusEnum.use' },
@@ -44,40 +25,13 @@ export const TYPE_CONTRACT_TYPES = [
   { label: 'statusType.contractTypeEnum.supplement', value: 'statusType.contractTypeEnum.supplement' },
 ];
 
-export const TYPE_CONTRACT_PAY_TYPES = [
-  { label: 'statusType.payTypeEnum.payment', value: 'statusType.payTypeEnum.payment' },
-  { label: 'statusType.payTypeEnum.receipt', value: 'statusType.payTypeEnum.receipt' },
-];
-
-export const TYPE_SALE_STATUS = [
-  { label: 'statusType.saleStatusEnum.unsold', value: 'statusType.saleStatusEnum.unsold' },
-  { label: 'statusType.saleStatusEnum.sold', value: 'statusType.saleStatusEnum.sold' },
-  { label: 'statusType.saleStatusEnum.reserve', value: 'statusType.saleStatusEnum.reserve' },
-];
-
-export const TYPE_RESERVE_STATUS = [
-  { label: 'statusType.reserveStatusEnum.unreserved', value: 'statusType.reserveStatusEnum.unreserved' },
-  { label: 'statusType.reserveStatusEnum.reserved', value: 'statusType.reserveStatusEnum.reserved' },
-];
+// 以下四个选项数组零引用（对应下拉筛选尚未存在，枚举仍由 statusType.* 词条提供），20261003 清理删除：
+// TYPE_CONTRACT_PAY_TYPES、TYPE_SALE_STATUS、TYPE_RESERVE_STATUS、TYPE_INTO_STATUS
 
 export const TYPE_ROOM_TYPES = [
   { label: 'statusType.roomTypeEnum.single', value: 'statusType.roomTypeEnum.single' },
   { label: 'statusType.roomTypeEnum.double', value: 'statusType.roomTypeEnum.double' },
   { label: 'statusType.roomTypeEnum.multiple', value: 'statusType.roomTypeEnum.multiple' },
-];
-
-export const TYPE_INTO_STATUS = [
-  { label: 'statusType.intoStatusEnum.incomplet', value: 'statusType.intoStatusEnum.incomplet' },
-  { label: 'statusType.intoStatusEnum.buried', value: 'statusType.intoStatusEnum.buried' },
-  { label: 'statusType.intoStatusEnum.full', value: 'statusType.intoStatusEnum.full' },
-  { label: 'statusType.intoStatusEnum.reserve', value: 'statusType.intoStatusEnum.reserve' },
-  { label: 'statusType.intoStatusEnum.examine', value: 'statusType.intoStatusEnum.examine' },
-];
-
-// 迁出状态：未迁出/已迁出，与其它状态字段同为枚举键存储 20260916 新增
-export const TYPE_TRANSFER_OUT_STATUS = [
-  { label: 'statusType.transferOutStatusEnum.notOut', value: 'statusType.transferOutStatusEnum.notOut' },
-  { label: 'statusType.transferOutStatusEnum.out', value: 'statusType.transferOutStatusEnum.out' },
 ];
 
 // 业务卡片页与查询页共用的筛选标题宽度：显式传给 TDesign Form，避免回退到默认 100px 内联宽度

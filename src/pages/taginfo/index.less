@@ -7,6 +7,14 @@
 .form-basic-container {
   .cms-form-basic();
   .cms-form-title-gap();
+
+  // 逝者关系标签：固定主题浅蓝 #0594FA（品牌色选项中的浅蓝预设，用户指定色值），白字实心胶囊，
+  // 硬编码色值不随品牌色切换（同墓位业务页已下葬卡片 #0052D9 防混淆方案）20261003 新增 20261003 改色 #0594FA
+  :deep(.deceased-relation-tag-input .t-tag) {
+    color: #fff !important;
+    background-color: #0594fa !important;
+    border-color: #0594fa !important;
+  }
 }
 
 .form-submit-container {

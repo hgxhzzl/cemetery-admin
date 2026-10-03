@@ -4,15 +4,16 @@
        布局不窜行变形，超出部分由浏览器横向滚动条承接 20260925 修改 -->
   <div class="home-dashboard">
     <top-panel class="home-row home-row--top" :summary="summary" />
-    <middle-chart class="home-row home-row--middle" :monthly-sales="summary?.monthlySales" />
-    <rank-list class="home-row home-row--bottom" :regions="summary?.regions" :weekly-sales="summary?.weeklySales" />
-    <!-- 下葬记录：销售记录下方第四行，样式同销售记录，分区域两张卡、今天/明天切换 20260925 新增 -->
+    <!-- 下葬记录：移至销售数量统计上方第二行（用户反馈位置互换），样式同销售记录，分区域两张卡、今天/明天切换 20260925 新增 20261002 移位 -->
     <buried-list
       class="home-row home-row--buried"
       :regions="summary?.regions"
       :buried-records="summary?.buriedRecords"
     />
-    <!-- 管理到期记录：下葬记录下方第五行，样式同销售记录，分区域两张卡；
+    <rank-list class="home-row home-row--bottom" :regions="summary?.regions" :weekly-sales="summary?.weeklySales" />
+    <!-- 销售数量统计：由第二行移至下葬记录原位置第四行（用户反馈与下葬记录位置互换）20261002 移位 -->
+    <middle-chart class="home-row home-row--middle" :monthly-sales="summary?.monthlySales" />
+    <!-- 管理到期记录：销售数量统计下方第五行，样式同销售记录，分区域两张卡；
          数据走 /expired-list 独立分页接口滚动加载，标题右侧显示记录条数 20260925 新增 20260926 改分页加载 -->
     <expired-list class="home-row home-row--expired" :regions="summary?.regions" />
   </div>
@@ -49,6 +50,7 @@ onActivated(async () => {
 .home-dashboard {
   display: flex;
   flex-direction: column;
+
   /* 取消 calc(100vh - 200px) 一屏高限制：自然高度随内容撑开，上下滚动交给外层布局层（.tdesign-starter-layout overflow-y:auto）承接，
      不再产生内层滚动条 20260925 修改 */
 
@@ -70,8 +72,9 @@ onActivated(async () => {
   min-height: 124px;
 }
 
-/* 第二行固定高度：容器不再限高一屏，flex:1 无从伸缩，改为固定高度供折线图绘制
-   （原动态伸缩时常规视口下实际渲染约 360-400px，取 380px 居中值）20260925 修改 */
+/* 折线图行固定高度（现位于第四行）：容器不再限高一屏，flex:1 无从伸缩，改为固定高度供折线图绘制
+   （原动态伸缩时常规视口下实际渲染约 360-400px，取 380px 居中值）20260925 修改
+   20261002 与下葬记录位置互换：由第二行移至第四行，高度不变 */
 .home-row--middle {
   height: 380px;
 }
@@ -81,7 +84,8 @@ onActivated(async () => {
   height: 328px;
 }
 
-/* 第四行固定高度：下葬记录与销售记录同结构同高度 20260925 新增 */
+/* 下葬记录固定高度（现位于第二行）：与销售记录同结构同高度 20260925 新增
+   20261002 与销售数量统计位置互换：由第四行移至第二行，高度不变 */
 .home-row--buried {
   height: 328px;
 }

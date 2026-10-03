@@ -1,6 +1,6 @@
 <template>
   <div class="detail-base">
-    <!-- 墓穴信息卡片：标题与销售/下葬等卡片一致展示在卡片头部，返回按钮在头部右侧，不再单独突出显示 20260914 修改 -->
+    <!-- 墓位信息卡片：标题与销售/下葬等卡片一致展示在卡片头部，返回按钮在头部右侧，不再单独突出显示 20260914 修改 -->
     <t-card :title="$t('pages.room.detailTitle')" :bordered="false">
       <template #actions>
         <!-- 返回按钮：文字在前图标在后，样式统一用全局公共类 cms-back-btn 20260921 修改 -->
@@ -16,7 +16,7 @@
         </div>
       </div>
     </t-card>
-    <!-- 该墓穴存在有效预定时展示只读预定信息卡片，样式参照墓穴信息 20260907 新增 -->
+    <!-- 该墓位存在有效预定时展示只读预定信息卡片，样式参照墓位信息 20260907 新增 -->
     <t-card v-if="reserve" :title="$t('pages.reserve.reserveInfoTitle')" :bordered="false">
       <div class="info-block">
         <div class="info-item">
@@ -37,16 +37,17 @@
         </div>
       </div>
     </t-card>
-    <!-- 该墓穴存在有效销售时展示只读销售信息卡片，样式参照墓穴信息 20260907 新增 -->
+    <!-- 该墓位存在有效销售时展示只读销售信息卡片，样式参照墓位信息 20260907 新增 -->
     <t-card v-if="sale" :title="$t('pages.sale.saleInfoTitle')" :bordered="false">
       <div class="info-block">
         <div class="info-item">
           <h1>{{ $t('pages.sale.realPrice') }}</h1>
           <span>{{ sale?.realPrice ? formatPrice(sale.realPrice) : display(sale?.realPrice) }}</span>
         </div>
-        <!-- 付款人电话：位于实收金额之后，与付款人互换位置 20260919 修改 -->
+        <!-- 购墓人电话（原标“付款人电话”）：位于实收金额之后，与购墓人互换位置 20260919 修改；
+             全部页面详情销售卡统一用“购墓人”称谓（库列仍为 sale.payerPhone，仅标题取词不同）20261003 修改 -->
         <div class="info-item">
-          <h1>{{ $t('pages.sale.phone') }}</h1>
+          <h1>{{ $t('pages.gravePlotBusiness.buyerPhone') }}</h1>
           <span>{{ display(sale?.payerPhone) }}</span>
         </div>
         <!-- 收款人：与经办人互换位置 20260919 修改 -->
@@ -59,13 +60,13 @@
           <h1>{{ $t('pages.sale.operator') }}</h1>
           <span>{{ display(sale?.operator) }}</span>
         </div>
-        <!-- 付款人：与付款人电话互换位置 20260919 修改 -->
+        <!-- 购墓人（原标“付款人”）：与购墓人电话互换位置 20260919 修改；称谓全页统一 20261003 修改 -->
         <div class="info-item">
-          <h1>{{ $t('pages.sale.payer') }}</h1>
+          <h1>{{ $t('pages.room.buyer') }}</h1>
           <span>{{ display(sale?.payer) }}</span>
         </div>
         <div class="info-item">
-          <h1>{{ $t('pages.sale.payerIDCard') }}</h1>
+          <h1>{{ $t('pages.gravePlotBusiness.buyerIDCard') }}</h1>
           <span>{{ display(sale?.payerIDCard) }}</span>
         </div>
         <div class="info-item">
@@ -79,7 +80,7 @@
         </div>
       </div>
     </t-card>
-    <!-- 该墓穴存在下葬记录时展示只读下葬信息卡片：下葬记录可能多条，改用表格列表展示 20260912 修改 -->
+    <!-- 该墓位存在下葬记录时展示只读下葬信息卡片：下葬记录可能多条，改用表格列表展示 20260912 修改 -->
     <t-card v-if="buried && buried.length" :title="$t('pages.buried.buriedInfoTitle')" :bordered="false">
       <t-table
         row-key="idBuried"
@@ -141,20 +142,31 @@ import { i18n } from '@/locales';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 
-// 墓穴详情统一组件：墓区销售页与墓区预定页共用，展示完全相同的信息 20260907 新增,
+// 墓位详情统一组件：墓区销售页与墓区预定页共用，展示完全相同的信息 20260907 新增,
 const props = defineProps<{
   // 单条墓位数据，null 表示尚未加载
   room: RoomModel | null;
-  // 该墓穴当前活动预定记录，null 表示无有效预定，不展示预定信息卡片
+  // 该墓位当前活动预定记录，null 表示无有效预定，不展示预定信息卡片
   reserve: ReserveModel | null;
-  // 该墓穴当前活动销售记录，null 表示无有效销售，不展示销售信息卡片
+  // 该墓位当前活动销售记录，null 表示无有效销售，不展示销售信息卡片
   sale: SaleModel | null;
-  // 该墓穴的下葬记录（可能多条），null/未传表示无下葬记录，不展示下葬信息卡片 20260912 修改
+  // 该墓位的下葬记录（可能多条），null/未传表示无下葬记录，不展示下葬信息卡片 20260912 修改
   buried?: BuriedModel[];
   // 该墓位的管理费收款记录（可能多条），null/未传表示无收款记录，不展示管理费收款信息卡片 20260912 新增
   adminfees?: AdminfeeModel[];
   // 该墓位的联系人记录（可能多条），null/未传表示无联系人记录，不展示联系人卡片 20260912 新增
   contacts?: ContactsModel[];
+  // 墓位业务页详情定制：隐藏墓位信息中的预定状态、在墓位信息末尾增加 room.remark 备注；
+  // 其它页面不传则保持默认（展示预定状态、不展示备注）20261003 新增
+  hideReserveStatus?: boolean;
+  showRoomRemark?: boolean;
+  // 墓位业务页详情定制：隐藏墓位信息中的排号（room.yNum）与序号（room.xNum），位置（room.xyNumber）保留；
+  // 其它页面不传则保持默认展示 20261003 新增
+  hideYxNum?: boolean;
+  // 墓位业务页详情定制：隐藏墓位信息中的迁出状态（room.transferOutStatus）；其它页面不传则保持默认展示 20261003 新增
+  hideTransferOutStatus?: boolean;
+  // 墓位业务页详情定制：在墓位信息末尾（迁出状态原位）增加 room.serialNo 编号；其它页面不传则不展示 20261003 新增
+  showRoomSerialNo?: boolean;
 }>();
 
 const emit = defineEmits<{
@@ -175,14 +187,15 @@ const display = (value: string | number | null | undefined): string => {
   return str === '' ? translate('operate.notFilled') : str;
 };
 
-// 以 i18n key 存储的字段（墓穴类型/各状态）先判空再翻译，空则展示“未填写” 20260907 新增,
+// 以 i18n key 存储的字段（墓位类型/各状态）先判空再翻译，空则展示“未填写” 20260907 新增,
 const displayKey = (key: string | null | undefined): string => {
   if (key === null || key === undefined || String(key).trim() === '') return translate('operate.notFilled');
   return translate(String(key));
 };
 
-// 墓穴信息字段：区域/园区/排号/序号/编号/墓穴类型/规格/安葬者/单价/管理费结束日期/预定状态/销售状态/下葬状态/迁出状态，
+// 墓位信息字段：区域/园区/排号/序号/编号/墓位类型/规格/安葬者/单价/管理费结束日期/预定状态/销售状态/下葬状态/迁出状态，
 // 与墓区设置页详情标准一致（不含修复状态） 20260912 修改 20260916 加迁出状态 20260917 去购墓人,
+// 排号/序号/预定状态/迁出状态可按页隐藏、备注与编号可按页追加（由调用方传 prop 控制，默认行为不变）20261003 修改,
 const detailData = computed<{ name: string; value: string }[]>(() => {
   const { room } = props;
   if (!room) return [];
@@ -190,22 +203,37 @@ const detailData = computed<{ name: string; value: string }[]>(() => {
     // 区域：详情第一字段展示 20260912 新增
     { name: translate('pages.room.region'), value: display(room.region) },
     { name: translate('pages.room.park'), value: display(room.park) },
-    { name: translate('pages.room.yNum'), value: display(room.yNum) },
-    { name: translate('pages.room.xNum'), value: display(room.xNum) },
+    // 排号/序号：墓位业务页详情不展示（hideYxNum），其它页保留 20261003 修改
+    ...(props.hideYxNum
+      ? []
+      : [
+          { name: translate('pages.room.yNum'), value: display(room.yNum) },
+          { name: translate('pages.room.xNum'), value: display(room.xNum) },
+        ]),
     // 墓区编号：墓区设置/销售/预定/下葬/联系/管理费/销售查询页详情统一展示 20260912 新增
     { name: translate('pages.room.xyNumber'), value: display(room.xyNumber) },
     { name: translate('pages.room.roomType'), value: displayKey(room.roomType) },
     { name: translate('pages.room.specs'), value: display(room.specs) },
-    // 购墓人不再展示：销售信息卡片已有付款人字段，避免重复 20260917 移除；安葬者保留 20260912 新增
+    // 购墓人不再展示：销售信息卡片已有购墓人字段（原标“付款人”），避免重复 20260917 移除；安葬者保留 20260912 新增
     { name: translate('pages.room.deceased'), value: display(room.deceased) },
     { name: translate('pages.room.price'), value: display(formatPrice(room.price)) },
     // 管理费结束日期：后端在下葬/收款事务中维护，详情统一展示并格式化为 YYYY-MM-DD 20260912 新增
     { name: translate('pages.room.endDate'), value: display(formatDate(room.endDate)) },
-    { name: translate('pages.room.reserveStatus'), value: displayKey(room.reserveStatus) },
+    // 预定状态：墓位业务页详情不展示（hideReserveStatus），其它页保留 20261003 修改
+    ...(props.hideReserveStatus
+      ? []
+      : [{ name: translate('pages.room.reserveStatus'), value: displayKey(room.reserveStatus) }]),
     { name: translate('pages.room.saleStatus'), value: displayKey(room.saleStatus) },
     { name: translate('pages.room.intoStatus'), value: displayKey(room.intoStatus) },
-    // 迁出状态：库表新增字段，详情统一展示，旧数据 NULL 展示“未填写” 20260916 新增
-    { name: translate('pages.room.transferOutStatus'), value: displayKey(room.transferOutStatus) },
+    // 迁出状态：库表新增字段，详情统一展示，旧数据 NULL 展示“未填写” 20260916 新增；
+    // 墓位业务页详情不展示（hideTransferOutStatus）20261003 修改
+    ...(props.hideTransferOutStatus
+      ? []
+      : [{ name: translate('pages.room.transferOutStatus'), value: displayKey(room.transferOutStatus) }]),
+    // 编号（room.serialNo）：墓位业务页详情在原迁出状态位置展示（showRoomSerialNo），其它页不展示 20261003 新增
+    ...(props.showRoomSerialNo ? [{ name: translate('pages.room.serialNo'), value: display(room.serialNo) }] : []),
+    // 备注（room.remark）：墓位业务页详情在末尾增加展示（showRoomRemark），其它页不展示 20261003 新增
+    ...(props.showRoomRemark ? [{ name: translate('pages.room.remark'), value: display(room.remark) }] : []),
   ];
 });
 

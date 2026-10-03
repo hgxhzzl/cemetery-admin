@@ -22,7 +22,4 @@ export const INITIAL_PARKJSON = {
   park: '',
   region: '',
 };
-export const INITIAL_REGION = [
-  { label: 'Company A', value: '1' },
-  { label: 'Company B', value: '2' },
-];
+// 模板演示残留 INITIAL_REGION（选项文案为 Company A/B，与本业务无关）零引用，20261003 清理删除

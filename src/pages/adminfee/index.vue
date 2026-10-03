@@ -109,8 +109,11 @@
                       class="adminfee-card"
                       :class="{
                         'adminfee-card--empty': card.placeholder,
-                        [getCardStatusClass('adminfee', card.row)]: !card.placeholder,
+                        'adminfee-card--clickable': !card.placeholder,
+                        // 未销售叠加浅橙底态（withUnsold）：四页统一使用公共 cms-card-status-frame 的四态外框色+同色浅底 20261003 新增
+                        [getCardStatusClass('adminfee', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
+                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260909 新增 -->
@@ -127,7 +130,7 @@
                           <div class="adminfee-card__serial">
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
                           </div>
-                          <!-- 墓穴类型值上移至首行右侧胶囊，与其余卡片页一致 20260917 修改 -->
+                          <!-- 墓位类型值上移至首行右侧胶囊，与其余卡片页一致 20260917 修改 -->
                           <span class="adminfee-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="adminfee-card__body">
@@ -224,8 +227,12 @@
           <div v-if="hasQueried && adminfeeCardRows.length" class="adminfee-list-toolbar">
             <span>{{ listTotalText }}</span>
             <div class="adminfee-list-toolbar__right">
-              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售 -->
               <div class="adminfee-list-toolbar__legend">
+                <span class="adminfee-legend-item">
+                  <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--unsold" />
+                  {{ $t('statusType.saleStatusEnum.unsold') }}
+                </span>
                 <span class="adminfee-legend-item">
                   <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -313,7 +320,7 @@
                 <span>{{ $t('pages.adminfee.endDate') }} : {{ formatDate(formRoomData.endDate) }}</span>
               </t-col>
 
-              <!-- 修改/删除模式：墓穴信息下方以列表展示全部收款记录；修改用单选列回填表单，删除用操作列逐行删除 20260909 新增 -->
+              <!-- 修改/删除模式：墓位信息下方以列表展示全部收款记录；修改用单选列回填表单，删除用操作列逐行删除 20260909 新增 -->
               <t-col v-if="isModifyMode || isDeleteMode" :span="12">
                 <t-form-item name="idAdminfee">
                   <t-table
@@ -634,6 +641,14 @@ const handleClickDetail = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
+// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/新建/修改/删除等操作链接自身点击
+// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
+const onCardClick = (event: MouseEvent, row: RoomModel | null) => {
+  if (!row) return;
+  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
+  handleClickDetail(row);
+};
+
 // 详情关闭：清空详情数据并回到列表 20260909 新增,
 const ClickDetailClose = () => {
   clearDetail();
@@ -641,7 +656,7 @@ const ClickDetailClose = () => {
 };
 
 // ==================== 收款登记：新建 / 修改 / 删除 ====================
-// 删除模式：复用收款登记视图，仅展示墓穴信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260909 新增
+// 删除模式：复用收款登记视图，仅展示墓位信息+记录列表(操作列删除)，隐藏可编辑表单与提交区 20260909 新增
 const isDeleteMode = ref(false);
 // 表单标题随模式切换：删除 > 修改 > 新建 20260909 新增
 const formTitle = computed(() => {
@@ -653,7 +668,7 @@ const formTitle = computed(() => {
     : translate('pages.adminfee.creatTitle');
 });
 
-// 修改模式下在墓穴信息下方以列表展示“选择收款记录”；adminfeeRecords 为该墓位全部活动收款记录（后端按 idAdminfee DESC，[0] 为最新）20260909 新增
+// 修改模式下在墓位信息下方以列表展示“选择收款记录”；adminfeeRecords 为该墓位全部活动收款记录（后端按 idAdminfee DESC，[0] 为最新）20260909 新增
 const isModifyMode = ref(false);
 const adminfeeRecords = ref<AdminfeeModel[]>([]);
 // 列表单选选中的收款记录 idAdminfee（默认最新一条），及展示完整信息的列定义 20260909 新增
@@ -813,7 +828,7 @@ const onSelectFeeRecord = (keys: Array<string | number>) => {
   }
 };
 
-// 点击卡片“修改”：进入修改页，墓穴信息下方列出全部收款记录，默认选中最后一条（最新）20260909 新增,
+// 点击卡片“修改”：进入修改页，墓位信息下方列出全部收款记录，默认选中最后一条（最新）20260909 新增,
 const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   const currentRow = row.row ?? row;
   try {
@@ -836,7 +851,7 @@ const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
-// 点击卡片“删除”：进入删除页（复用收款登记视图 isDeleteMode），墓穴信息下方列出全部收款记录，操作列逐行删除 20260909 新增
+// 点击卡片“删除”：进入删除页（复用收款登记视图 isDeleteMode），墓位信息下方列出全部收款记录，操作列逐行删除 20260909 新增
 const handleClickDelete = async (row: CardRowArg<RoomModel>) => {
   const currentRow = row.row ?? row;
   try {
@@ -907,8 +922,8 @@ const printReceipt = async () => {
     yNum: String(formRoomData.value.yNum ?? ''),
     xNum: String(formRoomData.value.xNum ?? ''),
     userName: String(userStore.userName ?? ''),
-    // 管理费票据扩展：编号后缀取墓位卡号、起止日期行取收款起止日期 20260922 新增
-    cardno: String(formRoomData.value.cardno ?? ''),
+    // 管理费票据扩展：编号后缀取墓位编号、起止日期行取收款起止日期 20260922 新增 20261003 墓位卡号改编号 serialNo
+    serialNo: String(formRoomData.value.serialNo ?? ''),
     startDate: String(formFeeData.value.startDate ?? ''),
     endDate: String(formFeeData.value.endDate ?? ''),
   };

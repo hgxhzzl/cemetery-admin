@@ -1,4 +1,3 @@
-import type { StatusResult, TreesResult } from '@/api/model/model';
 import type { ListRoomResult, RoomModel } from '@/api/model/roomModel';
 import { request } from '@/utils/request';
 
@@ -9,12 +8,7 @@ const Api = {
   queryRoom: '/room-query/',
 };
 
-// 状态接口
-export function getTypeList() {
-  return request.get<StatusResult>({
-    url: `${Api.queryRoom}/status`,
-  });
-}
+// 模板遗留的状态/树接口 getTypeList、getTreeList 全仓库零调用（枚举改由 statusType.* 词条 + 各页下拉数据源提供），20261003 清理删除
 
 // 列表接口
 export function getRoomList(park: string, region: string) {
@@ -29,12 +23,6 @@ export function getCanSaleList(park: string, region: string) {
   });
 }
 
-// 状态接口
-export function getTreeList() {
-  return request.get<TreesResult>({
-    url: `${Api.queryRoom}/parkTree`,
-  });
-}
 // 新增接口
 export function insertRoom(data: Partial<RoomModel>) {
   return request.post({

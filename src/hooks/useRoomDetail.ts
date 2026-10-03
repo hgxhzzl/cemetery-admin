@@ -22,11 +22,11 @@ import { getSaleByRoom } from '@/api/sale';
 export const useRoomDetail = () => {
   // 单条墓位数据，null 表示尚未加载
   const detailRoom = ref<RoomModel | null>(null);
-  // 该墓穴当前活动预定记录，null 表示无有效预定
+  // 该墓位当前活动预定记录，null 表示无有效预定
   const detailReserve = ref<ReserveModel | null>(null);
-  // 该墓穴当前活动销售记录，null 表示无有效销售
+  // 该墓位当前活动销售记录，null 表示无有效销售
   const detailSale = ref<SaleModel | null>(null);
-  // 该墓穴的下葬记录（可能多条），全量传入由详情组件表格展示
+  // 该墓位的下葬记录（可能多条），全量传入由详情组件表格展示
   const detailBuried = ref<BuriedModel[]>([]);
   // 该墓位的管理费收款记录（可能多条）
   const detailAdminfees = ref<AdminfeeModel[]>([]);

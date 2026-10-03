@@ -110,8 +110,11 @@
                       class="room-card"
                       :class="{
                         'room-card--empty': card.placeholder,
-                        [getCardStatusClass('room', card.row)]: !card.placeholder,
+                        'room-card--clickable': !card.placeholder,
+                        // 未销售叠加浅橙底态（withUnsold）：四页统一使用公共 cms-card-status-frame 的四态外框色+同色浅底 20261003 新增
+                        [getCardStatusClass('room', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
+                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -127,7 +130,7 @@
                         <div class="room-card__header">
                           <!-- 卡片首行改为展示xyNumber编号字段 20260831 修改 -->
                           <div class="room-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓位类型值上移至首行右侧，去掉墓穴类型标题 20260916 修改 -->
+                          <!-- 墓位类型值上移至首行右侧，去掉墓位类型标题 20260916 修改 -->
                           <div class="room-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="room-card__body">
@@ -176,8 +179,12 @@
           <div v-if="hasQueried && roomCardRows.length" class="room-list-toolbar">
             <span>{{ listTotalText }}</span>
             <div class="room-list-toolbar__right">
-              <!-- 卡片外框颜色说明：绿已销售/蓝已下葬/浅红管理到期 20260926 新增 -->
+              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售 -->
               <div class="room-list-toolbar__legend">
+                <span class="room-legend-item">
+                  <i class="room-legend-item__swatch room-legend-item__swatch--unsold" />
+                  {{ $t('statusType.saleStatusEnum.unsold') }}
+                </span>
                 <span class="room-legend-item">
                   <i class="room-legend-item__swatch room-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -336,7 +343,7 @@
                   />
                 </t-form-item>
               </t-col>
-              <!-- 空占位：单条修改时补满序号行，使编号换行与墓穴类型同行（TDesign为12栅格，span6=半行） 20260916 修改 -->
+              <!-- 空占位：单条修改时补满序号行，使编号换行与墓位类型同行（TDesign为12栅格，span6=半行） 20260916 修改 -->
               <t-col v-if="isModify && formDataModify === '1'" :span="6"></t-col>
               <!-- 单条修改时新增编号行（独占一行），值为xyNumber可编辑保存 20260831 新增 -->
               <t-col v-if="isModify && formDataModify === '1'" :span="6">
@@ -350,7 +357,7 @@
                   />
                 </t-form-item>
               </t-col>
-              <!-- 墓穴类型上移至编号右侧同行（各占半行） 20260916 修改 -->
+              <!-- 墓位类型上移至编号右侧同行（各占半行） 20260916 修改 -->
               <t-col :span="6">
                 <t-form-item :label="$t('pages.room.roomType')" name="roomType">
                   <t-select v-model="formData.roomType" :style="{ width: '322px' }" class="demo-select-base" clearable>
@@ -681,6 +688,14 @@ const handleClickDetail = async (row: CardRowArg<RoomModel>) => {
   } catch (e) {
     logError(e);
   }
+};
+
+// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/修改/删除等操作链接自身点击
+// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
+const onCardClick = (event: MouseEvent, row: RoomModel | null) => {
+  if (!row) return;
+  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
+  handleClickDetail(row);
 };
 
 // 点击卡片修改：校验墓位可查后进入修改表单 20260828 修改,

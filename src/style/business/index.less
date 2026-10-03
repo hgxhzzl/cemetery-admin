@@ -350,7 +350,7 @@
   white-space: nowrap;
 }
 
-// 卡片首行右侧胶囊（墓穴类型等类型值，橙色底）
+// 卡片首行右侧胶囊（墓位类型等类型值，橙色底）
 .cms-card-head-pill(@prefix) {
   .@{prefix}-card__type {
     flex-shrink: 0;
@@ -431,6 +431,59 @@
       background-color: var(--td-bg-color-secondarycontainer);
       color: var(--td-error-color);
     }
+  }
+}
+
+// ============================================================
+// 卡片外框状态色套件：墓位业务/墓位设置/收管理费/墓位迁出 四页共用，
+// 原四页 index.less 逐字重复声明，以墓位业务页为标准抽取于此（改一处四页生效）20261003 抽取
+// ============================================================
+
+// 卡片整卡可点击进详情：非空卡加 --clickable 修饰类得指针光标；
+// 卡片内链接/按钮等自身点击由页面 onCardClick 拦截，不触发跳转 20261003 新增
+.cms-card-clickable(@prefix) {
+  .@{prefix}-card--clickable {
+    cursor: pointer;
+  }
+}
+
+.cms-card-status-frame(@prefix) {
+  // 外框统一 1px：状态色外框保持醒目，与公共 cms-card-basic 边框宽度一致
+  .@{prefix}-card {
+    border-width: 1px;
+  }
+
+  // 已销售绿 / 已下葬蓝 / 管理到期红 / 未销售橙：四态外框色各配同色相浅底，
+  // 外框色在 hover 下保持不变，
+  // 覆盖公共 cms-card-hover-highlight 的 hover 品牌色（特异性相同，页面 less 后声明优先，
+  // 故本页 mixin 调用需位于 cms-card-hover-highlight 之后）20261003 抽取
+  .@{prefix}-card--sold,
+  .@{prefix}-card--sold:hover {
+    border-color: var(--td-success-color);
+    background-color: #f4fef9;
+  }
+
+  // 已下葬固定默认主题蓝 #0052D9（同 config/style 默认 brandTheme），不用 --td-brand-color：
+  // 品牌主题色可在设置中切换，切换为绿色时蓝框会变成绿色、与已销售绿混淆
+  .@{prefix}-card--buried,
+  .@{prefix}-card--buried:hover {
+    border-color: #0052d9;
+    background-color: #f4f8fe;
+  }
+
+  .@{prefix}-card--expired,
+  .@{prefix}-card--expired:hover {
+    border-color: var(--td-error-color);
+    background-color: #fce5e5;
+  }
+
+  // 未销售：浅橙背景 #fcf6ef + 橙色外框 #fca678，悬停不变（hover 高亮仅改边框与阴影）。
+  // 该态为独立叠加类，是否渲染由类名下发方控制：墓位业务页 cardStatusClass 直接叠加，
+  // 墓位设置/墓位迁出/收管理费经 getCardStatusClass 的 withUnsold 选项开启，四页均已启用该态 20261003 抽取
+  .@{prefix}-card--unsold,
+  .@{prefix}-card--unsold:hover {
+    background-color: #fcf6ef;
+    border-color: #fca678;
   }
 }
 

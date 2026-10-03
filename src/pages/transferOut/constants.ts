@@ -23,7 +23,7 @@ export const INITIAL_ROOM_DATA = {
   price: 0,
   specs: '',
   repairStatus: '',
-  // 迁出状态：未迁出/已迁出，卡片标签与登记表单墓穴信息行展示 20260916 新增,
+  // 迁出状态：未迁出/已迁出，卡片标签与登记表单墓位信息行展示 20260916 新增,
   transferOutStatus: '',
 };
 

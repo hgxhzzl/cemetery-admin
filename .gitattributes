@@ -4,3 +4,10 @@
 *.jsx   text eol=lf
 *.html  text eol=lf
 *.json  text eol=lf
+# 样式与脚本也纳入 LF 统一（core.autocrlf=true 时缺这条会使 .less 每次 diff 报 LF→CRLF 警告）20261003 新增
+*.less  text eol=lf
+*.css   text eol=lf
+*.js    text eol=lf
+*.cjs   text eol=lf
+*.mjs   text eol=lf
+*.md    text eol=lf

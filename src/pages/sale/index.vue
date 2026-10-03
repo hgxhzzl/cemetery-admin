@@ -109,7 +109,7 @@
                         <div class="sale-card__header">
                           <!-- 卡片首行改为展示xyNumber编号字段，与墓区设置页一致 20260916 修改 -->
                           <div class="sale-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓穴类型值上移至首行右侧胶囊，去掉墓穴类型标题 20260916 修改 -->
+                          <!-- 墓位类型值上移至首行右侧胶囊，去掉墓位类型标题 20260916 修改 -->
                           <div class="sale-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="sale-card__body">
@@ -573,8 +573,8 @@ const printReceipt = async () => {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
     payee: String(formSaleData.value.payee ?? '').trim(),
-    // 票据编号后缀取墓位卡号（yyyyymm+卡号）20260926 修改
-    cardno: String(formRoomData.value.cardno ?? ''),
+    // 票据编号后缀取墓位编号（yyyyymm+编号）20260926 修改 20261003 墓位卡号改编号 serialNo
+    serialNo: String(formRoomData.value.serialNo ?? ''),
     // 票据编号前缀取销售创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
     createDate: String(formSaleData.value.createDate ?? ''),
     region: String(formRoomData.value.region ?? ''),

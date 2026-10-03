@@ -3,50 +3,13 @@
   "common": {
     "appName": "墓园管理系统",
     "copyright": "墓园管理系统",
-    "conjunction": "和",
-    "admin": "admin",
     "none": "无"
   },
   "components": {
-    "isSetup": {
-      "on": "已启用",
-      "off": "已停用"
-    },
-    "manage": "管理",
-    "delete": "删除",
-    "deleteSuccess": "删除成功",
-    "copySuccess": "复制成功",
-    "copyFail": "复制失败",
-    "submitSuccess": "提交成功",
+    "isSetup": {},
     "commonTable": {
-      "contractName": "合同名称",
-      "contractNamePlaceholder": "请输入合同名称",
-      "contractStatus": "合同状态",
-      "contractStatusPlaceholder": "请输入合同状态",
-      "contractNum": "合同编号",
-      "contractNumPlaceholder": "请输入合同编号",
-      "contractType": "合同类型",
-      "contractTypePlaceholder": "请选择合同类型",
-      "contractPayType": "合同支付类型",
-      "contractAmount": "合同金额",
-      "operation": "操作",
-      "detail": "详情",
-      "delete": "删除",
-      "placeholder": "请输入内容搜索",
-      "contractStatusEnum": {
-        "fail": "审核失败",
-        "audit": "待审核",
-        "executing": "履行中",
-        "pending": "待履行",
-        "finish": "已完成"
-      },
-      "contractTypeEnum": {
-        "main": "主合同",
-        "sub": "子合同",
-        "supplement": "补充合同"
-      },
-      "reset": "重置",
-      "query": "查询"
+      "contractStatusEnum": {},
+      "contractTypeEnum": {}
     }
   },
   "layout": {
@@ -67,10 +30,6 @@
       "oldPasswordWrong": "旧密码不正确",
       "changePasswordSuccess": "密码修改成功"
     },
-    "searchPlaceholder": "请输入搜索内容",
-    "search": {
-      "placeholder": "输入要搜索内容"
-    },
     "tagTabs": {
       "closeOther": "关闭其他",
       "closeLeft": "关闭左侧",
@@ -80,36 +39,8 @@
   },
   "constants": {
     "contract": {
-      "name": "合同名称",
-      "status": "合同状态",
-      "num": "合同编号",
-      "type": "合同类型",
-      "typePlaceholder": "请输入类型",
-      "payType": "合同收支类型",
-      "amount": "合同金额",
-      "amountPlaceholder": "请输入金额",
-      "signDate": "合同签订日期",
-      "effectiveDate": "合同生效日期",
-      "endDate": "合同结束日期",
-      "createDate": "合同创建时间",
-      "company": "甲方",
-      "employee": "乙方",
-      "pay": "付款",
-      "receive": "收款",
-      "remark": "备注",
-      "attachment": "附件",
-      "statusOptions": {
-        "fail": "审核失败",
-        "auditPending": "待审核",
-        "execPending": "待履行",
-        "executing": "审核成功",
-        "finish": "已完成"
-      },
-      "typeOptions": {
-        "main": "主合同",
-        "sub": "子合同",
-        "supplement": "补充合同"
-      }
+      "statusOptions": {},
+      "typeOptions": {}
     }
   },
   "menu": {
@@ -274,40 +205,21 @@
   },
   "pages": {
     "dashboardBase": {
-      "title": "概览仪表盘",
       "outputOverview": {
-        "title": "出入库概览",
-        "subtitle": "(件)",
-        "export": "导出数据",
-        "month": {
-          "input": "本月入库总计（件）",
-          "output": "本月出库总计（件）"
-        },
-        "since": "自从上周以来"
+        "month": {}
       },
       "rankList": {
         "title": "销售记录",
-        "week": "本周",
-        "month": "本月",
         "today": "今天",
-        "yesterday": "昨天",
-        "info": "详情"
+        "yesterday": "昨天"
       },
       "topPanel": {
         "card1": "年销售",
         "card2": "年收费",
         "card3": "年下葬数",
         "card4": "预下葬数",
-        "cardTips": "自从上周以来",
         "analysis": {
-          "title": "销售数量统计",
-          "unit": "万元",
-          "series1": "本月",
-          "series2": "上月",
-          "channels": "销售渠道",
-          "channel1": "线上",
-          "channel2": "门店",
-          "channelTips": "销售占比"
+          "title": "销售数量统计"
         }
       },
       "weekColumns": {
@@ -338,48 +250,11 @@
         "endDate": "到期日期",
         "contacts": "联系人"
       },
-      "saleColumns": {
-        "index": "排名",
-        "productName": "客户名称",
-        "growUp": "较上周",
-        "count": "订单量",
-        "operation": "操作"
-      },
-      "buyColumns": {
-        "index": "排名",
-        "productName": "供应商名称",
-        "growUp": "较上周",
-        "count": "订单量",
-        "operation": "操作"
-      },
-      "saleTend": {
-        "item1": "国家电网有限公司",
-        "item2": "深圳燃气集团股份有限公司",
-        "item3": "国家烟草专卖局",
-        "item4": "中国电信集团有限公司",
-        "item5": "中国移动通信集团有限公司",
-        "item6": "新余市办公用户采购项目"
-      },
-      "buyTend": {
-        "item1": "腾讯科技（深圳）有限公司",
-        "item2": "大润发有限公司",
-        "item3": "四川海底捞股份有限公司",
-        "item4": "索尼（中国）有限公司",
-        "item5": "松下电器（中国）有限公司",
-        "item6": "新余市办公用户采购项目"
-      },
+      "saleColumns": {},
+      "buyColumns": {},
+      "saleTend": {},
+      "buyTend": {},
       "chart": {
-        "week1": "周一",
-        "week2": "周二",
-        "week3": "周三",
-        "week4": "周四",
-        "week5": "周五",
-        "week6": "周六",
-        "week7": "周日",
-        "max": "最大值",
-        "min": "最小值",
-        "thisMonth": "本月",
-        "lastMonth": "上月",
         "month1": "1月",
         "month2": "2月",
         "month3": "3月",
@@ -398,27 +273,11 @@
       "baseInfo": {
         "title": "基本信息"
       },
-      "sampleData": {
-        "contractName": "总部办公用品采购项目",
-        "status": "履行中",
-        "company": "腾讯科技（深圳）有限公司",
-        "employee": "欧尚",
-        "fileName": "总部办公用品采购项目合同.pdf"
-      },
+      "sampleData": {},
       "changelog": {
-        "title": "变更记录",
-        "step1": {
-          "title": "上传合同附件",
-          "subtitle": "这里是提示文字"
-        },
-        "step2": {
-          "title": "修改合同金额",
-          "subtitle": "这里是提示文字"
-        },
-        "step3": {
-          "title": "新建合同",
-          "desc": "管理员-李川操作"
-        }
+        "step1": {},
+        "step2": {},
+        "step3": {}
       }
     },
     "login": {
@@ -439,11 +298,7 @@
       "detailTitle": "账户信息",
       "modifyTitle": "修改账户",
       "creatTitle": "新建账户",
-      "title": "账户信息",
-      "export": "导出",
       "create": "新建账户",
-      "select": "已选",
-      "items": "项",
       "account": "账户名称",
       "accountPlaceholder": "请输入账户名称",
       "head": "负责人",
@@ -464,13 +319,9 @@
       "endDatePlaceholder": "请选择结束日期",
       "createDate": "创建时间",
       "detail": "详情",
-      "remark": "备注",
-      "remarkPlaceholder": "请输入备注",
       "placeholder": "请输入账户名称搜索",
-      "otherInfo": "其他信息",
       "accountPowerTitle": "账户权限",
-      "deleteCascadePrompt": "，其关联操作员与菜单权限将一并删除",
-      "operation": "操作"
+      "deleteCascadePrompt": "，其关联操作员与菜单权限将一并删除"
     },
     "adminfee": {
       "creatTitle": "收管理费",
@@ -502,7 +353,6 @@
       "createDate": "创建日期"
     },
     "managementPeriod": {
-      "listTitle": "管理期限",
       "modifyTitle": "管理期限修改",
       "index": "序号",
       "region": "区域",
@@ -511,7 +361,7 @@
       "parkPlaceholder": "请选择园区",
       "date": "日期",
       "datePlaceholder": "请选择日期",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "endDate": "结束日期",
       "contacts": "联系人",
       "contactsPhone": "联系人电话",
@@ -525,16 +375,14 @@
       "noMore": "没有更多数据了"
     },
     "buried": {
-      "creatTitle": "墓穴下葬",
-      "modifyTitle": "墓穴下葬修改",
-      "deleteTitle": "墓穴下葬删除",
+      "creatTitle": "墓位下葬",
+      "modifyTitle": "墓位下葬修改",
+      "deleteTitle": "墓位下葬删除",
       "deleteInfoPrompt": " 下葬信息将被清空，且无法恢复",
-      "selectRecordTitle": "选择下葬记录",
       "select": "选择",
       "noRecord": "该墓位暂无下葬记录",
       "selectContactTitle": "选择联系人",
       "noContact": "该墓位暂无联系人",
-      "detailTitle": "墓穴信息",
       "buriedInfoTitle": "下葬信息",
       "index": "序号",
       "contacts": "联系人",
@@ -575,11 +423,7 @@
     "contract": {
       "modifyTitle": "修改合同",
       "creatTitle": "新建合同",
-      "title": "合同信息",
-      "export": "导出合同",
       "create": "新建合同",
-      "select": "已选",
-      "items": "项",
       "contractName": "合同名称",
       "contractNamePlaceholder": "请输入合同名称",
       "contractStatus": "合同状态",
@@ -589,6 +433,7 @@
       "contractType": "合同类型",
       "contractTypePlaceholder": "请输入合同类型",
       "payType": "收支类型",
+      "payTypePlaceholder": "请选择收支类型",
       "contractAmount": "合同金额",
       "contractAmountPlaceholder": "请输入金额",
       "partyA": "甲方",
@@ -603,21 +448,12 @@
       "endDatePlaceholder": "请选择合同结束日期",
       "createDate": "合同创建时间",
       "operation": "操作",
-      "detail": "详情",
-      "delete": "删除",
       "modify": "修改",
       "pay": "付款",
       "receive": "收款",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
       "placeholder": "请输入合同名称搜索",
-      "upload": "上传文件",
-      "uploadFile": "上传合同",
-      "uploadTips": "请上传pdf文件,大小在60M以内",
-      "otherInfo": "其他信息",
-      "notaryPublic": "公证人",
-      "confirm": "确认提交",
-      "cancel": "取消",
       "contractStatusEnum": {
         "fail": "审核失败",
         "audit": "待审核",
@@ -629,23 +465,12 @@
         "main": "主合同",
         "sub": "子合同",
         "supplement": "补充合同"
-      },
-      "payTypeEnum": {
-        "payment": "付款",
-        "receipt": "收款"
-      },
-      "createdSuccessPrompt": "新建成功",
-      "createdFailedPrompt": "新建失败",
-      "modifySuccessPrompt": "修改成功",
-      "modifyFailedPrompt": "修改失败",
-      "deleteSuccessPrompt": "删除成功"
+      }
     },
     "operator": {
       "detailTitle": "操作员信息",
       "modifyTitle": "修改操作员",
       "creatTitle": "新建操作员",
-      "title": "操作人员",
-      "create": "新建操作员",
       "name": "姓名",
       "namePlaceholder": "请输入姓名",
       "phone": "电话",
@@ -656,29 +481,13 @@
       "teamPlaceholder": "请选择团队",
       "useStatus": "使用状态",
       "useStatusPlaceholder": "请选择使用状态",
-      "createDate": "创建时间",
       "joinDate": "入职时间",
       "joinDatePlaceholder": "请选择入职时间",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
-      "placeholder": "请输入账户名称搜索",
-      "markDayA": "上午好，",
-      "markDayB": "下午好，",
-      "markDayC": "今天是你入企的第 ",
-      "markDayD": " 天",
-      "teamMember": "运行维护工程师",
-      "personalInfoTitle": "个人信息",
-      "ChangePassword": "更改密码",
-      "oldPasswordPlaceholder": "请输入原密码",
-      "newPasswordPlaceholder": "请输入新密码",
-      "againPasswordPlaceholder": "请再次输入新密码",
-      "differentPasswordPlaceholder": "输入新密码与再次输入新密码不一致",
-      "successPasswordPlaceholder": "更新密码成功",
-      "failedPasswordPlaceholder": "更新密码失败",
       "operatorPowerTitle": "操作员权限",
       "menuName": "菜单名称",
       "menuDescribe": "菜单描述",
-      "useMenu": "菜单使用",
       "menuOperation": "功能操作",
       "havePhonePlaceholder": "电话已存在，请重新输入"
     },
@@ -687,14 +496,12 @@
       "park": "园区",
       "parkPlaceholder": "请输入园区标签",
       "region": "区域选择",
-      "regionPlaceholder": "请选择区域",
       "tagAtMost": "最多只能输入 ",
       "tag": " 个标签"
     },
     "receiptConfig": {
       "title": "收据配制",
       "region": "区域选择",
-      "regionPlaceholder": "请选择区域",
       "prefix": "单据前缀",
       "prefixPlaceholder": "请输入单据前缀",
       "phone": "单位电话",
@@ -703,9 +510,8 @@
       "addressPlaceholder": "请输入单位地址"
     },
     "reserve": {
-      "creatTitle": "预定墓穴",
+      "creatTitle": "预定墓位",
       "modifyTitle": "修改预定",
-      "detailTitle": "墓穴信息",
       "reserveInfoTitle": "预定信息",
       "liaison": "联系人",
       "liaisonPlaceholder": "请输入联系人",
@@ -717,8 +523,6 @@
       "deleteInfoPrompt": " 预定信息将被清空，且无法恢复"
     },
     "room": {
-      "create": "新建",
-      "manage": "管理",
       "saleStatus": "销售状态",
       "saleStatusPlaceholder": "请选择销售状态",
       "reserveStatus": "预定状态",
@@ -726,12 +530,13 @@
       "intoStatus": "下葬状态",
       "intoStatusPlaceholder": "请选择下葬状态",
       "transferOutStatus": "迁出状态",
-      "transferOutStatusPlaceholder": "请选择迁出状态",
+      "remark": "备注",
+      "serialNo": "编号",
       "transferOutNotModifiablePrompt": "已迁出的墓位不可修改",
       "transferOutRangePrompt": "修改范围内包含已迁出的墓位，请调整范围",
       "transferOutCreateConfirmPrompt": "所选范围内存在已迁出的墓位记录，新建后该位置将登记为新墓位，原迁出记录仍保留在迁出查询中，是否继续？",
-      "roomType": "墓穴类型",
-      "roomTypePlaceholder": "请选择墓穴类型",
+      "roomType": "墓位类型",
+      "roomTypePlaceholder": "请选择墓位类型",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
       "park": "园区",
@@ -745,54 +550,46 @@
       "xNumPlaceholder": "1 到 100 的整数",
       "xNumMessagePlugin": "请输入序号",
       "endXNumNotLessPrompt": "结束序号不能小于开始序号",
-      "xyNumber": "编号",
-      "xyNumberPlaceholder": "请输入编号",
+      "xyNumber": "位置",
+      "xyNumberPlaceholder": "请输入位置",
       "price": "价格",
       "pricePlaceholder": "0 到 9,999,999 的整数",
       "priceMessagePlugin": "请输入价格",
       "repairStatus": "修复状态",
       "repairStatusPlaceholder": "请选择修复状态",
-      "reset": "重置",
-      "query": "查询",
-      "creatTitle": "新建墓穴",
-      "modifyTitle": "修改墓穴",
-      "confirm": "确认提交",
-      "cancel": "取消",
+      "creatTitle": "新建墓位",
+      "modifyTitle": "修改墓位",
       "to": "到",
       "specs": "规格",
       "specsPlaceholder": "请输入规格",
       "buyer": "购墓人",
-      "buyerPlaceholder": "请输入购墓人",
       "buriedPerson": "下葬者",
       "deceased": "安葬者",
-      "deceasedPlaceholder": "请输入安葬者",
       "contacts": "联系人",
-      "contactsPlaceholder": "请输入联系人",
       "endDate": "管理费结束日期",
-      "detailTitle": "墓穴信息",
+      "detailTitle": "墓位信息",
       "multipleData": "多条修改",
-      "singleData": "单条修改",
-      "saleStatusUnsold": "未销售",
-      "saleStatusReserve": "预定",
-      "saleStatusSold": "已销售"
+      "singleData": "单条修改"
     },
     "gravePlotBusiness": {
-      "reserver": "预定人",
       "sortOrder": "排序",
       "sortAsc": "升",
       "sortDesc": "降",
-      "creatTitle": "登记墓位业务",
-      "modifyTitle": "修改墓位业务",
-      "saleTitle": "墓穴销售",
+      "saleTitle": "墓位销售",
       "reserveTitle": "墓位预定",
       "buriedTitle": "墓位下葬",
       "contactTitle": "墓位联系人",
+      "remarkTitle": "墓位备注",
       "liaison": "联系人",
       "liaisonPlaceholder": "请输入联系人",
       "liaisonPhone": "电话",
       "liaisonPhonePlaceholder": "请输入联系人电话",
       "buyerPhone": "购墓人电话",
       "buyerIDCard": "购墓人身份证号",
+      "buyerPlaceholder": "请必填购墓人",
+      "buyerPhonePlaceholder": "请必填购墓人电话",
+      "buyerIDCardPlaceholder": "请必填购墓人身份证号",
+      "deceasedRequiredPlaceholder": "请必填安葬者",
       "deceased": "安葬者",
       "deceasedPlaceholder": "请输入安葬者",
       "burialDate": "下葬日期",
@@ -810,7 +607,6 @@
       "select": "选择",
       "selectContactTitle": "选择联系人",
       "noContact": "该墓位暂无联系人",
-      "detailTitle": "墓穴信息",
       "realPrice": "实收金额",
       "realPricPlaceholder": "请输入实收金额",
       "payee": "收款人",
@@ -821,14 +617,10 @@
       "payer": "付款人",
       "payerPlaceholder": "请输入付款人",
       "phone": "付款人电话",
-      "phonePlaceholder": "请输入付款人电话",
       "payerIDCard": "付款人身份证号",
-      "payerIDCardPlaceholder": "请输入付款人身份证号",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
       "printBlockedPrompt": "请允许浏览器弹出窗口后重试",
-      "createDate": "创建日期",
-      "deleteInfoPrompt": " 业务信息将被清空，且无法恢复",
       "deleteBuriedInfoPrompt": " 下葬信息将被清空，且无法恢复",
       "deleteContactsInfoPrompt": " 联系人信息将被清空，且无法恢复",
       "certificate": "证件",
@@ -859,9 +651,8 @@
       "jointPrint": "合葬打印"
     },
     "sale": {
-      "creatTitle": "销售墓穴",
+      "creatTitle": "销售墓位",
       "modifyTitle": "修改销售",
-      "detailTitle": "墓穴信息",
       "saleInfoTitle": "销售信息",
       "realPrice": "实收金额",
       "realPricPlaceholder": "请输入实收金额",
@@ -869,13 +660,13 @@
       "payeePlaceholder": "请输入收款人",
       "serialNo": "编号",
       "serialNoPlaceholder": "请输入编号",
-      "payer": "付款人",
-      "payerPlaceholder": "请输入付款人",
-      "phone": "付款人电话",
-      "phonePlaceholder": "请输入付款人电话",
+      "payer": "购墓人",
+      "payerPlaceholder": "请输入购墓人",
+      "phone": "购墓人电话",
+      "phonePlaceholder": "请输入购墓人电话",
       "operator": "经办人",
-      "payerIDCard": "付款人身份证号",
-      "payerIDCardPlaceholder": "请输入付款人身份证号",
+      "payerIDCard": "购墓人身份证号",
+      "payerIDCardPlaceholder": "请输入购墓人身份证号",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
       "printBlockedPrompt": "请允许浏览器弹出窗口后重试",
@@ -883,21 +674,18 @@
       "deleteInfoPrompt": " 销售信息将被清空，且无法恢复"
     },
     "roomQuery": {
-      "listTitle": "墓位信息查询",
       "index": "序号",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
       "park": "园区",
       "parkPlaceholder": "请选择园区",
-      "dateRange": "日期范围",
       "saleDate": "销售日期",
       "keyword": "关键词",
       "keywordPlaceholder": "请输入/墓区编号/购墓人/联系人/电话/安葬者",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓位编号",
+      "xyNumber": "位置",
       "buyer": "购墓人",
-      "payerPhone": "购墓人电话",
       "createDate": "销售日期",
       "deceased": "安葬者",
       "contacts": "联系人",
@@ -905,7 +693,6 @@
       "noMore": "没有更多数据了"
     },
     "saleQuery": {
-      "listTitle": "墓区销售查询",
       "index": "序号",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
@@ -914,7 +701,7 @@
       "dateRange": "日期范围",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "price": "价格",
       "realPrice": "实际价格",
       "payer": "付款人",
@@ -925,7 +712,6 @@
       "totalAmount": "金额合计"
     },
     "buriedQuery": {
-      "listTitle": "墓区下葬查询",
       "index": "序号",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
@@ -934,7 +720,7 @@
       "dateRange": "日期范围",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "deceased": "安葬者",
       "deceasedIDCard": "身份证号",
       "burialDate": "下葬日期",
@@ -947,16 +733,6 @@
       "noMore": "没有更多数据了"
     },
     "transferOut": {
-      "listTitle": "墓位迁出",
-      "index": "序号",
-      "region": "区域",
-      "regionPlaceholder": "请选择区域",
-      "park": "园区",
-      "parkPlaceholder": "请选择园区",
-      "dateRange": "日期范围",
-      "startDatePlaceholder": "开始日期",
-      "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓区编号",
       "transferOutDate": "迁出日期",
       "transferOutDatePlaceholder": "请选择迁出日期",
       "destination": "迁往何处",
@@ -967,9 +743,6 @@
       "contactsPlaceholder": "请输入联系人",
       "contactsphone": "联系人电话",
       "contactsphonePlaceholder": "请输入联系人电话",
-      "loading": "加载中...",
-      "noMore": "没有更多数据了",
-      "selectRoomTitle": "选择墓位",
       "select": "选择",
       "creatTitle": "新增迁出登记",
       "modifyTitle": "修改迁出登记",
@@ -980,7 +753,6 @@
       "emptySeat": "空位"
     },
     "transferOutQuery": {
-      "listTitle": "墓位迁出查询",
       "index": "序号",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
@@ -989,7 +761,7 @@
       "dateRange": "日期范围",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "transferOutDate": "迁出日期",
       "reason": "原因",
       "contacts": "联系人",
@@ -997,7 +769,6 @@
       "noMore": "没有更多数据了"
     },
     "adminfeeQuery": {
-      "listTitle": "管理收款查询",
       "index": "序号",
       "region": "区域",
       "regionPlaceholder": "请选择区域",
@@ -1006,7 +777,7 @@
       "dateRange": "日期范围",
       "startDatePlaceholder": "开始日期",
       "endDatePlaceholder": "结束日期",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "termYears": "缴费年限",
       "startDate": "开始日期",
       "endDate": "结束日期",
@@ -1020,13 +791,12 @@
       "totalAmount": "金额合计"
     },
     "contactsQuery": {
-      "listTitle": "墓位联系查询",
       "index": "序号",
       "keyword": "关键词",
       "keywordPlaceholder": "请输入区域/园区/墓区编号/联系人/电话/身份证号",
       "region": "区域",
       "park": "园区",
-      "xyNumber": "墓区编号",
+      "xyNumber": "位置",
       "contacts": "联系人",
       "contactsPhone": "联系人电话",
       "contactsIDCard": "身份证号",
@@ -1038,10 +808,11 @@
       "title": "选择设置",
       "duties": "职务设置",
       "team": "团队设置",
+      "deceasedRelation": "逝者关系",
       "region": "区域设置",
-      "remarkPlaceholder": "请输入备注",
       "dutiesPlaceholder": "请输入职务标签",
       "teamPlaceholder": "请输入团队标签",
+      "deceasedRelationPlaceholder": "请输入逝者关系标签",
       "regionPlaceholder": "请输入区域标签",
       "tagAtMost": "最多只能输入 ",
       "tag": " 个标签"

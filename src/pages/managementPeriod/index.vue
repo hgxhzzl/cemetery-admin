@@ -138,7 +138,7 @@
               </t-button>
             </div>
 
-            <!-- 墓穴信息展示行：数据取自当前列表行 -->
+            <!-- 墓位信息展示行：数据取自当前列表行 -->
             <t-row class="info-block des" :gutter="[62, 5]">
               <t-col :span="6">
                 <span>{{ t('pages.managementPeriod.park') }} : {{ formRoomData.park }}</span>
@@ -435,7 +435,7 @@ const ClickDetailClose = () => {
 };
 
 // ==================== 修改：管理期限变更登记 ====================
-// 修改页墓穴信息展示行：数据取自当前列表行（列表行已含全部展示字段，无需再查库）20260915 新增
+// 修改页墓位信息展示行：数据取自当前列表行（列表行已含全部展示字段，无需再查库）20260915 新增
 interface RoomBriefData {
   park: string;
   xyNumber: string;

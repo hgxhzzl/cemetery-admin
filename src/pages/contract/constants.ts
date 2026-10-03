@@ -28,12 +28,7 @@ export const INITIAL_DATA = {
   contractAmount: '0',
   remark: '',
 };
-// zhuzhelong 后改实现中英文
-export const TYPE_CONTRACT_TYPE = [
-  { label: t('pages.contract.contractTypeEnum.main'), value: 0 },
-  { label: t('pages.contract.contractTypeEnum.sub'), value: 1 },
-  { label: t('pages.contract.contractTypeEnum.supplement'), value: 2 },
-];
+// 旧版合同类型选项 TYPE_CONTRACT_TYPE 零引用（已改由 @/constants 的 TYPE_CONTRACT_TYPES 提供），20261003 清理删除
 
 export const TYPE_CONTRACT_STATUS = [
   { label: t('pages.contract.contractStatusEnum.fail'), value: 0 },

@@ -2,6 +2,7 @@ import cloneDeep from 'lodash/cloneDeep';
 
 import type { RawRouteItem, RouteItem } from '@/api/model/permissionModel';
 import type { LocalizedTitle } from '@/locales';
+import { logError } from '@/utils/logger';
 import {
   BLANK_LAYOUT,
   EXCEPTION_COMPONENT,
@@ -306,6 +307,34 @@ const dynamicViewsModules: Record<string, () => Promise<Recordable>> = {
     '../../pages/{account,adminfee,adminfeeQuery,buried,buriedQuery,contacts,contactsQuery,contract,gravePlotBusiness,home,login,managementPeriod,operator,park,receiptConfig,reserve,room,roomQuery,sale,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
   ),
 };
+
+// ============================================================
+// 白名单一致性守卫：上方字面量 glob 与 src/pages 真实目录会漂移——新增页面忘记登记时，
+// dynamicImport 只能 console.warn 并回落异常页，表现为“菜单能点、页面空白”的静默失败。
+// 这里用第二条通配 glob 只取键名做比对（非 eager，不产生额外预加载 chunk），
+// 开发环境直接抛错拦住，生产环境记错误日志避影响首屏 20261003 新增
+// 注：result 目录为二级结构（result/404/index.vue）不会被 `*/index.vue` 命中，
+// 其异常页由 utils/route/constant.ts 显式引用，无需登记也无需豁免名单 20261003 新增
+// ============================================================
+const pageEntryModules = import.meta.glob<Recordable>('../../pages/*/index.vue');
+
+// 从 glob 键名（形如 ../../pages/room/index.vue）取出页面目录名
+function pageDirOfModulePath(modulePath: string): string {
+  const pagesIndex = modulePath.lastIndexOf('/pages/');
+  return pagesIndex === -1 ? '' : modulePath.slice(pagesIndex + '/pages/'.length).split('/')[0];
+}
+
+const registeredPageDirs = new Set(Object.keys(dynamicViewsModules).map(pageDirOfModulePath));
+const actualPageDirs = new Set(Object.keys(pageEntryModules).map(pageDirOfModulePath));
+const unregisteredPageDirs = [...actualPageDirs].filter((dir) => !registeredPageDirs.has(dir));
+
+if (unregisteredPageDirs.length > 0) {
+  const guardHint = `[route] 页面目录未登记进动态路由 glob 白名单，请补入 src/utils/route/index.ts: ${unregisteredPageDirs.join(', ')}`;
+  if (import.meta.env.DEV) {
+    throw new Error(guardHint);
+  }
+  logError(guardHint);
+}
 
 function asyncImportRoute(routes: RouteItem[] | undefined) {
   if (!routes) return;
