@@ -136,8 +136,8 @@
                           <span class="transferOut-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="transferOut-card__body">
-                          <!-- 购墓人/下葬者/联系人：标签在左灰色、值在右深色两端对齐（价格行已去掉）20261004 调整 -->
-                          <!-- 三行的内容显示形式对齐墓位业务页：超过7字显示前6字+4个半角点 + 悬停提示完整内容，无值统一显示“无”（原为 -- / 留空）20261004 调整 -->
+                          <!-- 购墓人/下葬者/联系人/管理期：标签在左灰色、值在右深色两端对齐（价格行已去掉）20261004 调整 -->
+                          <!-- 四行的内容显示形式对齐墓位业务页：超过7字显示前6字+4个半角点 + 悬停提示完整内容，无值统一显示“无”（原为 -- / 留空）20261004 调整 -->
                           <div class="transferOut-card__meta">
                             <span class="transferOut-card__meta-label">{{ $t('pages.room.buyer') }}</span>
                             <span class="transferOut-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
@@ -162,6 +162,14 @@
                             </t-tooltip>
                             <span v-else class="transferOut-card__meta-value">{{
                               card.row.contacts || $t('common.none')
+                            }}</span>
+                          </div>
+                          <!-- 管理期：取墓位管理费结束日期(room.endDate，后端在下葬/收款事务中维护)，
+                               形式、行位与收管理费/下葬/墓位业务三页卡片的管理期行完全一致（同一公共词条 pages.adminfee.period），无值显示“无” 20261004 新增 -->
+                          <div class="transferOut-card__meta">
+                            <span class="transferOut-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
+                            <span class="transferOut-card__meta-value">{{
+                              formatDate(card.row.endDate) || $t('common.none')
                             }}</span>
                           </div>
                           <!-- 价格行不在卡片内展示（迁出业务不关注墓位价格，详情/表单页仍保留价格行），行位留给底部备注 20261004 调整 -->
@@ -492,7 +500,7 @@ const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
 const NOT_OUT = 'statusType.transferOutStatusEnum.notOut';
 // 卡片状态胶囊行已改为备注行，配色函数 statusKey 随之移除（销售/迁出状态仍随行数据返回，仅不再展示）20261004 调整
 // 卡片长文本截断：超过7字显示前6字+4个半角点，悬停 tooltip 展示完整内容（与墓位业务页同形式；
-// 本页只服务购墓人/下葬者/联系人/备注四行，故共用一个函数而不按字段拆多个同体函数）20261004 调整
+// 本页只服务购墓人/下葬者/联系人/备注四行（管理期行为日期值不需截断），故共用一个函数而不按字段拆多个同体函数）20261004 调整
 const truncateText = (value?: string | null) => {
   const text = String(value || '');
   return text.length > 7 ? `${text.slice(0, 6)}....` : text;
