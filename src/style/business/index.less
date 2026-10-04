@@ -439,14 +439,6 @@
 // 原四页 index.less 逐字重复声明，以墓位业务页为标准抽取于此（改一处四页生效）20261003 抽取
 // ============================================================
 
-// 卡片整卡可点击进详情：非空卡加 --clickable 修饰类得指针光标；
-// 卡片内链接/按钮等自身点击由页面 onCardClick 拦截，不触发跳转 20261003 新增
-.cms-card-clickable(@prefix) {
-  .@{prefix}-card--clickable {
-    cursor: pointer;
-  }
-}
-
 .cms-card-status-frame(@prefix) {
   // 外框统一 1px：状态色外框保持醒目，与公共 cms-card-basic 边框宽度一致
   .@{prefix}-card {

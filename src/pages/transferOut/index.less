@@ -12,19 +12,17 @@
 .cms-card-basic(transferOut);
 // 空位卡：虚线边框 + 灰底
 .cms-card-empty-dashed(transferOut);
-// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定/联系页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260917 抽取
+// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定/联系页共用（hover 凸显/首行胶囊/两端对齐/操作两端对齐）20260917 抽取
 .cms-card-hover-highlight(transferOut);
 .cms-card-head-pill(transferOut);
 .cms-card-meta-between(transferOut);
-.cms-card-status-tags(transferOut);
+// 卡内销售/迁出状态胶囊行已改备注信息行，cms-card-status-tags 不再调用（同墓位业务页）20261004 调整
 // 四个操作链接两端对齐，间隙调小
 .cms-card-actions-between(transferOut, 2px);
 
-// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红）与整卡可点击光标：四页共用公共 mixin；
-// 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，未销售卡与墓位业务页同色；
-// 墓位设置/收管理费未开启该项，仍保持原有白底 20260926 新增 20261003 抽取
+// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红）：四页共用公共 mixin；
+// 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，未销售卡与墓位业务页同色 20260926 新增 20261003 抽取
 .cms-card-status-frame(transferOut);
-.cms-card-clickable(transferOut);
 
 // 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
 .transferOut-list-toolbar__right {

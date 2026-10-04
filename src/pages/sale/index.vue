@@ -344,7 +344,12 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" :disabled="saleSubmitted" @click="ClickSubmit()">
+              <t-button
+                theme="primary"
+                class="form-submit-confirm"
+                :disabled="saleSubmitted || submitting"
+                @click="ClickSubmit()"
+              >
                 {{ $t('operate.confirm') }}
               </t-button>
 
@@ -383,7 +388,15 @@ import { deleteSale, getSaleByRoom, insertSale, updateSale } from '@/api/sale';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useCardGrid,
+  usePageSwitch,
+  useParkRoomFilter,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { formatPrice } from '@/utils/format';
@@ -732,7 +745,10 @@ const onConfirmDelete = async () => {
 };
 
 // 提交开单数据，校验必填项与成交价后调用新增接口 20260828 梳理,
-const ClickSubmit = async () => {
+// 确认提交防重复：请求在途期间忽略后续点击（saleSubmitted 仅新建成功后置位，不覆盖在途窗口与修改分支）20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   const { realPriceString, payer, payerPhone, remark, idRoom, idSale, payerIDCard, payee, serialNo } =
     formSaleData.value;
 

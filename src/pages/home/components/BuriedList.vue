@@ -148,9 +148,11 @@ const getRankClass = (index: number) => {
 };
 </script>
 <style lang="less" scoped>
-// 卡片 100% 高度需要 t-col 建立高度链 20260925 新增
+// 列高不再给 100%：flex item 一旦有指定交叉尺寸，父行的 align-items: stretch 就失效，
+// 同行两张记录数不同的卡不会等高（实测行高 270 / 短卡仍 192.7，差 77.3px 断层）；
+// 现改由行的 stretch 给列定高，卡内 height: 100% 再解析到该高度（原规则为固定行高方案服务 20260925 新增 20261004 改为 auto）
 .dashboard-col {
-  height: 100%;
+  height: auto;
 }
 
 // 卡片结构与销售记录（dashboard-rank-card）一致 20260925 新增

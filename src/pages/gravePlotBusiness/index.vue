@@ -110,10 +110,8 @@
                       class="gravePlotBusiness-card"
                       :class="{
                         'gravePlotBusiness-card--empty': card.placeholder,
-                        'gravePlotBusiness-card--clickable': !card.placeholder,
                         [cardStatusClass(card.row)]: !card.placeholder,
                       }"
-                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -128,8 +126,11 @@
                         <div class="gravePlotBusiness-card__header">
                           <!-- 排号改取 xyNumber 字段(自定义坐标名)，缺失时回退 yNum/xNum 拼接 20260923 修改；
                                编号点击进详情（悬停小手），原整卡双击事件已移除 20260926 修改；
-                               20261003 整卡可点击进入详情，本行不再单独绑定点击（避免与卡片根事件双触发） -->
-                          <div class="gravePlotBusiness-card__serial gravePlotBusiness-card__serial--clickable">
+                               20261003 取消整卡空白处点击进详情，点击事件回到编号本身 -->
+                          <div
+                            class="gravePlotBusiness-card__serial gravePlotBusiness-card__serial--clickable"
+                            @click="handleClickDetail(card.row)"
+                          >
                             {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.xNum} 号` }}
                           </div>
                           <!-- 墓位类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 20260923 修改 -->
@@ -579,7 +580,7 @@
                       :maxcharacter="20"
                       show-limit-number
                       :style="{ width: '322px' }"
-                      :placeholder="$t('pages.gravePlotBusiness.contactsPlaceholder')"
+                      :placeholder="$t('pages.gravePlotBusiness.contactsRequiredPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -615,7 +616,7 @@
                       :maxcharacter="20"
                       show-limit-number
                       :style="{ width: '322px' }"
-                      :placeholder="$t('pages.gravePlotBusiness.deceasedPlaceholder')"
+                      :placeholder="$t('pages.gravePlotBusiness.deceasedRequiredPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -941,7 +942,7 @@
               <t-button
                 theme="primary"
                 class="form-submit-confirm"
-                :disabled="businessSubmitted || saleFormDisabled"
+                :disabled="businessSubmitted || saleFormDisabled || submitting"
                 @click="ClickSubmit()"
               >
                 {{ $t('operate.confirm') }}
@@ -1116,7 +1117,7 @@ import { getReceiptConfigForPrint } from '@/api/receiptConfig';
 import { getTagList } from '@/api/taginfo';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, useRoomDetail, useTabCacheName } from '@/hooks';
+import { useCardGrid, usePageSwitch, useParkRoomFilter, useRoomDetail, useSubmitGuard, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
@@ -1322,15 +1323,6 @@ const handleClickDetail = async (row: GravePlotBusinessRoomRow) => {
   } catch (e) {
     logError(e);
   }
-};
-
-// 整卡点击进详情（同墓位设置/收管理费/墓位迁出页）：空位卡不响应；
-// 卡片内的链接/按钮（购墓人、下葬人、联系人、备注、打印等）自身点击不冒泡触发跳转，
-// 否则点“备注/联系人”等会被详情视图抢跳 20261003 新增
-const onCardClick = (event: MouseEvent, row: GravePlotBusinessRoomRow | null) => {
-  if (!row) return;
-  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
-  handleClickDetail(row);
 };
 
 // 详情关闭：清空详情数据并回到列表 20260907 修改,
@@ -2082,7 +2074,10 @@ const ClickCreateClose = () => {
 };
 
 // ==================== 提交业务登记（走 gravePlotBusiness 自有接口，按形态选表）20260923 修改 ====================
-const ClickSubmit = async () => {
+// 确认提交防重复：请求在途期间忽略后续点击（businessSubmitted 仅部分形态成功后置位，不覆盖在途窗口与各修改分支）20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   const {
     realPriceString,
     payer,
@@ -2106,7 +2101,7 @@ const ClickSubmit = async () => {
   if (formMode.value === 'business' && contactsEditMode.value !== 'list') {
     const { idContacts, contacts, contactsPhone, contactsIDCard } = formContactsData.value;
     if (contacts === undefined || contacts.trim() === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPlaceholder'));
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsRequiredPlaceholder'));
     }
     const contactsPayload = {
       idRoom,
@@ -2203,7 +2198,7 @@ const ClickSubmit = async () => {
   }
   if (isBuriedMode) {
     if (deceased === undefined || deceased.trim() === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.deceasedPlaceholder'));
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.deceasedRequiredPlaceholder'));
     }
     if (burialDate === undefined || burialDate === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.burialDatePlaceholder'));

@@ -196,7 +196,7 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ t('operate.confirm') }}
               </t-button>
 
@@ -230,7 +230,14 @@ import type { ListParkModel } from '@/api/model/parkModel';
 import { getParkList } from '@/api/park';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { QUERY_FORM_LABEL_WIDTH } from '@/constants';
-import { useInfiniteScrollQuery, useLayoutScrollRestore, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useInfiniteScrollQuery,
+  useLayoutScrollRestore,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { exportCsv } from '@/utils/csv';
 import { formatDate } from '@/utils/date';
@@ -496,7 +503,10 @@ const ClickModifyClose = () => {
 };
 
 // 提交期限修改：新结束日期与原因必填校验；成功后刷新列表并关闭修改视图 20260915 新增
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (!formPeriodData.value.newEndDate) {
     return MessagePlugin.warning(translate('pages.managementPeriod.newEndDatePlaceholder'));
   }

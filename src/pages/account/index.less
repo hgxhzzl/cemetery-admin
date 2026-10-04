@@ -8,9 +8,11 @@
   .cms-info-block-detail();
 }
 
-// ==================== 新建合同表单（标准版） ====================
+// ==================== 新建合同表单（紧凑版：同墓区销售页） ====================
+// 行间距由标准版的“t-form__item 默认下边距 24px + 纵向 gutter 5px”收紧为仅由 gutter 控制，
+// 表单容器上下内边距同步压缩（底部不再预留 80px），与销售页观感一致 20261004 调整
 .form-basic-container {
-  .cms-form-basic();
+  .cms-form-basic-compact();
   .cms-form-title-gap();
 }
 

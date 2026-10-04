@@ -109,11 +109,9 @@
                       class="adminfee-card"
                       :class="{
                         'adminfee-card--empty': card.placeholder,
-                        'adminfee-card--clickable': !card.placeholder,
                         // 未销售叠加浅橙底态（withUnsold）：四页统一使用公共 cms-card-status-frame 的四态外框色+同色浅底 20261003 新增
                         [getCardStatusClass('adminfee', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
-                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260909 新增 -->
@@ -170,20 +168,17 @@
                               formatDate(card.row.endDate) || $t('common.none')
                             }}</span>
                           </div>
-                          <!-- 销售/下葬状态两枚胶囊两端分布，与其余卡片页一致 20260917 修改 -->
-                          <div class="adminfee-card__status">
-                            <span
-                              class="adminfee-card__tag"
-                              :class="`adminfee-card__tag--${statusKey(card.row.saleStatus)}`"
-                            >
-                              {{ $t(card.row.saleStatus) }}
-                            </span>
-                            <span
-                              class="adminfee-card__tag"
-                              :class="`adminfee-card__tag--${statusKey(card.row.intoStatus)}`"
-                            >
-                              {{ $t(card.row.intoStatus) }}
-                            </span>
+                          <!-- 销售/下葬状态两枚胶囊不再展示（管理费本页本身不依赖状态判定操作入口），行位改为备注信息 20261004 调整 -->
+                          <!-- 备注（room.remark）作为卡片底部最后一行，形式同墓位业务页：超过7字截断 + 悬停提示完整内容，无值显示“无”；
+                               业务页该行的标题是“修改备注”入口链接，本页无备注表单故保持与其他行一致的普通标签 20261004 新增 -->
+                          <div class="adminfee-card__meta">
+                            <span class="adminfee-card__meta-label">{{ $t('pages.room.remark') }}</span>
+                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
+                              <span class="adminfee-card__meta-value">{{ truncateText(card.row.remark) }}</span>
+                            </t-tooltip>
+                            <span v-else class="adminfee-card__meta-value">{{
+                              card.row.remark || $t('common.none')
+                            }}</span>
                           </div>
                         </div>
                         <div class="adminfee-card__actions">
@@ -353,13 +348,26 @@
 
               <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :required="true" :label="$t('pages.adminfee.payer')" name="payer">
-                  <t-input
-                    v-model="formFeeData.payer"
-                    :maxcharacter="20"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.adminfee.payerPlaceholder')"
-                  />
+                  <!-- 付款人输入框右侧“选择”按钮：样式/交互同墓位业务下葬页联系人选择，
+                       点击打开联系人选择页，选中后回填付款人+电话+身份证号 20261004 新增/调整 -->
+                  <div style="display: flex; gap: 8px; align-items: center">
+                    <!-- 输入框自适应填充剩余宽度，与“选择”按钮整体右缘对齐容器右界（宽度由本页 less 控制，同 contacts-inline-input）20261004 新增 -->
+                    <t-input
+                      v-model="formFeeData.payer"
+                      class="payer-inline-input"
+                      :maxcharacter="20"
+                      show-limit-number
+                      :placeholder="$t('pages.adminfee.payerPlaceholder')"
+                    />
+                    <t-button
+                      theme="default"
+                      variant="outline"
+                      style="margin-left: auto"
+                      @click="handleOpenContactsSelect()"
+                    >
+                      {{ $t('pages.adminfee.select') }}
+                    </t-button>
+                  </div>
                 </t-form-item>
               </t-col>
               <!-- 付款人电话：库列名原始拼写 payePrhone，非必填 20260909 新增 -->
@@ -371,6 +379,18 @@
                     show-limit-number
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.adminfee.payePrhonePlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
+              <!-- 付款人身份证号：库列 payerIDCard，非必填，可由付款人“选择”回填 20261004 新增 -->
+              <t-col v-if="!isDeleteMode" :span="6">
+                <t-form-item :label="$t('pages.adminfee.payerIDCard')" name="payerIDCard">
+                  <t-input
+                    v-model="formFeeData.payerIDCard"
+                    :maxcharacter="18"
+                    show-limit-number
+                    :style="{ width: '322px' }"
+                    :placeholder="$t('pages.adminfee.payerIDCardPlaceholder')"
                   />
                 </t-form-item>
               </t-col>
@@ -386,17 +406,6 @@
                   />
                 </t-form-item>
               </t-col>
-              <!-- 开始日期只读：自动取该墓位首次下葬时间，新建时后端锚定，修改时取记录原值 20260909 新增 -->
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.adminfee.startDate')" name="startDate">
-                  <t-input
-                    v-model="formFeeData.startDate"
-                    readonly
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.adminfee.startDatePlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :required="true" :label="$t('pages.adminfee.termYears')" name="termYears">
                   <t-input-number
@@ -406,6 +415,17 @@
                     :decimal-places="0"
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.adminfee.termYearsPlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
+              <!-- 开始日期只读：自动取该墓位首次下葬时间，新建时后端锚定，修改时取记录原值 20260909 新增（与缴费年限互换位置 20261004 调整） -->
+              <t-col v-if="!isDeleteMode" :span="6">
+                <t-form-item :label="$t('pages.adminfee.startDate')" name="startDate">
+                  <t-input
+                    v-model="formFeeData.startDate"
+                    readonly
+                    :style="{ width: '322px' }"
+                    :placeholder="$t('pages.adminfee.startDatePlaceholder')"
                   />
                 </t-form-item>
               </t-col>
@@ -420,7 +440,8 @@
                   />
                 </t-form-item>
               </t-col>
-              <t-col v-if="!isDeleteMode" :span="12">
+              <!-- 备注：改为半宽列，紧接结束日期同一行右侧 20261004 调整 -->
+              <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :label="$t('pages.adminfee.remark')" name="remark">
                   <t-input
                     v-model="formFeeData.remark"
@@ -437,7 +458,12 @@
         <div v-if="!isDeleteMode" class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" :disabled="feeSubmitted" @click="ClickSubmit()">
+              <t-button
+                theme="primary"
+                class="form-submit-confirm"
+                :disabled="feeSubmitted || submitting"
+                @click="ClickSubmit()"
+              >
                 {{ $t('operate.confirm') }}
               </t-button>
 
@@ -456,6 +482,75 @@
       </t-form>
     </div>
     <!-- 管理费收款登记结束 -->
+    <!-- 付款人联系人选择页（收款登记表单付款人“选择”按钮进入）：样式/交互同墓位业务下葬页联系人选择，
+         墓位信息只读行 + 该墓位活动联系人列表，操作列选中回填付款人+电话并返回表单 20261004 新增 -->
+    <div v-if="isContactsSelectShow">
+      <t-form class="base-form" :data="formFeeData" label-align="top" :label-width="100">
+        <div class="form-basic-container">
+          <div class="form-basic-item">
+            <div class="form-basic-container-title">
+              {{ $t('pages.adminfee.selectContactTitle') }}
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="handleCloseContactsSelect()"
+              >
+                {{ $t('operate.backDetail') }}
+                <rollback-icon size="16px" />
+              </t-button>
+            </div>
+
+            <t-row class="info-block des" :gutter="[62, 5]">
+              <t-col :span="6">
+                <span>{{ $t('pages.room.park') }} : {{ formRoomData.park }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.xyNumber') }} : {{ formRoomData.xyNumber }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.roomType') }} : {{ t(formRoomData.roomType) }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.specs') }} : {{ formRoomData.specs }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.price') }} : {{ formRoomData.price }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.saleStatus') }} : {{ t(formRoomData.saleStatus) }}</span>
+              </t-col>
+              <t-col :span="12">
+                <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
+              </t-col>
+
+              <!-- 该墓位活动联系人列表，操作列逐行“选择”按钮，点击回填付款人并返回 20261004 新增 -->
+              <t-col :span="12">
+                <t-form-item name="idContacts">
+                  <t-table
+                    class="adminfee-record-table"
+                    :data="contactsRecords"
+                    :columns="contactsColumns"
+                    row-key="idContacts"
+                    :bordered="true"
+                    size="small"
+                    :max-height="240"
+                  >
+                    <template #op="{ row }">
+                      <t-link theme="primary" @click="onSelectContact(row)">
+                        {{ $t('pages.adminfee.select') }}
+                      </t-link>
+                    </template>
+                  </t-table>
+                </t-form-item>
+              </t-col>
+            </t-row>
+          </div>
+        </div>
+      </t-form>
+    </div>
+    <!-- 联系人选择页结束 20261004 新增 -->
     <!-- 删除收款记录二次确认弹窗，参照墓区下葬页 20260909 新增 -->
     <t-dialog
       v-model:visible="confirmVisible"
@@ -482,15 +577,26 @@ import { useRoute } from 'vue-router';
 import { deleteAdminfee, getAdminfeeList, getRoomList, insertAdminfee, updateAdminfee } from '@/api/adminfee';
 // 管理费开始日期锚定该墓位首次下葬时间，复用下葬接口取最早 burialDate 20260909 新增
 import { getBuriedList } from '@/api/buried';
+// 付款人“选择”按钮：按墓位查活动联系人列表供选回填（数据源同墓位联系页，与下葬页联系人选择同机制）20261004 新增
+import { getContactsList } from '@/api/contacts';
 import type { AdminfeeModel } from '@/api/model/adminfeeModel';
 import type { BuriedModel } from '@/api/model/buriedModel';
+import type { ContactsModel } from '@/api/model/contactsModel';
 import type { RoomModel } from '@/api/model/roomModel';
 import { getReceiptConfigForPrint } from '@/api/receiptConfig';
 import { getIdList } from '@/api/room';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useCardGrid,
+  usePageSwitch,
+  useParkRoomFilter,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { getCardStatusClass } from '@/utils/cardStatus';
@@ -514,8 +620,7 @@ const userInfo = usePermission('adminfee');
 
 // 下葬状态：未下葬用于区分卡片是否显示“新建/修改/删除”（管理费锚定首次下葬，未下葬无锚点）20260909 新增
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
-// 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260917 新增
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+// 卡片状态胶囊行已移除，状态配色函数 statusKey 随之移除（销售/下葬状态仍随行数据返回，仅不再展示）20261004 调整,
 // 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容（与下葬页一致） 20260917 新增
 const truncateText = (value?: string | null) => {
   const text = String(value || '');
@@ -528,10 +633,12 @@ type FilterFormData = typeof FIND_DATA;
 type RoomFormData = typeof INITIAL_ROOM_DATA;
 type FeeFormData = typeof INITIAL_FEE_DATA;
 
-// 视图互斥显示：列表 / 详情 / 收款登记（新建、修改、删除复用同一表单）20260909 新增,
+// 视图互斥显示：列表 / 详情 / 收款登记（新建、修改、删除复用同一表单）/ 付款人联系人选择 20260909 新增,
 const isListShow = ref(false);
 const isDetailShow = ref(false);
 const isCreateShow = ref(false);
+// 付款人联系人选择页：与列表/详情/登记表单互斥（同墓位业务下葬页联系人选择页）20261004 新增
+const isContactsSelectShow = ref(false);
 
 const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formFeeData = ref<FeeFormData>({ ...INITIAL_FEE_DATA });
@@ -541,6 +648,7 @@ const { controlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   create: isCreateShow,
+  contactsSelect: isContactsSelectShow,
 });
 
 // ==================== 列表：状态与筛选下拉数据 ====================
@@ -641,14 +749,6 @@ const handleClickDetail = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
-// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/新建/修改/删除等操作链接自身点击
-// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
-const onCardClick = (event: MouseEvent, row: RoomModel | null) => {
-  if (!row) return;
-  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
-  handleClickDetail(row);
-};
-
 // 详情关闭：清空详情数据并回到列表 20260909 新增,
 const ClickDetailClose = () => {
   clearDetail();
@@ -720,6 +820,7 @@ const fillFeeForm = (record: AdminfeeModel) => {
     idRoom: record.idRoom,
     payer: record.payer ?? '',
     payePrhone: record.payePrhone ?? '',
+    payerIDCard: record.payerIDCard ?? '',
     payAmount: record.payAmount ?? 0,
     startDate: formatDate(record.startDate),
     endDate: formatDate(record.endDate),
@@ -896,6 +997,46 @@ const onConfirmDelete = async () => {
   }
 };
 
+// ==================== 收款登记：付款人联系人选择（同墓位业务下葬页，代码独立）20261004 新增 ====================
+// 该墓位全部活动联系人记录，操作列逐行“选择”回填付款人/付款人电话
+const contactsRecords = ref<ContactsModel[]>([]);
+const contactsColumns: PrimaryTableCol[] = [
+  { title: translate('pages.adminfee.contacts'), colKey: 'contacts' },
+  { title: translate('pages.adminfee.contactsPhone'), colKey: 'contactsPhone', width: 140 },
+  { title: translate('pages.adminfee.contactsIDCard'), colKey: 'contactsIDCard', width: 180 },
+  { title: translate('operate.operation'), colKey: 'op', width: 90 },
+];
+
+// 打开联系人选择页：查该墓位活动联系人，无记录提示且不跳转（同下葬页）20261004 新增
+const handleOpenContactsSelect = async () => {
+  const { idRoom } = formFeeData.value;
+  try {
+    const { list } = await getContactsList(idRoom);
+    if (!list || list.length === 0) {
+      return MessagePlugin.warning(translate('pages.adminfee.noContact'));
+    }
+    contactsRecords.value = list;
+    controlPageShow('contactsSelect');
+  } catch (e) {
+    logError(e);
+  }
+};
+
+// 选择联系人：回填付款人/电话/身份证号（contacts 表列 contactsPhone→payePrhone、contactsIDCard→payerIDCard），返回收款登记表单 20261004 新增/调整
+const onSelectContact = (row: ContactsModel) => {
+  formFeeData.value.payer = row.contacts ?? '';
+  formFeeData.value.payePrhone = row.contactsPhone ?? '';
+  formFeeData.value.payerIDCard = row.contactsIDCard ?? '';
+  contactsRecords.value = [];
+  controlPageShow('create');
+};
+
+// 关闭联系人选择页：返回收款登记表单，不改动已填内容 20261004 新增
+const handleCloseContactsSelect = () => {
+  contactsRecords.value = [];
+  controlPageShow('create');
+};
+
 // ==================== 收款登记：票据打印 ====================
 // 经办人显示当前登录操作员姓名，收款保存时后端同样自动写入 20260922 新增
 const userStore = useUserStore();
@@ -964,7 +1105,10 @@ const printReceipt = async () => {
 
 // 提交收款登记：idAdminfee 为0走新增，否则走修改；成功后刷新列表 20260909 新增,
 
-const ClickSubmit = async () => {
+// 确认提交防重复：请求在途期间忽略后续点击（feeSubmitted 仅新建成功后置位，不覆盖在途窗口与修改分支）20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (formFeeData.value.payer === '') {
     return MessagePlugin.warning(translate('pages.adminfee.payerPlaceholder'));
   }

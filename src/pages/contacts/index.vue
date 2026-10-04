@@ -313,7 +313,7 @@
         <div v-if="!isDeleteMode" class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
 
@@ -356,7 +356,15 @@ import { getIdList } from '@/api/room';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useCardGrid,
+  usePageSwitch,
+  useParkRoomFilter,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
@@ -670,7 +678,10 @@ const onConfirmDelete = async () => {
 
 // 提交联系人登记：idContacts 为0走新增，否则走修改；成功后刷新列表 20260909 新增,
 
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (formContactsData.value.contacts === '') {
     return MessagePlugin.warning(translate('pages.contacts.contactsPlaceholder'));
   }

@@ -49,7 +49,7 @@
       <div class="form-submit-container">
         <div class="form-submit-sub">
           <div class="form-submit-left">
-            <t-button theme="primary" class="form-submit-confirm" type="submit">
+            <t-button theme="primary" class="form-submit-confirm" type="submit" :disabled="submitting">
               {{ $t('operate.confirm') }}
             </t-button>
             <t-button type="reset" class="form-submit-cancel" theme="default" variant="base">
@@ -69,6 +69,7 @@ import type { SelectModel } from '@/api/model/parkModel';
 import type { ReceiptConfigModel } from '@/api/model/receiptConfigModel';
 import { getRegionList } from '@/api/park';
 import { getReceiptConfig, saveReceiptConfig } from '@/api/receiptConfig';
+import { useSubmitGuard } from '@/hooks';
 import { i18n } from '@/locales';
 import { logError } from '@/utils/logger';
 
@@ -141,7 +142,10 @@ const onReset = () => {
 };
 
 // 提交：单据前缀、单位电话、单位地址为空时弹消息提示（样式与修改销售"请输入实收金额"一致）
-const onSubmit = async () => {
+// 确认提交防重复：type=submit 表单提交无锁，双击/回车会并发发出两次写接口；submitting 同步上锁并绑定按钮 :disabled 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const onSubmit = () => run(submitCore);
+const submitCore = async () => {
   const { prefix, phone, address } = formData.value;
   if (prefix === undefined || String(prefix).trim() === '') {
     return MessagePlugin.warning(translate('pages.receiptConfig.prefixPlaceholder'));

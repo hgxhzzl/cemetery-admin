@@ -106,7 +106,9 @@
                 <rollback-icon size="16px" />
               </t-button>
             </div>
-            <t-row class="row-gap" :gutter="[32, 24]">
+            <!-- 表单容器早已用紧凑版（t-form__item 默认下边距已清），纵向 gutter 即行间距，
+                 由 24 收到 5 与新建账户页/新建合同页一致 20261004 调整 -->
+            <t-row class="row-gap" :gutter="[32, 5]">
               <t-col :span="6">
                 <t-form-item :required="true" :label="$t('pages.operator.name')" name="name">
                   <t-input
@@ -214,7 +216,7 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
               <t-button v-if="isCreate" class="form-submit-cancel" theme="default" type="reset">
@@ -405,7 +407,7 @@ import {
   updatePower,
 } from '@/api/operator';
 import { TYPE_USE_STATUS } from '@/constants';
-import { usePermission } from '@/hooks';
+import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import type { UserPermissionField } from '@/types/interface';
@@ -731,7 +733,10 @@ const formatSubmitData = (data: Partial<OperatorModel> & { password?: string; cr
   return submitData;
 };
 
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await（含前置重电话查重）前无任何锁，双击/慢网络会并发发出两次写接口；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (formData.value.name === '') {
     return MessagePlugin.warning(translate('pages.operator.namePlaceholder'));
   }

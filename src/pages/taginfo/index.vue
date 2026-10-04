@@ -64,7 +64,7 @@
       <div class="form-submit-container">
         <div class="form-submit-sub">
           <div class="form-submit-left">
-            <t-button theme="primary" class="form-submit-confirm" type="submit">
+            <t-button theme="primary" class="form-submit-confirm" type="submit" :disabled="submitting">
               {{ $t('operate.confirm') }}
             </t-button>
             <t-button type="reset" class="form-submit-cancel" theme="default" variant="base">
@@ -88,6 +88,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { onMounted, ref } from 'vue';
 
 import { getSetList, getTagList, insertTag } from '@/api/taginfo';
+import { useSubmitGuard } from '@/hooks';
 import { translate } from '@/locales';
 import { logError } from '@/utils/logger';
 
@@ -160,7 +161,10 @@ const tagMax = ref({ ...INITIAL_TAGMAX });
 const onReset = () => {
   fetchData();
 };
-const onSubmit = async (ctx: SubmitContext) => {
+// 确认提交防重复：type=submit 表单提交无锁，双击/回车会并发发出两次写接口；submitting 同步上锁并绑定按钮 :disabled 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const onSubmit = (ctx: SubmitContext) => run(() => submitCore(ctx));
+const submitCore = async (ctx: SubmitContext) => {
   const tag: Array<{ tagName: string; tagType: string }> = [];
   duties.value.forEach((item) => {
     const json = { ...INITIAL_TAGJSON };

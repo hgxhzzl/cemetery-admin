@@ -113,11 +113,9 @@
                       class="transferOut-card"
                       :class="{
                         'transferOut-card--empty': card.placeholder,
-                        'transferOut-card--clickable': !card.placeholder,
                         // 未销售叠加浅橙底态（withUnsold）：与墓位业务页共用公共 cms-card-status-frame 的 --unsold 规则 20261003 新增
                         [getCardStatusClass('transferOut', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
-                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 -->
@@ -138,47 +136,46 @@
                           <span class="transferOut-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="transferOut-card__body">
-                          <!-- 购墓人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐 -->
+                          <!-- 购墓人/下葬者/联系人：标签在左灰色、值在右深色两端对齐（价格行已去掉）20261004 调整 -->
+                          <!-- 三行的内容显示形式对齐墓位业务页：超过7字显示前6字+4个半角点 + 悬停提示完整内容，无值统一显示“无”（原为 -- / 留空）20261004 调整 -->
                           <div class="transferOut-card__meta">
                             <span class="transferOut-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <span class="transferOut-card__meta-value">{{ card.row.buyer || '--' }}</span>
+                            <span class="transferOut-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
                           </div>
                           <div class="transferOut-card__meta">
                             <span class="transferOut-card__meta-label">{{ $t('pages.room.buriedPerson') }}</span>
-                            <!-- 下葬者超过7字截断为前7字+省略号，悬停提示完整内容 -->
+                            <!-- 下葬者超过7字截断为前6字+4个半角点，悬停提示完整内容 -->
                             <t-tooltip v-if="isOverflow(card.row.deceased)" :content="String(card.row.deceased)">
                               <span class="transferOut-card__meta-value">{{ truncateText(card.row.deceased) }}</span>
                             </t-tooltip>
-                            <!-- 下葬者无值时不显示占位符，留空 -->
-                            <span v-else class="transferOut-card__meta-value">{{ card.row.deceased }}</span>
+                            <!-- 下葬者无值时同业务页显示“无”（原口径为留空不填占位符，本次按“同业务页”要求统一）20261004 调整 -->
+                            <span v-else class="transferOut-card__meta-value">{{
+                              card.row.deceased || $t('common.none')
+                            }}</span>
                           </div>
                           <!-- 联系人：room 表字段，存所有联系人 -->
                           <div class="transferOut-card__meta">
                             <span class="transferOut-card__meta-label">{{ $t('pages.room.contacts') }}</span>
-                            <!-- 联系人超过7字截断为前7字+省略号，悬停提示完整内容 -->
+                            <!-- 联系人超过7字截断为前6字+4个半角点，悬停提示完整内容 -->
                             <t-tooltip v-if="isOverflow(card.row.contacts)" :content="String(card.row.contacts)">
                               <span class="transferOut-card__meta-value">{{ truncateText(card.row.contacts) }}</span>
                             </t-tooltip>
-                            <span v-else class="transferOut-card__meta-value">{{ card.row.contacts || '--' }}</span>
+                            <span v-else class="transferOut-card__meta-value">{{
+                              card.row.contacts || $t('common.none')
+                            }}</span>
                           </div>
+                          <!-- 价格行不在卡片内展示（迁出业务不关注墓位价格，详情/表单页仍保留价格行），行位留给底部备注 20261004 调整 -->
+                          <!-- 销售/迁出状态两枚胶囊不再展示（本页“新建/修改/删除”入口本就按 intoStatus + transferOutStatus 行数据判定，不依赖胶囊），行位改为备注信息 20261004 调整 -->
+                          <!-- 备注（room.remark）作为卡片底部最后一行，形式同墓位业务页：超过7字截断 + 悬停提示完整内容，无值显示“无”；
+                               业务页该行的标题是“修改备注”入口链接，本页无备注表单故保持与其他行一致的普通标签 20261004 新增 -->
                           <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="transferOut-card__meta-value">{{ formatPrice(card.row.price) }}</span>
-                          </div>
-                          <!-- 销售/迁出状态改为两枚彩色胶囊标签两端分布；存量墓位迁出状态为 NULL 时兑底展示“未迁出” 20260916 新增 -->
-                          <div class="transferOut-card__status">
-                            <span
-                              class="transferOut-card__tag"
-                              :class="`transferOut-card__tag--${statusKey(card.row.saleStatus)}`"
-                            >
-                              {{ $t(card.row.saleStatus) }}
-                            </span>
-                            <span
-                              class="transferOut-card__tag"
-                              :class="`transferOut-card__tag--${statusKey(card.row.transferOutStatus || NOT_OUT)}`"
-                            >
-                              {{ $t(card.row.transferOutStatus || NOT_OUT) }}
-                            </span>
+                            <span class="transferOut-card__meta-label">{{ $t('pages.room.remark') }}</span>
+                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
+                              <span class="transferOut-card__meta-value">{{ truncateText(card.row.remark) }}</span>
+                            </t-tooltip>
+                            <span v-else class="transferOut-card__meta-value">{{
+                              card.row.remark || $t('common.none')
+                            }}</span>
                           </div>
                         </div>
                         <div class="transferOut-card__actions">
@@ -410,7 +407,7 @@
         <div v-if="!isDeleteMode" class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
 
@@ -459,7 +456,15 @@ import {
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useCardGrid,
+  usePageSwitch,
+  useParkRoomFilter,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatDate } from '@/utils/date';
@@ -485,12 +490,12 @@ const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
 const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
 // 未迁出枚举 key：存量墓位 transferOutStatus 字段为 NULL，卡片/表单展示时以此兑底 20260916 新增
 const NOT_OUT = 'statusType.transferOutStatusEnum.notOut';
-// 卡片状态标签配色：取状态枚举 key 末段(如 sold/out)拼接胶囊标签修饰类
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
-// 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容
+// 卡片状态胶囊行已改为备注行，配色函数 statusKey 随之移除（销售/迁出状态仍随行数据返回，仅不再展示）20261004 调整
+// 卡片长文本截断：超过7字显示前6字+4个半角点，悬停 tooltip 展示完整内容（与墓位业务页同形式；
+// 本页只服务购墓人/下葬者/联系人/备注四行，故共用一个函数而不按字段拆多个同体函数）20261004 调整
 const truncateText = (value?: string | null) => {
   const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 7)}…` : text;
+  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
 };
 // 是否超过7字需要截断并显示悬停提示
 const isOverflow = (value?: string | null) => String(value || '').length > 7;
@@ -616,14 +621,6 @@ const handleClickDetail = async (row: CardRowArg<TransferOutRoomRow>) => {
   } catch (e) {
     logError(e);
   }
-};
-
-// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/新建/修改/删除等操作链接自身点击
-// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
-const onCardClick = (event: MouseEvent, row: TransferOutRoomRow | null) => {
-  if (!row) return;
-  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
-  handleClickDetail(row);
 };
 
 // 详情关闭：清空详情数据并回到列表
@@ -822,7 +819,10 @@ const onConfirmDelete = async () => {
 
 // 提交迁出登记：idTransfer 为0走新增，否则走修改；成功后刷新列表 20260916 新增,
 
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (formTransferOutData.value.transferOutDate === '' || formTransferOutData.value.transferOutDate === null) {
     return MessagePlugin.warning(translate('pages.transferOut.transferOutDatePlaceholder'));
   }

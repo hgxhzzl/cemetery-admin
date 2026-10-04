@@ -36,6 +36,8 @@ export const INITIAL_FEE_DATA = {
   payer: '',
   // 付款人电话：库列名原始拼写为 payePrhone（建表笔误），payload 键须与库列一致 20260909 新增
   payePrhone: '',
+  // 付款人身份证号：库列 payerIDCard，付款人选择时回填 20261004 新增
+  payerIDCard: '',
   // 收款金额
   payAmount: 0,
   // 开始日期：自动取该墓位首次下葬时间

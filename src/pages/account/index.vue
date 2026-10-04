@@ -256,7 +256,7 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
               <t-button v-if="isCreate" class="form-submit-cancel" theme="default" type="reset">
@@ -352,7 +352,7 @@ import {
 } from '@/api/account';
 import type { AccountModel, AccountPowerModel } from '@/api/model/accountModel';
 import { TYPE_ENTERPRISE_TYPES, TYPE_USE_STATUS } from '@/constants';
-import { usePermission } from '@/hooks';
+import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import { logError } from '@/utils/logger';
@@ -686,7 +686,10 @@ const onReset = () => {
   formData.value = { ...INITIAL_DATA };
 };
 
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   if (formData.value.account === '') {
     return MessagePlugin.warning(translate('pages.account.accountPlaceholder'));
   }

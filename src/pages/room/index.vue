@@ -110,11 +110,9 @@
                       class="room-card"
                       :class="{
                         'room-card--empty': card.placeholder,
-                        'room-card--clickable': !card.placeholder,
                         // 未销售叠加浅橙底态（withUnsold）：四页统一使用公共 cms-card-status-frame 的四态外框色+同色浅底 20261003 新增
                         [getCardStatusClass('room', card.row, { withUnsold: true })]: !card.placeholder,
                       }"
-                      @click="onCardClick($event, card.row)"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
@@ -405,7 +403,7 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
               <t-button v-if="isCreate" class="form-submit-cancel" theme="default" type="reset">
@@ -438,7 +436,7 @@ import { deleteRoom, getIdList, getRoomList, insertRoom, updateRoom } from '@/ap
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH, TYPE_ROOM_TYPES } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, useParkRoomFilter, usePermission, useRoomDetail, useTabCacheName } from '@/hooks';
+import { useCardGrid, useParkRoomFilter, usePermission, useRoomDetail, useSubmitGuard, useTabCacheName } from '@/hooks';
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatPrice } from '@/utils/format';
@@ -690,14 +688,6 @@ const handleClickDetail = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
-// 整卡点击进详情（同墓位业务页）：空位卡不响应；卡片内的详情/修改/删除等操作链接自身点击
-// 不冒泡触发跳转，保证原有按钮行为不变 20261003 新增
-const onCardClick = (event: MouseEvent, row: RoomModel | null) => {
-  if (!row) return;
-  if ((event.target as HTMLElement | null)?.closest('.t-link, .t-button, a, button')) return;
-  handleClickDetail(row);
-};
-
 // 点击卡片修改：校验墓位可查后进入修改表单 20260828 修改,
 // 已迁出的墓位不可修改（迁出为终态）；旧数据 NULL 视为未迁出 20260921 新增
 const isRoomModifiable = (row: CardRowArg<RoomModel>) => {
@@ -853,7 +843,10 @@ const doSubmitCreate = async (jsonbody: Partial<RoomModel>) => {
 };
 
 // 提交数据
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   // 将Proxy对象转换为JSON字符串,不转也可以
 
   if (formData.value.region === '' || formData.value.region === undefined) {
@@ -948,7 +941,7 @@ const ClickSubmit = async () => {
         body: translate('pages.room.transferOutCreateConfirmPrompt'),
         onConfirm: () => {
           confirmDialog.hide();
-          doSubmitCreate(jsonbody);
+          run(() => doSubmitCreate(jsonbody));
         },
         onClose: () => {
           confirmDialog.hide();

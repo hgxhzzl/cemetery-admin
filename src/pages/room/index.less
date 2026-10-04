@@ -10,8 +10,8 @@
 .cms-no-data(room);
 .cms-card-layout(room);
 .cms-card-basic(room);
-// 空位卡与正常卡同边框同底色，仅“空位”文字保留占位色
-.cms-card-empty-plain(room);
+// 空位卡改为虚线边框 + 页面灰底，与墓位业务页空位卡完全一致（原 plain 版与正常卡同边框同底色）20261004 调整
+.cms-card-empty-dashed(room);
 // 卡片统一迭代样式套件：hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐 20260916 抽取
 .cms-card-hover-highlight(room);
 .cms-card-head-pill(room);
@@ -20,10 +20,9 @@
 // 卡片操作有三个链接，间距略小于默认以适配卡片宽度
 .cms-card-actions-between(room, var(--td-comp-margin-m));
 
-// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红，各含同色浅底）与整卡可点击光标：
+// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红，各含同色浅底）：
 // 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，四页与墓位业务页完全同色 20260926 新增 20261003 抽取
 .cms-card-status-frame(room);
-.cms-card-clickable(room);
 
 // 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
 .room-list-toolbar__right {

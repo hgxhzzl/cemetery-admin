@@ -150,7 +150,9 @@
               </t-button>
             </div>
             <!-- formdata -->
-            <t-row class="row-gap" :gutter="[32, 24]">
+            <!-- 行表单容器已改用紧凑版（t-form__item 默认下边距已清），纵向 gutter 即行间距，
+                 由 24 收到 5 与新建账户页/墓区销售页一致 20261004 调整 -->
+            <t-row class="row-gap" :gutter="[32, 5]">
               <t-col :span="6">
                 <t-form-item :required="true" :label="$t('pages.contract.contractName')" name="contractName">
                   <t-input
@@ -329,7 +331,7 @@
         <div class="form-submit-container">
           <div class="form-submit-sub">
             <div class="form-submit-left">
-              <t-button theme="primary" class="form-submit-confirm" @click="ClickSubmit()">
+              <t-button theme="primary" class="form-submit-confirm" :disabled="submitting" @click="ClickSubmit()">
                 {{ $t('operate.confirm') }}
               </t-button>
               <t-button v-if="isCreate" class="form-submit-cancel" theme="default" type="reset">
@@ -370,7 +372,7 @@ import {
 import type { ContractModel, SelectModel } from '@/api/model/contractModel';
 import Trend from '@/components/trend/index.vue';
 import { TYPE_CONTRACT_STATUS, TYPE_CONTRACT_TYPES } from '@/constants';
-import { usePermission } from '@/hooks';
+import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
 import { logError } from '@/utils/logger';
 
@@ -720,7 +722,10 @@ const onReset = () => {
   formData.value = { ...INITIAL_DATA };
 };
 
-const ClickSubmit = async () => {
+// 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const ClickSubmit = () => run(submitCore);
+const submitCore = async () => {
   const Amount = formData.value.contractAmount.toString();
   if (Amount === '') {
     formData.value.contractAmount = '0';

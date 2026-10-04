@@ -34,7 +34,7 @@
       <div class="form-submit-container">
         <div class="form-submit-sub">
           <div class="form-submit-left">
-            <t-button theme="primary" class="form-submit-confirm" type="submit">
+            <t-button theme="primary" class="form-submit-confirm" type="submit" :disabled="submitting">
               {{ $t('operate.confirm') }}
             </t-button>
             <t-button type="reset" class="form-submit-cancel" theme="default" variant="base">
@@ -52,6 +52,7 @@ import { onMounted, ref } from 'vue';
 
 import type { ListParkModel, SelectModel } from '@/api/model/parkModel';
 import { getParkList, getRegionList, insertPark } from '@/api/park';
+import { useSubmitGuard } from '@/hooks';
 import { i18n } from '@/locales';
 import { logError } from '@/utils/logger';
 
@@ -125,7 +126,10 @@ const onReset = () => {
   syncParksByRegion(region);
 };
 
-const onSubmit = async () => {
+// 确认提交防重复：type=submit 表单提交无锁，双击/回车会并发发出两次写接口；submitting 同步上锁并绑定按钮 :disabled 20261004 新增
+const { submitting, run } = useSubmitGuard();
+const onSubmit = () => run(submitCore);
+const submitCore = async () => {
   const tag = park.value.map((item) => ({
     ...INITIAL_PARKJSON,
     region: String(formData.value.region),
