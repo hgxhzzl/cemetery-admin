@@ -11,9 +11,11 @@ const CWD = process.cwd();
 
 // 应用版本号：构建期从 git 计算并注入运行时常量 __APP_VERSION__
 // 取值链：有 tag → 用 tag（如 cms01-v2.0.1）；无 tag → 回落 commit 短 hash；连 .git 都没有 → 'dev' 20261005 新增
+// 去掉 git describe 产物的 "-g<hash>" 段（保留 tag 与提交数，如 cms01-v2.0.3-1-g574192e → cms01-v2.0.3-1）20261006 修改
 const getAppVersion = (): string => {
   try {
-    return execSync('git describe --tags --always --dirty', { encoding: 'utf-8' }).trim();
+    const desc = execSync('git describe --tags --always --dirty', { encoding: 'utf-8' }).trim();
+    return desc.replace(/-g[0-9a-f]+/, '');
   } catch {
     return 'dev';
   }
