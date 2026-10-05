@@ -83,8 +83,11 @@
   }
 
   &-footer-layout {
-    padding: 0;
-    margin-bottom: var(--td-comp-margin-xxl);
+    // 像 TDesign 模板那样：版权行上下留白用 footer 自身 padding（计入滚动高度，能完整滚出），
+    // 而非末尾子项 margin-bottom（flex 滚动容器内不计入 scrollHeight，会被窗口底边切一半）20261006 修改
+    flex: none;
+    padding: var(--td-comp-paddingTB-xxl) 0;
+    background: var(--td-bg-color-page);
   }
 
   // slideBar
