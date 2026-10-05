@@ -24,7 +24,7 @@
         <t-button variant="text" shape="square" @click="changeCollapsed">
           <template #icon><t-icon name="view-list" /></template>
         </t-button>
-        <span v-show="!isCompact" :class="versionCls"> {{ !collapsed ? 'version：' : '' }}{{ appVersion }} </span>
+        <span v-show="!isCompact" :class="versionCls"> {{ !collapsed ? '易顺通：' : '' }}{{ appVersion }} </span>
       </template>
     </t-menu>
     <!-- 侧边栏宽度拖拽手柄：按住左右移动调整菜单宽度，双击恢复语言默认宽度 20260915 新增 -->
