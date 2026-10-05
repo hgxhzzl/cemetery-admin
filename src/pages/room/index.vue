@@ -223,12 +223,21 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->
     <!-- 新建始 -->
     <div v-if="isCreateShow">
-      <t-form ref="formCreate" class="base-form" :data="formData" label-align="top" :label-width="100" @reset="onReset">
+      <t-form
+        ref="formCreate"
+        class="base-form"
+        :data="formData"
+        label-align="top"
+        :label-width="100"
+        required-mark-position="right"
+        @reset="onReset"
+      >
         <div class="form-basic-container">
           <div class="form-basic-item">
             <div v-show="isCreate" class="form-basic-container-title">
@@ -266,11 +275,12 @@
             <t-row class="row-gap" :gutter="[32, 5]">
               <!-- 区域信息不展示,新建时仍预填 menuRegion 供提交与园区联动 20260902 修改 -->
               <t-col :span="6">
-                <t-form-item :label="$t('pages.room.park')" name="park">
+                <t-form-item :required-mark="true" :label="$t('pages.room.park')" name="park">
                   <t-select
                     v-model="formData.park"
                     :style="{ width: '322px' }"
                     class="demo-select-base"
+                    :placeholder="$t('pages.room.parkRequiredPlaceholder')"
                     clearable
                     :disabled="isModify"
                   >
@@ -287,7 +297,7 @@
               </t-col>
               <!-- :format="format" -->
               <t-col :span="6">
-                <t-form-item :required="true" :label="$t('pages.room.yNum')" name="yNum">
+                <t-form-item :required-mark="true" :label="$t('pages.room.yNum')" name="yNum">
                   <t-input-number
                     v-model="formData.yNum"
                     large-number
@@ -315,7 +325,7 @@
               </t-col>
 
               <t-col :span="6">
-                <t-form-item :label="$t('pages.room.xNum')" name="xNum">
+                <t-form-item :required-mark="true" :label="$t('pages.room.xNum')" name="xNum">
                   <t-input-number
                     v-model="formData.xNum"
                     large-number
@@ -357,8 +367,14 @@
               </t-col>
               <!-- 墓位类型上移至编号右侧同行（各占半行） 20260916 修改 -->
               <t-col :span="6">
-                <t-form-item :label="$t('pages.room.roomType')" name="roomType">
-                  <t-select v-model="formData.roomType" :style="{ width: '322px' }" class="demo-select-base" clearable>
+                <t-form-item :required-mark="true" :label="$t('pages.room.roomType')" name="roomType">
+                  <t-select
+                    v-model="formData.roomType"
+                    :style="{ width: '322px' }"
+                    class="demo-select-base"
+                    :placeholder="$t('pages.room.roomTypePlaceholder')"
+                    clearable
+                  >
                     <t-option
                       v-for="(item, index) in TYPE_ROOM_TYPES"
                       :key="index"
@@ -371,7 +387,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :required="true" :label="$t('pages.room.specs')" name="specs">
+                <t-form-item :required-mark="true" :label="$t('pages.room.specs')" name="specs">
                   <t-input
                     v-model="formData.specs"
                     :maxcharacter="20"
@@ -383,7 +399,7 @@
               </t-col>
 
               <t-col :span="6">
-                <t-form-item :label="$t('pages.room.price')" name="price">
+                <t-form-item :required-mark="true" :label="$t('pages.room.price')" name="price">
                   <!-- priceString 列已删，价格直接绑数值 price 录入，千分位仅用于展示位 20260910 修改 -->
                   <t-input-number
                     v-model="formData.price"
@@ -673,6 +689,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();
@@ -853,7 +870,7 @@ const submitCore = async () => {
     return MessagePlugin.warning(translate('pages.room.regionPlaceholder'));
   }
   if (formData.value.park === '' || formData.value.park === undefined) {
-    return MessagePlugin.warning(translate('pages.room.parkPlaceholder'));
+    return MessagePlugin.warning(translate('pages.room.parkRequiredPlaceholder'));
   }
   if (formData.value.yNum === undefined) {
     return MessagePlugin.warning(translate('pages.room.yNumMessagePlugin'));

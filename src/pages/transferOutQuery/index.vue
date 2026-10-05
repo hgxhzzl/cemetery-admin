@@ -114,6 +114,7 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情页面结束 -->
@@ -291,6 +292,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();

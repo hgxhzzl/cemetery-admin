@@ -26,6 +26,8 @@ export interface TransferOutModel {
   contacts: string;
   // 联系人电话：库中实际列名为 contactsphone(全小写)，SELECT 返回同名键，模型字段与之对齐
   contactsphone: string;
+  // 联系人身份证号：库列 contactsIDCard，迁出登记表单录入/联系人选择回填 20261005 新增
+  contactsIDCard: string;
   // 经办人（操作人名）
   operator: string;
   createDate: string;

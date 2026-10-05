@@ -152,8 +152,13 @@
                             }}</span>
                           </div>
                           <div class="gravePlotBusiness-card__meta">
-                            <!-- 下葬者按钮：点击进入下葬形态表单（同下葬页修改页内容，数据走自有接口读写 buried 表）20260923 修改 -->
-                            <t-link theme="primary" @click="handleClickBuried(card.row)">
+                            <!-- 下葬者按钮：点击进入下葬形态表单（同下葬页修改页内容，数据走自有接口读写 buried 表） 20260923 修改；
+                                 未销售墓位置灰不可点（t-link disabled 内部拦截 click 事件） 20261005 新增 -->
+                            <t-link
+                              :disabled="isUnsold(card.row.saleStatus)"
+                              theme="primary"
+                              @click="handleClickBuried(card.row)"
+                            >
                               {{ $t('pages.room.buriedPerson') }}
                             </t-link>
                             <!-- 下葬者超过7字截断为前6字+4个半角点，悬停提示完整内容 20260924 修改 -->
@@ -167,9 +172,14 @@
                               {{ card.row.deceased || $t('common.none') }}
                             </span>
                           </div>
-                          <!-- 联系人：room 表字段，存所有联系人；标签为操作按钮，点击进入业务登记表单 20260923 修改 -->
+                          <!-- 联系人：room 表字段，存所有联系人；标签为操作按钮，点击进入业务登记表单 20260923 修改；
+                               未销售墓位置灰不可点（t-link disabled 内部拦截 click 事件） 20261005 新增 -->
                           <div class="gravePlotBusiness-card__meta">
-                            <t-link theme="primary" @click="handleClickPerson(card.row)">
+                            <t-link
+                              :disabled="isUnsold(card.row.saleStatus)"
+                              theme="primary"
+                              @click="handleClickPerson(card.row)"
+                            >
                               {{ $t('pages.room.contacts') }}
                             </t-link>
                             <!-- 联系人超过7字截断为前6字+4个半角点，悬停提示完整内容 20260923 新增 20260924 修改 -->
@@ -263,6 +273,7 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->
@@ -273,6 +284,7 @@
         class="base-form"
         :data="formBusinessData"
         label-align="top"
+        required-mark-position="right"
         :label-width="100"
         :disabled="saleFormDisabled"
       >
@@ -402,19 +414,21 @@
                 "
               >
                 <t-col :span="6">
-                  <!-- 编号字段标题统一为"编号"（原"证件编号"，serialNo 字段标题全项目统一 20261003 修改）：仅销售形态 -->
-                  <t-form-item :label="$t('pages.gravePlotBusiness.serialNo')" name="serialNo">
+                  <!-- 编号字段标题统一为"编号"（原"证件编号"，serialNo 字段标题全项目统一 20261003 修改）：仅销售形态；
+                       销售形态调整为必填：加红星并改用专用占位键（原 serialNoPlaceholder 由安葬证只读证件编号共用，不可直改）20261005 修改 -->
+                  <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.serialNo')" name="serialNo">
                     <t-input
                       v-model="formBusinessData.serialNo"
                       :maxcharacter="6"
                       show-limit-number
                       :style="{ width: '312px' }"
-                      :placeholder="$t('pages.gravePlotBusiness.serialNoPlaceholder')"
+                      :placeholder="$t('pages.gravePlotBusiness.serialNoRequiredPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
                 <t-col :span="6">
-                  <t-form-item :label="$t('pages.gravePlotBusiness.realPrice')" name="realPrice">
+                  <!-- 实收金额为销售提交必校验项，补红星标记（:required 在本版本不渲染星号，用 required-mark） 20261005 新增 -->
+                  <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.realPrice')" name="realPrice">
                     <t-input-number
                       v-model="formBusinessData.realPriceString"
                       large-number
@@ -429,7 +443,7 @@
                 </t-col>
                 <t-col :span="6">
                   <t-form-item
-                    :required="true"
+                    :required-mark="true"
                     :label="formMode === 'sale' ? $t('pages.room.buyer') : $t('pages.gravePlotBusiness.payer')"
                     name="payer"
                   >
@@ -444,7 +458,7 @@
                 </t-col>
                 <t-col :span="6">
                   <t-form-item
-                    :required="true"
+                    :required-mark="true"
                     :label="
                       formMode === 'sale'
                         ? $t('pages.gravePlotBusiness.buyerPhone')
@@ -463,7 +477,7 @@
                 </t-col>
                 <t-col :span="6">
                   <t-form-item
-                    :required="true"
+                    :required-mark="true"
                     :label="
                       formMode === 'sale'
                         ? $t('pages.gravePlotBusiness.buyerIDCard')
@@ -494,7 +508,7 @@
                 <!-- 安葬者三字段：销售形态下随开单同步 buried 表（修改时按 idSale 联查回填，无对应 buried 记录则为空）20260923 新增 -->
                 <template v-if="formMode === 'sale'">
                   <t-col :span="6">
-                    <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
+                    <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
                       <t-input
                         v-model="formBusinessData.deceased"
                         :maxcharacter="20"
@@ -574,7 +588,7 @@
                    提交保存联系人记录并停留刷新列表 20260924 新增 -->
               <template v-if="formMode === 'business' && contactsEditMode !== 'list'">
                 <t-col :span="6">
-                  <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.contacts')" name="contacts">
+                  <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.contacts')" name="contacts">
                     <t-input
                       v-model="formContactsData.contacts"
                       :maxcharacter="20"
@@ -585,13 +599,17 @@
                   </t-form-item>
                 </t-col>
                 <t-col :span="6">
-                  <t-form-item :label="$t('pages.gravePlotBusiness.contactsPhone')" name="contactsPhone">
+                  <t-form-item
+                    :required-mark="true"
+                    :label="$t('pages.gravePlotBusiness.contactsPhone')"
+                    name="contactsPhone"
+                  >
                     <t-input
                       v-model="formContactsData.contactsPhone"
                       :maxcharacter="11"
                       show-limit-number
                       :style="{ width: '322px' }"
-                      :placeholder="$t('pages.gravePlotBusiness.contactsPhonePlaceholder')"
+                      :placeholder="$t('pages.gravePlotBusiness.contactsPhoneRequiredPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -610,7 +628,7 @@
               <!-- 下葬形态新增/修改视图字段（安葬者/身份证号/下葬日期/联系人三字段）；安葬证设置视图展示专属字段分支 20260924 新增 20260927 修改 -->
               <template v-if="formMode === 'buried' && (buriedEditMode === 'add' || buriedEditMode === 'modify')">
                 <t-col :span="6">
-                  <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
+                  <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
                     <t-input
                       v-model="formBusinessData.deceased"
                       :maxcharacter="20"
@@ -632,14 +650,18 @@
                   </t-form-item>
                 </t-col>
                 <t-col :span="6">
-                  <t-form-item :required="true" :label="$t('pages.gravePlotBusiness.burialDate')" name="burialDate">
+                  <t-form-item
+                    :required-mark="true"
+                    :label="$t('pages.gravePlotBusiness.burialDate')"
+                    name="burialDate"
+                  >
                     <t-date-picker
                       v-model="formBusinessData.burialDate"
                       :style="{ width: '322px' }"
                       theme="primary"
                       mode="date"
                       separator="/"
-                      :placeholder="$t('pages.gravePlotBusiness.burialDatePlaceholder')"
+                      :placeholder="$t('pages.gravePlotBusiness.burialDateRequiredPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -1311,6 +1333,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();
@@ -1457,11 +1480,21 @@ const formTitle = computed(() => {
 // 点击人员操作按钮（联系人）：卡片行数据即墓位全量字段（/room-list SELECT r.*）
 // 直接回填墓位信息区免二次请求；有活动业务记录回填为“修改”，无则空表单为“新建”；
 // 进入即回列表视图并拉取联系人记录列表 20260923 修改 20260924 修改
+// 卡顿排查优化 20261005：联系人列表页仅剩“墓位信息 + 联系人列表”，模板 formMode!=='business' 判定下不展示任何业务登记字段，
+// 原实现先 await enterBusinessForm（内部 await fillBusinessForm 串行请求一次 graveplotbusiness 业务记录，数据本页用不到）
+// 再 await 拉联系人——两次串行往返叠加、且视图切换被卡在首个无用请求之后，导致点击联系人后明显卡顿；
+// 改为参照 handleClickRemark：同步准备墓位信息并立即切视图，只拉取联系人列表一次 20261005 修改
 const handleClickPerson = async (row: GravePlotBusinessRoomRow) => {
   formMode.value = 'business';
   contactsEditMode.value = 'list';
   contactsRecords.value = [];
-  await enterBusinessForm(row);
+  resetBusinessForm(row.idRoom);
+  formRoomData.value = {
+    ...row,
+    xNum: String(row.xNum ?? ''),
+    yNum: String(row.yNum ?? ''),
+  };
+  controlPageShow('createModify');
   await loadContactsRecords(row.idRoom);
 };
 
@@ -2103,6 +2136,10 @@ const submitCore = async () => {
     if (contacts === undefined || contacts.trim() === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsRequiredPlaceholder'));
     }
+    // 联系人电话调整为必填（联系人形态新增/修改）：空值拦截，占位与提示同键 20261005 新增
+    if (contactsPhone === undefined || contactsPhone.trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPhoneRequiredPlaceholder'));
+    }
     const contactsPayload = {
       idRoom,
       type: 'contacts' as const,
@@ -2201,7 +2238,7 @@ const submitCore = async () => {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.deceasedRequiredPlaceholder'));
     }
     if (burialDate === undefined || burialDate === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.burialDatePlaceholder'));
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.burialDateRequiredPlaceholder'));
     }
   } else if (payer === undefined || payer.trim() === '') {
     return MessagePlugin.warning(
@@ -2213,9 +2250,12 @@ const submitCore = async () => {
   if (!isReserveMode && !isBuriedMode && (payerPhone === undefined || payerPhone.trim() === '')) {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerPhonePlaceholder'));
   }
-  // 销售形态额外必填：购墓人身份证号、安葬者（购墓人/购墓人电话已在上方校验），
-  // 确认提交时逐项判断未填写则给出提示 20261003 新增
+  // 销售形态额外必填：编号、购墓人身份证号、安葬者（购墓人/购墓人电话已在上方校验），
+  // 确认提交时逐项判断未填写则给出提示 20261003 新增 20261005 编号改为必填
   if (formMode.value === 'sale') {
+    if (serialNo === undefined || serialNo.trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.serialNoRequiredPlaceholder'));
+    }
     if (payerIDCard === undefined || payerIDCard.trim() === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerIDCardPlaceholder'));
     }

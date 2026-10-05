@@ -93,7 +93,7 @@ onActivated(async () => {
 .home-row--bottom,
 .home-row--expired {
   align-items: stretch;
-  min-height: 150px;
+  min-height: 90px;
   max-height: 328px;
 }
 </style>

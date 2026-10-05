@@ -119,6 +119,39 @@
         :columns="contactsColumns"
       />
     </t-card>
+    <!-- 该墓位存在迁出记录时展示只读迁出信息卡片：样式同本页销售信息（info-block 两列），内容为最新一条迁出记录 20261005 新增 -->
+    <t-card v-if="transferOut" :title="$t('pages.transferOut.detailTitle')" :bordered="false">
+      <div class="info-block">
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.transferOutDate') }}</h1>
+          <span>{{
+            transferOut?.transferOutDate
+              ? formatDate(transferOut.transferOutDate)
+              : display(transferOut?.transferOutDate)
+          }}</span>
+        </div>
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.destination') }}</h1>
+          <span>{{ display(transferOut?.destination) }}</span>
+        </div>
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.reason') }}</h1>
+          <span>{{ display(transferOut?.reason) }}</span>
+        </div>
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.contacts') }}</h1>
+          <span>{{ display(transferOut?.contacts) }}</span>
+        </div>
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.contactsphone') }}</h1>
+          <span>{{ display(transferOut?.contactsphone) }}</span>
+        </div>
+        <div class="info-item">
+          <h1>{{ $t('pages.transferOut.contactsIDCard') }}</h1>
+          <span>{{ display(transferOut?.contactsIDCard) }}</span>
+        </div>
+      </div>
+    </t-card>
   </div>
 </template>
 <script lang="ts">
@@ -138,6 +171,7 @@ import type { ContactsModel } from '@/api/model/contactsModel';
 import type { RoomModel } from '@/api/model/roomModel';
 import type { ReserveModel } from '@/api/reserve';
 import type { SaleModel } from '@/api/sale';
+import type { TransferOutModel } from '@/api/transferOut';
 import { i18n } from '@/locales';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
@@ -156,6 +190,8 @@ const props = defineProps<{
   adminfees?: AdminfeeModel[];
   // 该墓位的联系人记录（可能多条），null/未传表示无联系人记录，不展示联系人卡片 20260912 新增
   contacts?: ContactsModel[];
+  // 该墓位最新的迁出记录（单条），null/未传表示无迁出记录，不展示迁出信息卡片 20261005 新增
+  transferOut?: TransferOutModel | null;
 }>();
 
 const emit = defineEmits<{
@@ -371,14 +407,16 @@ const contactsRows = computed(() =>
   background-color: var(--td-bg-color-container);
   border-radius: var(--td-radius-medium) var(--td-radius-medium) 0 0;
   padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl) 80px var(--td-comp-paddingLR-xxl);
-  gap: var(--td-comp-margin-l);
+  // 压缩各类信息卡片之间的上下间距（配合卡片自身竖向内边距调小） 20261005 修改
+  gap: var(--td-comp-margin-xs);
 
   @media (max-width: @screen-sm-max) {
     padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-xl) 80px var(--td-comp-paddingLR-xl);
   }
 
   :deep(.t-card) {
-    padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+    // 竖向内边距由 xxl 降为 l，与 gap 一起缩小卡片上下留白 20261005 修改
+    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-xxl);
     // 卡片固定宽度 = 详情表格列宽总和 1104 + 左右内边距 ×2，
     // 内容宽度不随屏幕变宽而拉伸；窄屏退回 100% 避免溢出 20260914 新增
     width: calc(1104px + var(--td-comp-paddingLR-xxl) * 2);
@@ -404,6 +442,10 @@ const contactsRows = computed(() =>
   :deep(.t-table th),
   :deep(.t-table td) {
     border-right: 1px solid var(--td-border-level-1-color);
+    // 统一表头行与数据行的上下内边距与行高，使列表行高度与列名（表头）行保持一致 20261005 新增
+    padding-top: var(--td-comp-paddingTB-s);
+    padding-bottom: var(--td-comp-paddingTB-s);
+    line-height: 22px;
   }
 
   :deep(.t-table th:last-child),
@@ -416,7 +458,7 @@ const contactsRows = computed(() =>
   column-count: 2;
 
   .info-item {
-    padding-top: var(--td-comp-margin-m);
+    padding-top: var(--td-comp-margin-s);
     display: flex;
     color: var(--td-text-color-primary);
 

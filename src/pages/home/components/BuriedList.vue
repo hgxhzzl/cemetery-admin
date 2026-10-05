@@ -177,6 +177,11 @@ const getRankClass = (index: number) => {
     flex-direction: column;
   }
 
+  // 无记录时表格空状态不占额外空间，让行容器 min-height: 150px 自然兖底 20261005 新增
+  :deep(.t-table__empty) {
+    min-height: 0;
+  }
+
   :deep(.t-card__title) {
     font: var(--td-font-title-large);
     font-weight: 400;

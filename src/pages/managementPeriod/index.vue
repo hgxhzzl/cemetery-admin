@@ -115,13 +115,20 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情页面结束 -->
 
     <!-- 管理期限修改开始：参照管理费收款登记表单骨架，仅保留期限变更所需字段 20260915 新增 -->
     <div v-if="isModifyShow">
-      <t-form class="base-form" :data="formPeriodData" label-align="top" :label-width="100">
+      <t-form
+        class="base-form"
+        :data="formPeriodData"
+        label-align="top"
+        :label-width="100"
+        required-mark-position="right"
+      >
         <div class="form-basic-container">
           <div class="form-basic-item">
             <div class="form-basic-container-title">
@@ -167,7 +174,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :required="true" :label="t('pages.managementPeriod.newEndDate')" name="newEndDate">
+                <t-form-item :required-mark="true" :label="t('pages.managementPeriod.newEndDate')" name="newEndDate">
                   <t-date-picker
                     v-model="formPeriodData.newEndDate"
                     :style="{ width: '322px' }"
@@ -179,7 +186,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="12">
-                <t-form-item :required="true" :label="t('pages.managementPeriod.reason')" name="reason">
+                <t-form-item :required-mark="true" :label="t('pages.managementPeriod.reason')" name="reason">
                   <t-input
                     v-model="formPeriodData.reason"
                     :maxcharacter="100"
@@ -409,6 +416,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();

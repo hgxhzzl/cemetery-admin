@@ -12,9 +12,9 @@
     >
       <template #logo>
         <span v-if="showLogo" class="logo-spacer" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
-          <!-- 左上角品牌：logo-windows 图标 + account 表账户名称（+管理系统）；固定定位不受侧栏宽度限制，收起时仅显示图标 20261005 修改 -->
+          <!-- 左上角品牌：grid-view 图标 + account 表账户名称（+管理系统）；固定定位不受侧栏宽度限制，收起时仅显示图标 20261005 修改 -->
           <span class="app-brand">
-            <logo-windows-icon class="app-brand__icon" />
+            <grid-view-icon class="app-brand__icon" />
             <span v-show="!collapsed" class="app-brand__text">{{ brandText }}</span>
           </span>
         </span>
@@ -43,7 +43,7 @@
 import difference from 'lodash/difference';
 import remove from 'lodash/remove';
 import union from 'lodash/union';
-import { LogoWindowsIcon } from 'tdesign-icons-vue-next';
+import { GridViewIcon } from 'tdesign-icons-vue-next';
 import type { MenuValue } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
@@ -277,7 +277,7 @@ const goHome = () => {
   }
 }
 
-// 左上角品牌：logo-windows 图标 + 账户名称文字 20261005 新增
+// 左上角品牌：grid-view 图标 + 账户名称文字 20261005 新增
 // 用 position: fixed 脱离定宽侧栏容器，z-index 高于顶栏（1001），使“图标+文字”不受侧栏宽度限制、单行全量显示
 .logo-spacer {
   // 品牌层 fixed 后脱离文档流，此处预留与顶栏等高空白，避免菜单首项顶到最上 20261005 新增

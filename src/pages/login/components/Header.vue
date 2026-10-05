@@ -1,7 +1,7 @@
 <template>
   <header class="login-header">
     <span class="brand">
-      <logo-windows-icon class="brand__icon" />
+      <grid-view-icon class="brand__icon" />
       <span class="brand__text">{{ t('pages.login.brandText') }}</span>
     </span>
     <div class="operations-container">
@@ -10,7 +10,7 @@
   </header>
 </template>
 <script setup lang="ts">
-import { LogoWindowsIcon } from 'tdesign-icons-vue-next';
+import { GridViewIcon } from 'tdesign-icons-vue-next';
 
 import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { t } from '@/locales';

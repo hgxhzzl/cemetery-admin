@@ -1,6 +1,14 @@
 <template>
   <div v-if="isFormShow">
-    <t-form class="base-form" :data="formData" label-align="top" :label-width="100" @reset="onReset" @submit="onSubmit">
+    <t-form
+      class="base-form"
+      :data="formData"
+      label-align="top"
+      :label-width="100"
+      required-mark-position="right"
+      @reset="onReset"
+      @submit="onSubmit"
+    >
       <div class="form-basic-container">
         <div class="form-basic-item">
           <div class="form-basic-container-title">{{ $t('pages.receiptConfig.title') }}</div>
@@ -17,7 +25,7 @@
             </t-select>
           </t-form-item>
 
-          <t-form-item :label="$t('pages.receiptConfig.prefix')" name="prefix">
+          <t-form-item :required-mark="true" :label="$t('pages.receiptConfig.prefix')" name="prefix">
             <t-input
               v-model="formData.prefix"
               :placeholder="$t('pages.receiptConfig.prefixPlaceholder')"
@@ -26,7 +34,7 @@
             />
           </t-form-item>
 
-          <t-form-item :label="$t('pages.receiptConfig.phone')" name="phone">
+          <t-form-item :required-mark="true" :label="$t('pages.receiptConfig.phone')" name="phone">
             <t-input
               v-model="formData.phone"
               :placeholder="$t('pages.receiptConfig.phonePlaceholder')"
@@ -35,7 +43,7 @@
             />
           </t-form-item>
 
-          <t-form-item :label="$t('pages.receiptConfig.address')" name="address">
+          <t-form-item :required-mark="true" :label="$t('pages.receiptConfig.address')" name="address">
             <t-input
               v-model="formData.address"
               :placeholder="$t('pages.receiptConfig.addressPlaceholder')"

@@ -12,6 +12,8 @@ import { getReserveByRoom } from '@/api/reserve';
 import { getIdList } from '@/api/room';
 import type { SaleModel } from '@/api/sale';
 import { getSaleByRoom } from '@/api/sale';
+import type { TransferOutModel } from '@/api/transferOut';
+import { getTransferOutListByIdRoom } from '@/api/transferOut';
 
 /**
  * 共用详情页数据 hook：墓区系统 10 个业务页（6 卡片页 + 4 查询页）统一使用
@@ -32,6 +34,8 @@ export const useRoomDetail = () => {
   const detailAdminfees = ref<AdminfeeModel[]>([]);
   // 该墓位的联系人记录（可能多条）
   const detailContacts = ref<ContactsModel[]>([]);
+  // 该墓位最新的迁出记录（可能多条，详情按单条展示最新一条），null/未传表示无迁出记录，不展示迁出信息卡片 20261005 新增
+  const detailTransferOut = ref<TransferOutModel | null>(null);
 
   // 拉取单条墓位与活动预定/销售记录、下葬/收款/联系人记录列表。
   // 6 类数据必须全部拉取，任一遗漏会导致该页详情卡片与其他页不一致
@@ -44,6 +48,7 @@ export const useRoomDetail = () => {
       { list: buriedList },
       { list: adminfeeList },
       { list: contactsList },
+      { list: transferOutList },
     ] = await Promise.all([
       getIdList(idRoom),
       getReserveByRoom(idRoom),
@@ -51,6 +56,7 @@ export const useRoomDetail = () => {
       getBuriedList(idRoom),
       getAdminfeeList(idRoom),
       getContactsList(idRoom),
+      getTransferOutListByIdRoom(idRoom),
     ]);
     detailRoom.value = list && list.length > 0 ? list[0] : null;
     detailReserve.value = reserveList && reserveList.length > 0 ? reserveList[0] : null;
@@ -58,6 +64,7 @@ export const useRoomDetail = () => {
     detailBuried.value = buriedList;
     detailAdminfees.value = adminfeeList;
     detailContacts.value = contactsList;
+    detailTransferOut.value = transferOutList && transferOutList.length > 0 ? transferOutList[0] : null;
   };
 
   // 详情关闭：清空全部详情数据，视图切换由各页自行处理
@@ -68,6 +75,7 @@ export const useRoomDetail = () => {
     detailBuried.value = [];
     detailAdminfees.value = [];
     detailContacts.value = [];
+    detailTransferOut.value = null;
   };
 
   return {
@@ -77,6 +85,7 @@ export const useRoomDetail = () => {
     detailBuried,
     detailAdminfees,
     detailContacts,
+    detailTransferOut,
     loadDetail,
     clearDetail,
   };

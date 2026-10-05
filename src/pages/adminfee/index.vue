@@ -260,12 +260,13 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->
     <!-- 管理费收款登记（新建/修改/删除）开始 -->
     <div v-if="isCreateShow">
-      <t-form class="base-form" :data="formFeeData" label-align="top" :label-width="100">
+      <t-form class="base-form" :data="formFeeData" label-align="top" :label-width="100" required-mark-position="right">
         <div class="form-basic-container">
           <div class="form-basic-item">
             <div class="form-basic-container-title">
@@ -347,7 +348,7 @@
               </t-col>
 
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required="true" :label="$t('pages.adminfee.payer')" name="payer">
+                <t-form-item :required-mark="true" :label="$t('pages.adminfee.payer')" name="payer">
                   <!-- 付款人输入框右侧“选择”按钮：样式/交互同墓位业务下葬页联系人选择，
                        点击打开联系人选择页，选中后回填付款人+电话+身份证号 20261004 新增/调整 -->
                   <div style="display: flex; gap: 8px; align-items: center">
@@ -370,9 +371,9 @@
                   </div>
                 </t-form-item>
               </t-col>
-              <!-- 付款人电话：库列名原始拼写 payePrhone，非必填 20260909 新增 -->
+              <!-- 付款人电话：库列名原始拼写 payePrhone，改为必填 20261005 调整 -->
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.adminfee.payePrhone')" name="payePrhone">
+                <t-form-item :required-mark="true" :label="$t('pages.adminfee.payePrhone')" name="payePrhone">
                   <t-input
                     v-model="formFeeData.payePrhone"
                     :maxcharacter="11"
@@ -395,7 +396,7 @@
                 </t-form-item>
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required="true" :label="$t('pages.adminfee.payAmount')" name="payAmount">
+                <t-form-item :required-mark="true" :label="$t('pages.adminfee.payAmount')" name="payAmount">
                   <t-input-number
                     v-model="formFeeData.payAmount"
                     theme="normal"
@@ -407,7 +408,7 @@
                 </t-form-item>
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required="true" :label="$t('pages.adminfee.termYears')" name="termYears">
+                <t-form-item :required-mark="true" :label="$t('pages.adminfee.termYears')" name="termYears">
                   <t-input-number
                     v-model="formFeeData.termYears"
                     theme="normal"
@@ -734,6 +735,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();
@@ -1111,6 +1113,9 @@ const ClickSubmit = () => run(submitCore);
 const submitCore = async () => {
   if (formFeeData.value.payer === '') {
     return MessagePlugin.warning(translate('pages.adminfee.payerPlaceholder'));
+  }
+  if (!formFeeData.value.payePrhone || String(formFeeData.value.payePrhone).trim() === '') {
+    return MessagePlugin.warning(translate('pages.adminfee.payePrhonePlaceholder'));
   }
   if (!formFeeData.value.payAmount || Number(formFeeData.value.payAmount) <= 0) {
     return MessagePlugin.warning(translate('pages.adminfee.payAmountPlaceholder'));

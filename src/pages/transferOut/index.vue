@@ -269,12 +269,19 @@
       :buried="detailBuried"
       :adminfees="detailAdminfees"
       :contacts="detailContacts"
+      :transfer-out="detailTransferOut"
       @close="ClickDetailClose"
     />
     <!-- 详情结束 -->
     <!-- 迁出登记（新建/修改/删除）开始 -->
     <div v-if="isCreateShow">
-      <t-form class="base-form" :data="formTransferOutData" label-align="top" :label-width="100">
+      <t-form
+        class="base-form"
+        :data="formTransferOutData"
+        label-align="top"
+        :label-width="100"
+        required-mark-position="right"
+      >
         <div class="form-basic-container">
           <div class="form-basic-item">
             <div class="form-basic-container-title">
@@ -353,7 +360,11 @@
               </t-col>
 
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required="true" :label="$t('pages.transferOut.transferOutDate')" name="transferOutDate">
+                <t-form-item
+                  :required-mark="true"
+                  :label="$t('pages.transferOut.transferOutDate')"
+                  name="transferOutDate"
+                >
                   <t-date-picker
                     v-model="formTransferOutData.transferOutDate"
                     :style="{ width: '322px' }"
@@ -365,7 +376,7 @@
                 </t-form-item>
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required="true" :label="$t('pages.transferOut.destination')" name="destination">
+                <t-form-item :required-mark="true" :label="$t('pages.transferOut.destination')" name="destination">
                   <t-input
                     v-model="formTransferOutData.destination"
                     :maxcharacter="100"
@@ -388,13 +399,24 @@
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :label="$t('pages.transferOut.contacts')" name="contacts">
-                  <t-input
-                    v-model="formTransferOutData.contacts"
-                    :maxcharacter="20"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.transferOut.contactsPlaceholder')"
-                  />
+                  <!-- 联系人输入框右侧“选择”按钮：打开联系人选择页，选中后回填联系人/电话/身份证号（功能与样式同墓位业务页下葬）20261005 新增 -->
+                  <div style="display: flex; gap: 8px; align-items: center">
+                    <t-input
+                      v-model="formTransferOutData.contacts"
+                      :maxcharacter="20"
+                      show-limit-number
+                      :style="{ width: '240px' }"
+                      :placeholder="$t('pages.transferOut.contactsPlaceholder')"
+                    />
+                    <t-button
+                      theme="default"
+                      variant="outline"
+                      style="margin-left: auto"
+                      @click="handleOpenContactsSelect()"
+                    >
+                      {{ $t('pages.transferOut.select') }}
+                    </t-button>
+                  </div>
                 </t-form-item>
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
@@ -405,6 +427,18 @@
                     show-limit-number
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.transferOut.contactsphonePlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
+              <!-- 联系人身份证号：在联系人电话右侧同行，非必填，最长 18 位（同墓位业务页/下葬页）20261005 新增 -->
+              <t-col v-if="!isDeleteMode" :span="6">
+                <t-form-item :label="$t('pages.transferOut.contactsIDCard')" name="contactsIDCard">
+                  <t-input
+                    v-model="formTransferOutData.contactsIDCard"
+                    :maxcharacter="18"
+                    show-limit-number
+                    :style="{ width: '322px' }"
+                    :placeholder="$t('pages.transferOut.contactsIDCardPlaceholder')"
                   />
                 </t-form-item>
               </t-col>
@@ -428,6 +462,75 @@
       </t-form>
     </div>
     <!-- 迁出登记结束 -->
+    <!-- 联系人选择页：联系人字段“选择”按钮进入，样式/交互同墓位业务页下葬，墓位信息 + 活动联系人表格，
+         操作列逐行“选择”回填联系人/电话/身份证号并返回迁出登记表单 20261005 新增 -->
+    <div v-if="isContactsSelectShow">
+      <t-form class="base-form" :data="formTransferOutData" label-align="top" :label-width="100">
+        <div class="form-basic-container">
+          <div class="form-basic-item">
+            <div class="form-basic-container-title">
+              {{ $t('pages.transferOut.selectContactTitle') }}
+              <t-button
+                class="cms-back-btn"
+                style="float: right"
+                theme="default"
+                variant="text"
+                @click="handleCloseContactsSelect()"
+              >
+                {{ $t('operate.backDetail') }}
+                <rollback-icon size="16px" />
+              </t-button>
+            </div>
+
+            <t-row class="info-block des" :gutter="[62, 5]">
+              <t-col :span="6">
+                <span>{{ $t('pages.room.park') }} : {{ formRoomData.park }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.xyNumber') }} : {{ formRoomData.xyNumber }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.roomType') }} : {{ t(formRoomData.roomType) }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.specs') }} : {{ formRoomData.specs }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.price') }} : {{ formatPrice(formRoomData.price) }}</span>
+              </t-col>
+              <t-col :span="6">
+                <span>{{ $t('pages.room.saleStatus') }} : {{ t(formRoomData.saleStatus) }}</span>
+              </t-col>
+              <t-col :span="12">
+                <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
+              </t-col>
+
+              <!-- 该墓位活动联系人列表，操作列逐行“选择”按钮，点击回填迁出登记表单并返回 20261005 新增 -->
+              <t-col :span="12">
+                <t-form-item name="idContacts">
+                  <t-table
+                    class="transferOut-record-table"
+                    :data="contactsRecords"
+                    :columns="contactsColumns"
+                    row-key="idContacts"
+                    :bordered="true"
+                    size="small"
+                    :max-height="240"
+                  >
+                    <template #op="{ row }">
+                      <t-link theme="primary" @click="onSelectContact(row)">
+                        {{ $t('pages.transferOut.select') }}
+                      </t-link>
+                    </template>
+                  </t-table>
+                </t-form-item>
+              </t-col>
+            </t-row>
+          </div>
+        </div>
+      </t-form>
+    </div>
+    <!-- 联系人选择页结束 20261005 新增 -->
     <!-- 删除迁出二次确认弹窗，参照下葬页 20260916 新增 -->
     <t-dialog
       v-model:visible="confirmVisible"
@@ -451,6 +554,8 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { getContactsList } from '@/api/contacts';
+import type { ContactsModel } from '@/api/model/contactsModel';
 import type { RoomModel } from '@/api/model/roomModel';
 import { getIdList } from '@/api/room';
 import type { TransferOutModel } from '@/api/transferOut';
@@ -521,6 +626,8 @@ type TransferOutFormData = typeof INITIAL_FORM_DATA;
 const isListShow = ref(false);
 const isDetailShow = ref(false);
 const isCreateShow = ref(false);
+// 联系人选择页显隐：从迁出登记表单联系人字段的“选择”按钮进入，与列表/详情/登记页互斥 20261005 新增
+const isContactsSelectShow = ref(false);
 
 const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formTransferOutData = ref<TransferOutFormData>({ ...INITIAL_FORM_DATA });
@@ -530,6 +637,7 @@ const { controlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   create: isCreateShow,
+  contactsSelect: isContactsSelectShow,
 });
 
 // ==================== 列表：状态与筛选下拉数据 ====================
@@ -616,6 +724,7 @@ const {
   detailBuried,
   detailAdminfees,
   detailContacts,
+  detailTransferOut,
   loadDetail,
   clearDetail,
 } = useRoomDetail();
@@ -691,7 +800,49 @@ const fillFormData = (record: TransferOutModel) => {
     reason: record.reason ?? '',
     contacts: record.contacts ?? '',
     contactsphone: record.contactsphone ?? '',
+    // 联系人身份证号回填：库列 contactsIDCard 20261005 新增
+    contactsIDCard: record.contactsIDCard ?? '',
   };
+};
+
+// ==================== 联系人选择页（联系人字段“选择”按钮进入，功能/样式同墓位业务页下葬）====================
+// 该墓位活动联系人记录与展示列（联系人/电话/身份证号 + 操作列“选择”），数据源 getContactsList 20261005 新增
+const contactsRecords = ref<ContactsModel[]>([]);
+const contactsColumns: PrimaryTableCol[] = [
+  { title: translate('pages.contacts.contacts'), colKey: 'contacts' },
+  { title: translate('pages.contacts.contactsPhone'), colKey: 'contactsPhone', width: 140 },
+  { title: translate('pages.contacts.contactsIDCard'), colKey: 'contactsIDCard', width: 180 },
+  { title: translate('operate.operation'), colKey: 'op', width: 90 },
+];
+
+// 打开联系人选择页：查该墓位活动联系人，无记录提示且不跳转（同墓位业务页下葬）20261005 新增
+const handleOpenContactsSelect = async () => {
+  const { idRoom } = formTransferOutData.value;
+  try {
+    const { list } = await getContactsList(idRoom);
+    if (!list || list.length === 0) {
+      return MessagePlugin.warning(translate('pages.transferOut.noContact'));
+    }
+    contactsRecords.value = list;
+    controlPageShow('contactsSelect');
+  } catch (e) {
+    logError(e);
+  }
+};
+
+// 选择联系人：回填联系人/电话/身份证号（contacts 表列 contactsPhone 映射表单 contactsphone），返回迁出登记表单 20261005 新增
+const onSelectContact = (row: ContactsModel) => {
+  formTransferOutData.value.contacts = row.contacts ?? '';
+  formTransferOutData.value.contactsphone = row.contactsPhone ?? '';
+  formTransferOutData.value.contactsIDCard = row.contactsIDCard ?? '';
+  contactsRecords.value = [];
+  controlPageShow('create');
+};
+
+// 关闭联系人选择页：返回迁出登记表单，不改动已填内容 20261005 新增
+const handleCloseContactsSelect = () => {
+  contactsRecords.value = [];
+  controlPageShow('create');
 };
 
 const getRoomID = async (id: number) => {

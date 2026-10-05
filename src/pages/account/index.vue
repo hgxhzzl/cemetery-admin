@@ -488,7 +488,10 @@ const fetchData = async () => {
     data.value = list;
     controlPageShow('listTotal');
   } catch (e) {
+    // 列表请求失败/取消时若仅静默记日志，页面会停在“暂无数据”且无任何提示，只能整页刷新才恢复；
+    // 这里补一条可见错误提示，避免“打开没数据又不知道原因” 20261005 新增
     logError(e);
+    MessagePlugin.error(translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -506,8 +509,10 @@ const confirmBody = computed(() => {
   return '';
 });
 
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  // 先取完列表数据再显示，避免慢网/首次冷请求时表格先闪一屏“暂无数据”被误当成“没数据”；
+  // 数据就绪后再延时 280ms 配合淡入过渡显示 20261005 修改（对齐 park 页 await 模式）
+  await fetchData();
   setTimeout(() => {
     isListShow.value = true;
   }, 280);

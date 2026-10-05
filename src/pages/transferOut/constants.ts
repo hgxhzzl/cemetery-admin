@@ -39,4 +39,6 @@ export const INITIAL_FORM_DATA = {
   contacts: '',
   // 联系人电话：库列 contactsphone(全小写) 20260916 新增,
   contactsphone: '',
+  // 联系人身份证号：库列 contactsIDCard，非必填最长 18 位，联系人选择按钮回填/手动录入 20261005 新增,
+  contactsIDCard: '',
 };

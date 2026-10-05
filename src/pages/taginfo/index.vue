@@ -106,8 +106,10 @@ const deceasedRelation = ref<string[]>([]);
 const region = ref<string[]>([]);
 
 const isFormShow = ref(false);
-onMounted(() => {
-  fetchData();
+onMounted(async () => {
+  // 先取完标签配置数据再显示，避免慢网/首次冷请求时表单先闪一屏空数据被误当成“没数据”；
+  // 数据就绪后再延时 280ms 配合淡入过渡显示 20261005 修改（对齐 park 页 await 模式）
+  await fetchData();
   setTimeout(() => {
     isFormShow.value = true;
   }, 280);
@@ -151,7 +153,10 @@ const fetchData = async () => {
       }
     });
   } catch (e) {
+    // 标签列表请求失败/取消时若仅静默记日志，页面会停在空列表且无任何提示，只能整页刷新才恢复；
+    // 这里补一条可见错误提示 20261005 新增
     logError(e);
+    MessagePlugin.error(translate('operate.listLoadFailedPrompt'));
   }
 };
 
