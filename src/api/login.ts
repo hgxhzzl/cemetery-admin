@@ -23,6 +23,8 @@ export interface LoginResult {
     // 操作员是否平台管理员账号：1 管理员 / 0 普通操作员 20260924 新增
     isAccount?: number;
     dataBaseName?: string;
+    // account 表记录的 account 字段（账户/园区名称），供系统左上角 logo 文字展示 20261005 新增
+    accountName?: string;
     userInfo?: {
       roles?: UserPermission[];
     };

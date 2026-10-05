@@ -5,13 +5,10 @@
     <div class="login-container">
       <div class="title-container">
         <h1 class="title margin-no">{{ t('pages.login.loginTitle') }}</h1>
-        <h1 class="title">{{ t('common.appName') }}</h1>
       </div>
 
       <login />
     </div>
-
-    <footer class="copyright">{{ t('common.copyright') }}</footer>
   </div>
 </template>
 <script setup lang="ts">

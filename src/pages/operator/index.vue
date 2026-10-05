@@ -77,7 +77,15 @@
     <!-- detail end -->
     <!-- create begin -->
     <div v-if="isCreateShow">
-      <t-form ref="formCreate" class="base-form" :data="formData" label-align="top" :label-width="100" @reset="onReset">
+      <t-form
+        ref="formCreate"
+        class="base-form"
+        :data="formData"
+        label-align="top"
+        :label-width="100"
+        required-mark-position="right"
+        @reset="onReset"
+      >
         <div class="form-basic-container">
           <div class="form-basic-item">
             <div v-show="isCreate" class="form-basic-container-title">
@@ -110,7 +118,7 @@
                  由 24 收到 5 与新建账户页/新建合同页一致 20261004 调整 -->
             <t-row class="row-gap" :gutter="[32, 5]">
               <t-col :span="6">
-                <t-form-item :required="true" :label="$t('pages.operator.name')" name="name">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.name')" name="name">
                   <t-input
                     v-model="formData.name"
                     :maxcharacter="20"
@@ -122,7 +130,7 @@
               </t-col>
 
               <t-col :span="6">
-                <t-form-item :label="$t('pages.operator.phone')" name="phone">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.phone')" name="phone">
                   <t-input
                     v-model="formData.phone"
                     :maxcharacter="11"
@@ -133,8 +141,14 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :label="$t('pages.operator.useStatus')" name="useStatus">
-                  <t-select v-model="formData.useStatus" :style="{ width: '322px' }" class="demo-select-base" clearable>
+                <t-form-item :required-mark="true" :label="$t('pages.operator.useStatus')" name="useStatus">
+                  <t-select
+                    v-model="formData.useStatus"
+                    :style="{ width: '322px' }"
+                    class="demo-select-base"
+                    :placeholder="$t('pages.operator.useStatusPlaceholder')"
+                    clearable
+                  >
                     <t-option
                       v-for="(item, index) in TYPE_USE_STATUS"
                       :key="index"
@@ -147,7 +161,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :label="$t('pages.operator.duties')" name="duties">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.duties')" name="duties">
                   <t-select
                     v-model="formData.duties"
                     :style="{ width: '322px' }"
@@ -167,7 +181,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :label="$t('pages.operator.team')" name="team">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.team')" name="team">
                   <t-select
                     v-model="formData.team"
                     :style="{ width: '322px' }"
@@ -187,7 +201,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :label="$t('pages.operator.joinDate')" name="joinDate">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.joinDate')" name="joinDate">
                   <t-date-picker
                     v-model="formData.joinDate"
                     :style="{ width: '322px' }"
@@ -200,12 +214,12 @@
               </t-col>
             </t-row>
 
-            <!-- 备注统一限制50字 20260917 修改 -->
+            <!-- 备注限字：操作员页调为 20 字（原统一 50 字）20261005 修改 -->
             <t-form-item :label="$t('pages.operator.remark')" name="remark">
               <t-input
                 v-model="formData.remark"
                 :height="124"
-                :maxcharacter="50"
+                :maxcharacter="20"
                 show-limit-number
                 :placeholder="$t('pages.operator.remarkPlaceholder')"
               />

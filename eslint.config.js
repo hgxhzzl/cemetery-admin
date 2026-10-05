@@ -26,6 +26,7 @@ export default antfu(
           ...globals.jest,
           defineProps: 'readonly',
           defineEmits: 'readonly',
+          __APP_VERSION__: 'readonly',
         },
         ecmaVersion: 6,
         sourceType: 'module',

@@ -2,6 +2,7 @@
   "lang": "简体中文",
   "common": {
     "appName": "墓园管理系统",
+    "mgmtSuffix": "管理系统",
     "copyright": "墓园管理系统",
     "none": "无"
   },
@@ -281,7 +282,8 @@
       }
     },
     "login": {
-      "loginTitle": "登录到",
+      "loginTitle": "欢迎登录",
+      "brandText": "公墓管理系统",
       "remember": "记住账号",
       "signIn": "登录",
       "loginSuccess": "登录成功",
@@ -481,15 +483,15 @@
       "name": "姓名",
       "namePlaceholder": "请必填姓名",
       "phone": "电话",
-      "phonePlaceholder": "请输入电话",
+      "phonePlaceholder": "请必填电话",
       "duties": "职务",
-      "dutiesPlaceholder": "请选择职务",
+      "dutiesPlaceholder": "请必选职务",
       "team": "团队",
-      "teamPlaceholder": "请选择团队",
+      "teamPlaceholder": "请必选团队",
       "useStatus": "使用状态",
-      "useStatusPlaceholder": "请选择使用状态",
+      "useStatusPlaceholder": "请必选使用状态",
       "joinDate": "入职时间",
-      "joinDatePlaceholder": "请选择入职时间",
+      "joinDatePlaceholder": "请必选入职时间",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
       "operatorPowerTitle": "操作员权限",

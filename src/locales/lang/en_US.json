@@ -2,6 +2,7 @@
   "lang": "English",
   "common": {
     "appName": "Cemetery Management System",
+    "mgmtSuffix": " Management System",
     "copyright": "Cemetery Management System",
     "none": "None"
   },
@@ -281,7 +282,8 @@
       }
     },
     "login": {
-      "loginTitle": "Sign in to",
+      "loginTitle": "Welcome",
+      "brandText": "Cemetery Management System",
       "remember": "Remember Account",
       "signIn": "Sign in",
       "loginSuccess": "Login successful",
@@ -481,15 +483,15 @@
       "name": "Name",
       "namePlaceholder": "please enter name (required)",
       "phone": "Phone",
-      "phonePlaceholder": "please enter phone",
+      "phonePlaceholder": "please enter phone (required)",
       "duties": "Duties",
-      "dutiesPlaceholder": "please select duties",
+      "dutiesPlaceholder": "please select duties (required)",
       "team": "Team",
-      "teamPlaceholder": "please select team",
+      "teamPlaceholder": "please select team (required)",
       "useStatus": "Use Status",
-      "useStatusPlaceholder": "please select use status",
+      "useStatusPlaceholder": "please select use status (required)",
       "joinDate": "Join Date",
-      "joinDatePlaceholder": "please select join date",
+      "joinDatePlaceholder": "please select join date (required)",
       "remark": "Remark",
       "remarkPlaceholder": "please enter remark",
       "operatorPowerTitle": "Operator Permissions",

@@ -42,6 +42,8 @@ export const useUserStore = defineStore('user', {
     userName: '',
     userId: 0,
     dataBaseName: '',
+    // account 表记录的 account 字段（账户/园区名称），由登录响应透传，用于系统左上角 logo 文字展示 20261005 新增
+    accountName: '',
     // 是否平台管理员账号（1管理员/0普通操作员），由登录响应透传 20260924 新增
     isAccount: 0,
     userInfo: { ...InitUserInfo },
@@ -73,6 +75,7 @@ export const useUserStore = defineStore('user', {
         this.isAccount = res.data.isAccount ?? 0;
         this.dataBaseName =
           res.data.dataBaseName || `${roleItems.find((item: UserPermission) => item.dataBaseName)?.dataBaseName || ''}`;
+        this.accountName = res.data.accountName || '';
         this.userInfo = {
           name: this.userName || account,
           roles: roleItems,
@@ -158,6 +161,7 @@ export const useUserStore = defineStore('user', {
       this.userName = '';
       this.userId = 0;
       this.dataBaseName = '';
+      this.accountName = '';
       this.isAccount = 0;
       this.userInfo = { ...InitUserInfo };
     },
@@ -168,7 +172,7 @@ export const useUserStore = defineStore('user', {
       permissionStore.initRoutes();
     },
     key: 'user',
-    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'isAccount', 'userInfo'],
+    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'accountName', 'isAccount', 'userInfo'],
   },
 });
 

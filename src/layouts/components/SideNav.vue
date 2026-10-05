@@ -11,8 +11,12 @@
       @expand="onExpanded"
     >
       <template #logo>
-        <span v-if="showLogo" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
-          <component :is="getLogo()" :class="logoCls" />
+        <span v-if="showLogo" class="logo-spacer" :class="`${prefix}-side-nav-logo-wrapper`" @click="goHome">
+          <!-- 左上角品牌：logo-windows 图标 + account 表账户名称（+管理系统）；固定定位不受侧栏宽度限制，收起时仅显示图标 20261005 修改 -->
+          <span class="app-brand">
+            <logo-windows-icon class="app-brand__icon" />
+            <span v-show="!collapsed" class="app-brand__text">{{ brandText }}</span>
+          </span>
         </span>
       </template>
       <menu-content :nav-data="menu" />
@@ -20,9 +24,7 @@
         <t-button variant="text" shape="square" @click="changeCollapsed">
           <template #icon><t-icon name="view-list" /></template>
         </t-button>
-        <span v-show="!isCompact" :class="versionCls">
-          {{ !collapsed ? t('common.appName') : '' }} {{ pgk.version }}
-        </span>
+        <span v-show="!isCompact" :class="versionCls"> {{ !collapsed ? 'version：' : '' }}{{ appVersion }} </span>
       </template>
     </t-menu>
     <!-- 侧边栏宽度拖拽手柄：按住左右移动调整菜单宽度，双击恢复语言默认宽度 20260915 新增 -->
@@ -41,21 +43,19 @@
 import difference from 'lodash/difference';
 import remove from 'lodash/remove';
 import union from 'lodash/union';
+import { LogoWindowsIcon } from 'tdesign-icons-vue-next';
 import type { MenuValue } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
-import AssetLogoFull from '@/assets/assets-logo-full.svg?component';
-import AssetLogo from '@/assets/assets-t-logo.svg?component';
 import { prefix } from '@/config/global';
 import { t } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
-import { useSettingStore } from '@/store';
+import { useSettingStore, useUserStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
 
-import pgk from '../../../package.json';
 import MenuContent from './MenuContent.vue';
 
 const { menu, showLogo, isFixed, layout, theme, isCompact } = defineProps({
@@ -91,8 +91,15 @@ const { menu, showLogo, isFixed, layout, theme, isCompact } = defineProps({
 
 const MIN_POINT = 992 - 1;
 
+// 侧栏底部应用版本号：构建期由 vite define 注入的 __APP_VERSION__（取自 git tag / commit hash）20261005 新增
+const appVersion = __APP_VERSION__;
+
 const collapsed = computed(() => useSettingStore().isSidebarCompact);
 const menuAutoCollapsed = computed(() => useSettingStore().menuAutoCollapsed);
+// 左上角品牌文字：account 表 account 字段（账户/园区名称）+ “管理系统”后缀；未登录或未回填时冷备到应用名 20261005 修改
+const brandText = computed(() =>
+  useUserStore().accountName ? `${useUserStore().accountName}${t('common.mgmtSuffix')}` : t('common.appName'),
+);
 
 const active = computed(() => getActive());
 
@@ -132,14 +139,6 @@ const changeCollapsed = () => {
 };
 const sideMode = computed(() => {
   return theme === 'dark';
-});
-const logoCls = computed(() => {
-  return [
-    `${prefix}-side-nav-logo-${collapsed.value ? 't' : 'tdesign'}-logo`,
-    {
-      [`${prefix}-side-nav-dark`]: sideMode.value,
-    },
-  ];
 });
 const versionCls = computed(() => {
   return [
@@ -251,11 +250,6 @@ const goHome = () => {
   // 统一跳根路径，由路由守卫按菜单模式跳转：业务模式跳首个业务菜单，模板模式跳仪表盘
   router.push('/');
 };
-
-const getLogo = () => {
-  if (collapsed.value) return AssetLogo;
-  return AssetLogoFull;
-};
 </script>
 <style lang="less" scoped>
 // 侧边栏宽度拖拽手柄：悬浮于菜单右边缘，按住左右移动调整宽度 20260915 新增
@@ -280,6 +274,40 @@ const getLogo = () => {
 .is-sidebar-resizing {
   :deep(.t-default-menu) {
     transition: none;
+  }
+}
+
+// 左上角品牌：logo-windows 图标 + 账户名称文字 20261005 新增
+// 用 position: fixed 脱离定宽侧栏容器，z-index 高于顶栏（1001），使“图标+文字”不受侧栏宽度限制、单行全量显示
+.logo-spacer {
+  // 品牌层 fixed 后脱离文档流，此处预留与顶栏等高空白，避免菜单首项顶到最上 20261005 新增
+  min-height: var(--td-comp-size-xxxl);
+}
+
+.app-brand {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1050;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  height: var(--td-comp-size-xxxl);
+  padding: 0 16px;
+  white-space: nowrap;
+
+  &__icon {
+    flex: none;
+    font-size: 26px;
+    color: var(--td-brand-color);
+  }
+
+  &__text {
+    // 不收缩、不截断：宽度随文字自然撑开，不受侧栏宽度限制 20261005 新增
+    flex: none;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--td-text-color-primary);
   }
 }
 </style>

@@ -55,8 +55,10 @@ onActivated(async () => {
   /* 取消 calc(100vh - 200px) 一屏高限制：自然高度随内容撑开，上下滚动交给外层布局层（.tdesign-starter-layout overflow-y:auto）承接，
      不再产生内层滚动条 20260925 修改 */
 
-  /* 裁剪 t-row gutter 负 margin（左右各 -8px）导致的 8px 横向出血：列内对称 padding 已补偿，裁剪不影响视觉 20260917 修复 */
-  overflow-x: hidden;
+  /* 裁剪 t-row gutter 负 margin（左右各 -8px）导致的 8px 横向出血：列内对称 padding 已补偿，裁剪不影响视觉 20260917 修复
+     由 hidden 改为 clip：overflow-x:hidden 会把 overflow-y 强制算成 auto，内容自然高度略超盒子时凭空多出一条内层纵向滚动条；
+     clip 同样裁剪横向溢出但不创建滚动容器，overflow-y 维持 visible → 内层滚动条消失 20261005 修改 */
+  overflow-x: clip;
 }
 
 .home-row {

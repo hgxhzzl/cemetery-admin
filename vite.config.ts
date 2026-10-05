@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import path from 'node:path';
 
 import vue from '@vitejs/plugin-vue';
@@ -8,11 +9,24 @@ import svgLoader from 'vite-svg-loader';
 
 const CWD = process.cwd();
 
+// 应用版本号：构建期从 git 计算并注入运行时常量 __APP_VERSION__
+// 取值链：有 tag → 用 tag（如 cms01-v2.0.1）；无 tag → 回落 commit 短 hash；连 .git 都没有 → 'dev' 20261005 新增
+const getAppVersion = (): string => {
+  try {
+    return execSync('git describe --tags --always --dirty', { encoding: 'utf-8' }).trim();
+  } catch {
+    return 'dev';
+  }
+};
+
 // https://vitejs.dev/config/
 export default ({ mode }: ConfigEnv): UserConfig => {
   const { VITE_BASE_URL, VITE_API_URL_PREFIX } = loadEnv(mode, CWD);
   return {
     base: VITE_BASE_URL,
+    define: {
+      __APP_VERSION__: JSON.stringify(getAppVersion()),
+    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './src'),

@@ -1,5 +1,8 @@
 // 通用声明
 
+// 构建期由 vite define 注入的应用版本号（取自 git describe）20261005 新增
+declare const __APP_VERSION__: string;
+
 // Vue
 declare module '*.vue' {
   import type { DefineComponent } from 'vue';
