@@ -407,16 +407,16 @@ const contactsRows = computed(() =>
   background-color: var(--td-bg-color-container);
   border-radius: var(--td-radius-medium) var(--td-radius-medium) 0 0;
   padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl) 80px var(--td-comp-paddingLR-xxl);
-  // 压缩各类信息卡片之间的上下间距（配合卡片自身竖向内边距调小） 20261005 修改
-  gap: var(--td-comp-margin-xs);
+  // 进一步压缩各类信息卡片之间的上下间距（gap 归零 + 卡片竖向内边距再降）20261007 修改
+  gap: 0;
 
   @media (max-width: @screen-sm-max) {
     padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-xl) 80px var(--td-comp-paddingLR-xl);
   }
 
   :deep(.t-card) {
-    // 竖向内边距由 xxl 降为 l，与 gap 一起缩小卡片上下留白 20261005 修改
-    padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-xxl);
+    // 竖向内边距由 l 再降为 s，进一步缩小各类信息卡片上下留白 20261007 修改
+    padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-xxl);
     // 卡片固定宽度 = 详情表格列宽总和 1104 + 左右内边距 ×2，
     // 内容宽度不随屏幕变宽而拉伸；窄屏退回 100% 避免溢出 20260914 新增
     width: calc(1104px + var(--td-comp-paddingLR-xxl) * 2);
@@ -458,7 +458,10 @@ const contactsRows = computed(() =>
   column-count: 2;
 
   .info-item {
-    padding-top: var(--td-comp-margin-s);
+    // 行间距由 padding-top 改为 padding-bottom：首行上方不再留白，使“标题→首行”仅由卡片头 margin-bottom(12) 决定，
+    // 与下葬/收款/联系人“标题→表格”间距一致；且两列首行能对齐（若只去 :first-child 上边距，第二列首行会错位）20261007 修改
+    // 行与行之间距由 margin-s(8) 再降为 margin-xs(4)，整体收紧竖向密度 20261007 修改
+    padding-bottom: var(--td-comp-margin-xs);
     display: flex;
     color: var(--td-text-color-primary);
 

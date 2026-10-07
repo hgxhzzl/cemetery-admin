@@ -361,12 +361,13 @@
                 </t-form-item>
               </t-col>
               <!-- 费用金额字段移除：修改/新建均不再采集 cost，payload 剔除后修改不覆写库中旧值 20260908 修改 -->
-              <!-- 备注统一限制50字 20260917 修改 -->
+              <!-- 备注统一限制20字 20260917 修改 20261007 调为 20 字 -->
               <t-col v-if="!isDeleteMode" :span="12">
                 <t-form-item :label="$t('pages.buried.remark')" name="remark">
                   <t-input
                     v-model="formBuriedData.remark"
-                    :maxcharacter="50"
+                    :maxcharacter="20"
+                    show-limit-number
                     :height="124"
                     :placeholder="$t('pages.buried.remarkPlaceholder')"
                   />

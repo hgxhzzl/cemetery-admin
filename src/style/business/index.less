@@ -788,7 +788,9 @@
 // 详情卡片容器：TDesign 卡片内部留白归零，标题用大号字
 .detail-base {
   :deep(.t-card) {
-    padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl);
+    // 竖向内边距由 xxl 降为 s：此规则会随页面 scoped 样式覆盖 room-detail 组件内的同名定义，
+    // 是“每类信息之间上下间距”的真实控制点，需在此调小才生效 20261007 修改
+    padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-xxl);
   }
 
   :deep(.t-card__header) {

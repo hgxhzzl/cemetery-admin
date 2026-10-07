@@ -329,11 +329,11 @@
                 </t-form-item>
               </t-col>
             </t-row>
-            <!-- 备注改回单行输入框，宽度与联系人电话输入框右缘对齐（实测681），字数限制50并在输入框右侧计数，同电话 20260916 修改 -->
+            <!-- 备注改回单行输入框，宽度与联系人电话输入框右缘对齐（实测681），字数限制30并在输入框右侧计数，同电话 20260916 修改 -->
             <t-form-item :label="$t('pages.sale.remark')" name="remark">
               <t-input
                 v-model="formSaleData.remark"
-                :maxcharacter="50"
+                :maxcharacter="30"
                 show-limit-number
                 :style="{ width: '690px' }"
                 :placeholder="$t('pages.sale.remarkPlaceholder')"

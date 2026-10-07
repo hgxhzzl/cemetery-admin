@@ -189,9 +189,9 @@
                 <t-form-item :required-mark="true" :label="t('pages.managementPeriod.reason')" name="reason">
                   <t-input
                     v-model="formPeriodData.reason"
-                    :maxcharacter="100"
+                    :maxcharacter="30"
                     show-limit-number
-                    :style="{ width: '322px' }"
+                    :style="{ width: '100%' }"
                     :placeholder="t('pages.managementPeriod.reasonPlaceholder')"
                   />
                 </t-form-item>

@@ -889,7 +889,7 @@
                   </t-form-item>
                 </t-col>
               </template>
-              <!-- 墓位备注形态：唯一可编辑字段备注（50 字上限），确认保存写 room.remark 后直接返回列表；
+              <!-- 墓位备注形态：唯一可编辑字段备注（30 字上限），确认保存写 room.remark 后直接返回列表；
                    在 t-row 内整行（span=12）展示，输入框经 remark-fullrow-input 占满行宽，
                    右缘与返回按钮/半列字段右缘对齐（同下葬修改页）20261002 新增 20261002 改对齐方式 -->
               <t-col v-if="formMode === 'remark'" :span="12">
@@ -897,7 +897,7 @@
                   <t-input
                     v-model="formRemarkData.remark"
                     class="remark-fullrow-input"
-                    :maxcharacter="50"
+                    :maxcharacter="30"
                     show-limit-number
                     :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
                   />
@@ -928,7 +928,8 @@
               <t-form-item :label="$t('pages.gravePlotBusiness.remark')" name="remark">
                 <t-input
                   v-model="formBusinessData.remark"
-                  :maxcharacter="50"
+                  :maxcharacter="20"
+                  show-limit-number
                   :height="124"
                   :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
                 />
@@ -941,7 +942,7 @@
             >
               <t-input
                 v-model="formBusinessData.remark"
-                :maxcharacter="50"
+                :maxcharacter="30"
                 show-limit-number
                 :style="{ width: '690px' }"
                 :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
