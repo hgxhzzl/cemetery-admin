@@ -638,6 +638,8 @@
       "printBlockedPrompt": "请允许浏览器弹出窗口后重试",
       "deleteBuriedInfoPrompt": " 下葬信息将被清空，且无法恢复",
       "deleteContactsInfoPrompt": " 联系人信息将被清空，且无法恢复",
+      "cancelSale": "销售取消",
+      "cancelSaleConfirm": " 该墓位的销售记录及其关联的下葬/联系人/管理费/安葬证/期限变更将一并作废，墓位回退为未销售，且无法恢复",
       "certificate": "证件",
       "certificateTitle": "安葬证设置",
       "certHolder": "持证人",

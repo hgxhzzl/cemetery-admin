@@ -1004,6 +1004,19 @@
               >
                 {{ $t('operate.printReceipt') }}
               </t-button>
+
+              <!-- 销售取消：销售形态且已有销售记录（修改态）且当前操作员为平台管理员（isAccount=1）时展示，
+                   普通操作员不显示；作废该墓位销售并回退状态，二次确认后执行 20261008 新增 -->
+              <t-button
+                v-if="formMode === 'sale' && formBusinessData.idBusiness !== 0 && userStore.isAccount === 1"
+                class="form-submit-cancel"
+                theme="warning"
+                variant="outline"
+                :disabled="submitting"
+                @click="onClickCancelSale()"
+              >
+                {{ $t('pages.gravePlotBusiness.cancelSale') }}
+              </t-button>
             </div>
             <!-- 安葬证打印A/B：安葬证设置视图提交行右侧并列（form-submit-sub 为 space-between，
                  右侧容器自然贴右缘）；A/B 分别复刻原 PB d_room_card_print / d_room_card_printb
@@ -1105,6 +1118,14 @@
       :on-cancel="onCancel"
       @confirm="onConfirmDelete"
     />
+    <!-- 销售取消二次确认弹窗（仅平台管理员可见入口）20261008 新增 -->
+    <t-dialog
+      v-model:visible="cancelSaleConfirmVisible"
+      :header="dialogHeader"
+      :body="cancelSaleConfirmBody"
+      :on-cancel="onCancelSaleConfirmCancel"
+      @confirm="onConfirmCancelSale"
+    />
   </div>
 </template>
 <script lang="ts">
@@ -1129,6 +1150,7 @@ import type {
   ListGravePlotBusinessCertResult,
 } from '@/api/gravePlotBusiness';
 import {
+  cancelGravePlotBusinessSale,
   deleteGravePlotBusiness,
   getGravePlotBusinessByRoom,
   getGravePlotBusinessContacts,
@@ -2337,6 +2359,37 @@ const submitCore = async () => {
     }
   }
 };
+
+// ==================== 销售形态：销售取消（平台管理员作废销售，二次确认弹窗）20261008 新增 ====================
+const cancelSaleConfirmVisible = ref(false);
+// 确认文案：拼接当前墓位园区/排/号 + 取消后果描述（同删除二次确认样式）
+const cancelSaleConfirmBody = computed(
+  () =>
+    `${translate('operate.deleteDataAPrompt')}${formRoomData.value.park}${formRoomData.value.yNum}${translate(
+      'operate.row',
+    )}${formRoomData.value.xNum}${translate('pages.gravePlotBusiness.cancelSaleConfirm')}`,
+);
+// 点击“销售取消”：打开二次确认
+const onClickCancelSale = () => {
+  cancelSaleConfirmVisible.value = true;
+};
+const onCancelSaleConfirmCancel = () => {
+  cancelSaleConfirmVisible.value = false;
+};
+// 确认销售取消：后端单事务软删关联业务表并回置墓位；复用提交守卫 run 防在途重复点击，成功后刷新列表并返回
+const onConfirmCancelSale = () =>
+  run(async () => {
+    const { idRoom } = formBusinessData.value;
+    cancelSaleConfirmVisible.value = false;
+    try {
+      await cancelGravePlotBusinessSale(idRoom);
+      MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
+      await getRoomData();
+      ClickCreateClose();
+    } catch (e) {
+      logError(e);
+    }
+  });
 </script>
 <style lang="less" scoped>
 @import './index.less';

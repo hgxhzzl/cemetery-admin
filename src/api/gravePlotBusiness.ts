@@ -6,6 +6,7 @@ const Api = {
   queryGravePlotBusiness: '/gravePlotBusiness-query',
   queryGravePlotBusinessContacts: '/gravePlotBusiness-query/contacts-list',
   deleteGravePlotBusiness: '/gravePlotBusiness-delete',
+  cancelGravePlotBusinessSale: '/gravePlotBusiness-cancelSale',
   insertGravePlotBusiness: '/gravePlotBusiness-save/insert',
   updateGravePlotBusiness: '/gravePlotBusiness-save/update',
 };
@@ -117,6 +118,14 @@ export function updateGravePlotBusiness(
   return request.post({
     url: Api.updateGravePlotBusiness,
     data,
+  });
+}
+
+// 销售取消（平台管理员作废销售）：后端按 idRoom 单事务软删 sale/buried/contacts/adminfee/burial_cert/period_change
+// 关联活动记录，并将 room 回置未销售/未下葬、清空编号/管理费日期/购墓人/安葬者/联系人/备注 20261008 新增
+export function cancelGravePlotBusinessSale(idRoom: number) {
+  return request.get<ListGravePlotBusinessResult>({
+    url: `${Api.cancelGravePlotBusinessSale}?idRoom=${idRoom}`,
   });
 }
 

@@ -638,6 +638,8 @@
       "printBlockedPrompt": "Please allow popups and try again",
       "deleteBuriedInfoPrompt": " burial information will be cleared and cannot be restored",
       "deleteContactsInfoPrompt": " contact information will be cleared and cannot be restored",
+      "cancelSale": "Cancel Sale",
+      "cancelSaleConfirm": " the sale record and its linked burial/contact/management-fee/certificate/period-change records will be voided, the plot reverts to unsold, and it cannot be restored",
       "certificate": "Certificate",
       "certificateTitle": "Burial Certificate Settings",
       "certHolder": "Certificate Holder",
