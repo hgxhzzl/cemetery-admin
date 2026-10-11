@@ -18,7 +18,21 @@
               <t-col :span="10">
                 <!-- 筛选条件横向排列，条件之间空隙固定 24px，不随屏幕宽度变化 20260914 修改 -->
                 <div class="cms-card-filter-inline">
-                  <!-- 区域由墓区预定下区域三级菜单经路由下发 20260902 新增 -->
+                  <!-- 区域由墓区预定下区域三级菜单经路由下发：下拉框仅展示当前区域且不可用（不可切换），形态与宽度均同墓区业务页（收窄 120px）20261010 新增 -->
+                  <t-form-item
+                    :label="$t('pages.room.region')"
+                    name="region"
+                    class="cms-filter-item reserve-filter-item-narrow"
+                  >
+                    <t-select
+                      v-model="formfindData.region"
+                      class="demo-select-base cms-filter-control reserve-filter-control-narrow"
+                      disabled
+                      :placeholder="$t('pages.room.regionPlaceholder')"
+                    >
+                      <t-option :value="menuRegion" :label="menuRegion">{{ menuRegion }}</t-option>
+                    </t-select>
+                  </t-form-item>
                   <t-form-item :label="$t('pages.room.park')" name="park" class="cms-filter-item cms-filter-item-basic">
                     <t-select
                       v-model="formfindData.park"
@@ -48,6 +62,17 @@
                         {{ item.label }}
                       </t-option>
                     </t-select>
+                  </t-form-item>
+                  <!-- 排序选项：对排号升/降序展示卡片行组，默认降序；位置/样式与墓区业务页筛选行末项一致（窄项自适应宽，不占 basic 286px） 20261010 新增 -->
+                  <t-form-item
+                    :label="$t('pages.reserve.sortOrder')"
+                    name="sortOrder"
+                    class="cms-filter-item reserve-filter-item-sort"
+                  >
+                    <t-radio-group v-model="formfindData.sortOrder" variant="default-filled" size="small">
+                      <t-radio-button value="asc">{{ $t('pages.reserve.sortAsc') }}</t-radio-button>
+                      <t-radio-button value="desc">{{ $t('pages.reserve.sortDesc') }}</t-radio-button>
+                    </t-radio-group>
                   </t-form-item>
                 </div>
               </t-col>
@@ -121,10 +146,14 @@
                           <t-link theme="primary" @click="handleClickDetail(card.row)">{{
                             $t('operate.detail')
                           }}</t-link>
-                          <!-- 未销售墓位才可预定，权限沿用新增权限 useCreate，标签按新增权限显示为新建 20260907 修改 -->
+                          <!-- 未销售墓位才可预定，权限沿用新增权限 useCreate，标签按新增权限显示为新建 20260907 修改,
+                               已预定墓位不再出新建：预定只置 reserveStatus、销售状态保持未销售，不加这层判断会
+                               与「修改/删除」并存，重复登记会把原预定覆盖掉 20261011 修改 -->
                           <t-link
                             v-if="
-                              card.row.saleStatus === 'statusType.saleStatusEnum.unsold' && userInfo.useCreate === 1
+                              card.row.saleStatus === 'statusType.saleStatusEnum.unsold' &&
+                              card.row.reserveStatus !== 'statusType.reserveStatusEnum.reserved' &&
+                              userInfo.useCreate === 1
                             "
                             theme="danger"
                             @click="handleClickReserve(card.row)"
@@ -245,7 +274,9 @@
                 <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
               </t-col>
               <t-col :span="6">
-                <t-form-item :required="true" :label="$t('pages.reserve.liaison')" name="liaison">
+                <!-- 必填星号靠 required-mark 渲染：t-form-item 并无 required 这个 prop(写 :required 不报错也不生效)，
+                     统一改用与预定限期/墓区业务页一致的 required-mark 20261011 修复 -->
+                <t-form-item :required-mark="true" :label="$t('pages.reserve.liaison')" name="liaison">
                   <t-input
                     v-model="formReserveData.liaison"
                     :maxcharacter="20"
@@ -256,7 +287,8 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :label="$t('pages.reserve.liaisonPhone')" name="liaisonPhone">
+                <!-- 电话同为必填，与联系人同样加星，提交提示见 submitCore 20261011 新增 -->
+                <t-form-item :required-mark="true" :label="$t('pages.reserve.liaisonPhone')" name="liaisonPhone">
                   <t-input
                     v-model="formReserveData.liaisonPhone"
                     :maxcharacter="11"
@@ -266,15 +298,38 @@
                   />
                 </t-form-item>
               </t-col>
+              <!-- 预定限期(reserve.reservationExpireDate)：必填，与备注同行；控件写法同墓区业务页下葬日期 20261011 新增,
+                   库列为 datetime，前端只取日期部分，提交后由后端按 YYYY-MM-DD 落库(时间 00:00:00) 20261011 新增
+                   字段由 endDate 改名：旧名与 room.endDate（管理费止期）同字不同义，详情卡同屏易误读 20261011 修改 -->
+              <t-col :span="6">
+                <t-form-item
+                  :required-mark="true"
+                  :label="$t('pages.reserve.reservationExpireDate')"
+                  name="reservationExpireDate"
+                >
+                  <t-date-picker
+                    v-model="formReserveData.reservationExpireDate"
+                    :style="{ width: '322px' }"
+                    theme="primary"
+                    mode="date"
+                    separator="/"
+                    :placeholder="$t('pages.reserve.reservationExpireDatePlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
+              <!-- 备注：由原独占整行(690px)收进本行右列，宽度随 t-row 公共规则取 322px，限字 20 20261011 修改 -->
+              <t-col :span="6">
+                <t-form-item :label="$t('pages.reserve.remark')" name="remark">
+                  <t-input
+                    v-model="formReserveData.remark"
+                    :maxcharacter="20"
+                    show-limit-number
+                    :style="{ width: '322px' }"
+                    :placeholder="$t('pages.reserve.remarkPlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
             </t-row>
-            <t-form-item :label="$t('pages.reserve.remark')" name="remark">
-              <t-input
-                v-model="formReserveData.remark"
-                :maxcharacter="50"
-                :style="{ width: '690px' }"
-                :placeholder="$t('pages.reserve.remarkPlaceholder')"
-              />
-            </t-form-item>
             <!-- 经办人字段不再展示，后端保存时仍自动写入当前登录用户 operator 20260917 修改 -->
           </div>
         </div>
@@ -324,6 +379,7 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
+import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
@@ -388,9 +444,15 @@ const {
   zoom: reserveZoom,
   handleZoomIn,
   handleZoomOut,
-  cardRows: reserveCardRows,
+  cardRows: rawReserveCardRows,
   totalText: listTotalText,
 } = useCardGrid(visibleReserveRoomList);
+
+// 排序选项：对排号 yNum 升/降序，默认降序；useCardGrid 内行组固定按排号升序分组，
+// 降序时反转行组（组内序号顺序不变），升序保持原序，口径同墓区业务页 20261010 新增
+const reserveCardRows = computed(() =>
+  formfindData.value.sortOrder === 'asc' ? rawReserveCardRows.value : rawReserveCardRows.value.slice().reverse(),
+);
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片
@@ -512,7 +574,7 @@ const handleClickModify = async (row: CardRowArg<RoomModel>) => {
   controlPageShow('createReserve');
 };
 
-// 按墓位查询当前活动预定记录，回填可编辑字段（联系人/电话/备注）及 idReserve 20260907 新增
+// 按墓位查询当前活动预定记录，回填可编辑字段（联系人/电话/预定限期/备注）及 idReserve 20260907 新增, 20261011 字段改名
 const fillReserveForm = async (idRoom: number) => {
   try {
     const { list } = await getReserveByRoom(idRoom);
@@ -525,6 +587,8 @@ const fillReserveForm = async (idRoom: number) => {
       idRoom,
       liaison: record.liaison ?? '',
       liaisonPhone: record.liaisonPhone ?? '',
+      // 库中为 datetime（ISO 串），日期控件只认 yyyy-MM-dd，旧记录未填时保持空由用户补选 20261011 新增,
+      reservationExpireDate: formatDate(record.reservationExpireDate ?? ''),
       remark: record.remark ?? '',
     };
     return true;
@@ -582,18 +646,22 @@ const onConfirmDelete = async () => {
   confirmVisible.value = false;
 };
 
-// 提交预定数据，校验必填项后按 idReserve 区分新增/修改 20260907 修改
+// 提交预定数据，校验必填项（联系人/电话/预定限期）后按 idReserve 区分新增/修改 20260907 修改
 // 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
 const submitCore = async () => {
-  const { liaison, liaisonPhone, remark, idRoom, idReserve } = formReserveData.value;
+  const { liaison, liaisonPhone, reservationExpireDate, remark, idRoom, idReserve } = formReserveData.value;
 
   if (liaison === undefined || liaison.trim() === '') {
-    return MessagePlugin.warning(translate('pages.reserve.liaisonPlaceholder'));
+    return MessagePlugin.warning(translate('pages.reserve.liaisonRequiredPlaceholder'));
   }
   if (liaisonPhone === undefined || liaisonPhone.trim() === '') {
-    return MessagePlugin.warning(translate('pages.reserve.liaisonPhonePlaceholder'));
+    return MessagePlugin.warning(translate('pages.reserve.liaisonPhoneRequiredPlaceholder'));
+  }
+  // 预定限期必填：库列为可空，必填口径只靠应用层守住（后端同样会 400 拦下），前端先提示 20261011 新增 20261011 可空口径统一
+  if (reservationExpireDate === undefined || String(reservationExpireDate).trim() === '') {
+    return MessagePlugin.warning(translate('pages.reserve.reservationExpireDateRequiredPlaceholder'));
   }
 
   const payload = {
@@ -601,6 +669,8 @@ const submitCore = async () => {
     idRoom,
     liaison: liaison.trim(),
     liaisonPhone: liaisonPhone.trim(),
+    // 后端动态透传（body 键名即库列名），改名后两侧必须同步 20261011 修改
+    reservationExpireDate: String(reservationExpireDate).trim(),
     remark,
   };
 
@@ -615,7 +685,7 @@ const submitCore = async () => {
       MessagePlugin.error(translate('operate.reserveFailedPrompt'));
     }
   } else {
-    // 修改预定：idReserve 非0 走更新接口，仅更新联系人/电话/备注 20260907 新增
+    // 修改预定：idReserve 非0 走更新接口，仅更新联系人/电话/预定限期/备注 20260907 新增 20261011 字段改名
     try {
       await updateReserve(payload);
       MessagePlugin.success(translate('operate.modifySuccessPrompt'));

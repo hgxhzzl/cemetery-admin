@@ -45,6 +45,8 @@ export interface GravePlotBusinessModel {
   serialNo: string;
   // 安葬者三字段：销售形态随开单同步 buried 表；下葬形态直接读写 buried 表（联查回填）20260923 新增/修改
   deceased?: string;
+  // 死亡日期（库列 buried.deathDate，datetime 可空）：销售形态随开单同步，无对应 buried 记录时为 null 20261011 新增
+  deathDate?: string;
   burialDate?: string;
   deceasedIDCard?: string;
   // 逝者关系：仅销售形态录入，保存到 buried.deceasedRelation 20260924 新增

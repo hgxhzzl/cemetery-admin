@@ -11,6 +11,8 @@ export interface BuriedModel {
   deceasedIDCard: string;
   // 逝者关系（与安葬者关系），下葬/销售形态录入，详情表格展示 20260925 新增
   deceasedRelation: string;
+  // 死亡日期（库列 buried.deathDate，datetime 可空）：下葬页录入、墓位详情下葬列表展示，旧记录未填为 null 20261011 新增
+  deathDate: string;
   burialDate: string;
   // 联系人电话：库中实际列名为 contactsphone(全小写)，SELECT * 返回同名键，模型字段与之对齐 20260909 修改,
   contactsphone: string;

@@ -50,4 +50,7 @@ export interface RoomModel {
   endDate: string;
   // 备注：墓位业务页卡片底部展示 20261002 新增,
   remark: string;
+  // 预定限期（库列 room.reservationExpireDate，datetime）：活动预定记录的限期副本，由后端在预定登记/修改/取消事务中同步，
+  // 无活动预定时为 NULL（展示“未填写”），前端只读不可编辑 20261011 新增,
+  reservationExpireDate: string | null;
 }

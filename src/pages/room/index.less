@@ -50,21 +50,21 @@
     height: 4px;
     border-radius: 1px;
 
-    // 未销售：同卡片外框橙色 #fca678，位于已销售图例左侧（同墓位业务页）20261003 新增
+    // 四态图例色 = 卡片外框色同源，统一引用 style/card-color.less 变量（避免逐页抄写色值、改色漏改图例）20261011 修改,
     &--unsold {
-      background-color: #fca678;
+      background-color: var(--cms-card-unsold-border);
     }
 
     &--sold {
-      background-color: var(--td-success-color);
+      background-color: var(--cms-card-sold-border);
     }
 
     &--buried {
-      background-color: #0052d9;
+      background-color: var(--cms-card-buried-border);
     }
 
     &--expired {
-      background-color: var(--td-error-color);
+      background-color: var(--cms-card-expired-border);
     }
   }
 }

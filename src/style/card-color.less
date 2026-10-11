@@ -1,0 +1,26 @@
+// ============================================================
+// 卡片状态色 CSS 变量：未销售/已销售/已下葬/管理到期四态的底色与外框色单一来源。
+// 卡片外框 mixin(cms-card-status-frame)与各页底部图例色块均引用本变量，改一处四页同步生效；
+// 用户可在「基础设置 - 卡片颜色」页覆盖，覆盖值由 utils/cardTheme.ts 以行内样式写到 html 元素上，
+// 行内声明优先于本 :root 规则，无需 !important 20261011 新增
+// 默认值即改造前各文件里的硬编码色，抽取后视觉零变化；
+// sold/expired 的外框沿用主题变量，保持随暗色/主题切换的原行为 20261011 新增
+// ============================================================
+:root {
+  // 已销售：浅绿底 + 主题绿框
+  --cms-card-sold-bg: #f4fef9;
+  --cms-card-sold-border: var(--td-success-color);
+
+  // 已下葬：固定默认主题蓝 #0052D9(同 config/style 默认 brandTheme)，不用 --td-brand-color：
+  // 品牌主题色可在设置中切换，切为绿色时蓝框会变成绿色、与已销售绿混淆 20261011 由 business/index.less 迁来
+  --cms-card-buried-bg: #f4f8fe;
+  --cms-card-buried-border: #0052d9;
+
+  // 管理到期：浅红底 + 主题红框
+  --cms-card-expired-bg: #fce5e5;
+  --cms-card-expired-border: var(--td-error-color);
+
+  // 未销售：浅橙底 + 橙色外框
+  --cms-card-unsold-bg: #fcf6ef;
+  --cms-card-unsold-border: #fca678;
+}

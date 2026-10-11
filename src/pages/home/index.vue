@@ -1,10 +1,11 @@
 <template>
-  <!-- 五行布局自然高度：第一行保底 124px、第二行（销售数量统计）固定 380px，下葬记录/销售记录/管理到期三行为
+  <!-- 六行布局自然高度：第一行保底 124px、第二行（销售数量统计）固定 380px，下葬记录/销售记录/管理到期/预定记录四行为
        150px~328px 区间自适应（无记录保底、记录不足 5 行按实际用高、超过则行内滚动），不再限定一屏高，内容整体可上下滚动（外层布局层滚动承接）；
        各行均为固定 span 栅格不设响应式断点，窄视口下内容区由全局 min-width 1320px 保底，
-       布局不窜行变形，超出部分由浏览器横向滚动条承接 20260925 修改 20261004 三行改区间 -->
+       布局不窜行变形，超出部分由浏览器横向滚动条承接 20260925 修改 20261004 三行改区间 20261011 增至六行 -->
   <div class="home-dashboard">
-    <top-panel class="home-row home-row--top" :summary="summary" />
+    <!-- 第一行四卡片不再显示 20261010 隐藏 -->
+    <!-- <top-panel class="home-row home-row--top" :summary="summary" /> -->
     <!-- 下葬记录：移至销售数量统计上方第二行（用户反馈位置互换），样式同销售记录，分区域两张卡、今天/明天切换 20260925 新增 20261002 移位 -->
     <buried-list
       class="home-row home-row--buried"
@@ -17,6 +18,9 @@
     <!-- 管理到期记录：销售数量统计下方第五行，样式同销售记录，分区域两张卡；
          数据走 /expired-list 独立分页接口滚动加载，标题右侧显示记录条数 20260925 新增 20260926 改分页加载 -->
     <expired-list class="home-row home-row--expired" :regions="summary?.regions" />
+    <!-- 预定记录：管理到期记录下方第六行，样式同该行；
+         数据走 /reserve-list 独立分页接口滚动加载（预定限期 >= 当天且墓位未售出），标题右侧显示记录条数 20261011 新增 -->
+    <reserve-list class="home-row home-row--reserve" :regions="summary?.regions" />
   </div>
 </template>
 <script setup lang="ts">
@@ -30,7 +34,7 @@ import BuriedList from './components/BuriedList.vue';
 import ExpiredList from './components/ExpiredList.vue';
 import MiddleChart from './components/MiddleChart.vue';
 import RankList from './components/RankList.vue';
-import TopPanel from './components/TopPanel.vue';
+import ReserveList from './components/ReserveList.vue';
 
 defineOptions({
   name: 'HomeIndex',
@@ -82,16 +86,17 @@ onActivated(async () => {
   height: 380px;
 }
 
-/* 下葬记录 / 销售记录 / 管理到期三行：高度由“固定 328px”改为区间自适应 20261004 修改
+/* 下葬记录 / 销售记录 / 管理到期 / 预定记录四行：高度由“固定 328px”改为区间自适应 20261004 修改
    - 下限 150px：无记录时（表内“暂无数据”占位）卡片不至于塌成一条
    - 中间段：少于 5 行明细时由内容撑高，行高取“本行两张卡自然高度的较大值”。
      需显式写 align-items: stretch：TDesign 的 t-row 根节点默认带 t-row--align-top（align-items: flex-start），
      不覆盖则行高能拉到最大值但短卡不会被拉伸，短卡下方会多出空断层（实测：4 条 270px / 2 条 192.7px）20261004 新增
    - 上限 328px：与原固定值一致。表格自身 max-height 288 + 卡片 padding/header 占位已够 5 行以上内滚，
-     所以记录 >= 5 行时的表现与改动前完全相同 */
+     所以记录 >= 5 行时的表现与改动前完全相同 20261011 补预定记录行 */
 .home-row--buried,
 .home-row--bottom,
-.home-row--expired {
+.home-row--expired,
+.home-row--reserve {
   align-items: stretch;
   min-height: 90px;
   max-height: 328px;

@@ -43,6 +43,8 @@ export const INITIAL_BUSINESS_DATA = {
   serialNo: '',
   // 安葬者四字段：销售形态随开单同步 buried 表；下葬形态直接读写 buried 表 20260923 修改 20260924 新增逝者关系,
   deceased: '',
+  // 死亡日期（库列 buried.deathDate）：仅销售形态表单录入，非必填、不加星，未选时提交空串由后端归一为 null 20261011 新增,
+  deathDate: '',
   burialDate: '',
   deceasedIDCard: '',
   // 逝者关系：仅销售形态表单录入，保存到 buried.deceasedRelation 20260924 新增,

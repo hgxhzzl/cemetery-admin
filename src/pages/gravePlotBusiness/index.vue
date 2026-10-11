@@ -193,6 +193,16 @@
                               card.row.contacts || $t('common.none')
                             }}</span>
                           </div>
+                          <!-- 预定期（room.reservationExpireDate，活动预定记录的限期副本）：写法同下行管理期，
+                               无活动预定/未填限期时 formatDate 回空串、默认展示“无” 20261011 新增 -->
+                          <div class="gravePlotBusiness-card__meta">
+                            <span class="gravePlotBusiness-card__meta-label">
+                              {{ $t('pages.gravePlotBusiness.reservationPeriod') }}
+                            </span>
+                            <span class="gravePlotBusiness-card__meta-value">{{
+                              formatDate(card.row.reservationExpireDate) || $t('common.none')
+                            }}</span>
+                          </div>
                           <!-- 期限信息（管理费结束日期），标签用短词条避免卡片内换行，与下葬页卡片一致 20260923 新增 -->
                           <div class="gravePlotBusiness-card__meta">
                             <span class="gravePlotBusiness-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
@@ -233,21 +243,22 @@
           <div v-if="hasQueried && businessCardRows.length" class="gravePlotBusiness-list-toolbar">
             <span>{{ listTotalText }}</span>
             <div class="gravePlotBusiness-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧 20260926 新增 20261002 补未销售 -->
+              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧 20260926 新增 20261002 补未销售；
+                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261011 修改, -->
               <div class="gravePlotBusiness-list-toolbar__legend">
-                <span class="gravePlotBusiness-legend-item">
+                <span v-if="isCardStateEnabled('unsold')" class="gravePlotBusiness-legend-item">
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
-                <span class="gravePlotBusiness-legend-item">
+                <span v-if="isCardStateEnabled('sold')" class="gravePlotBusiness-legend-item">
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
                 </span>
-                <span class="gravePlotBusiness-legend-item">
+                <span v-if="isCardStateEnabled('buried')" class="gravePlotBusiness-legend-item">
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--buried" />
                   {{ $t('statusType.intoStatusEnum.buried') }}
                 </span>
-                <span class="gravePlotBusiness-legend-item">
+                <span v-if="isCardStateEnabled('expired')" class="gravePlotBusiness-legend-item">
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--expired" />
                   {{ $t('pages.gravePlotBusiness.legendExpired') }}
                 </span>
@@ -293,10 +304,11 @@
             <div class="form-basic-container-title">
               {{ formTitle }}
               <!-- 返回按钮：t-button 会注入 t-form 的 formDisabled 被 :disabled 一并禁用，
-                   显式 :disabled=false 使组件级 disabled 优先于表单级，销售形态只读门控下仍可返回 20260924 修复 -->
+                   显式 :disabled=false 使组件级 disabled 优先于表单级，销售形态只读门控下仍可返回 20260924 修复；
+                   float/margin-right 改用 backBtnStyle 统一输出（对齐口径同墓位预定页）20261011 修改 -->
               <t-button
                 class="cms-back-btn"
-                style="float: right"
+                :style="backBtnStyle"
                 theme="default"
                 variant="text"
                 :disabled="false"
@@ -518,6 +530,19 @@
                       />
                     </t-form-item>
                   </t-col>
+                  <!-- 死亡日期（库列 buried.deathDate）：销售形态随开单同步 buried 表，位置在下葬日期左侧、非必填不加星（口径同下葬页）20261011 新增 -->
+                  <t-col :span="6">
+                    <t-form-item :label="$t('pages.gravePlotBusiness.deathDate')" name="deathDate">
+                      <t-date-picker
+                        v-model="formBusinessData.deathDate"
+                        :style="{ width: '312px' }"
+                        theme="primary"
+                        mode="date"
+                        separator="/"
+                        :placeholder="$t('pages.gravePlotBusiness.deathDatePlaceholder')"
+                      />
+                    </t-form-item>
+                  </t-col>
                   <t-col :span="6">
                     <t-form-item :label="$t('pages.gravePlotBusiness.burialDate')" name="burialDate">
                       <t-date-picker
@@ -543,7 +568,8 @@
                   </t-col>
                   <!-- 逝者关系：安葬者身份证号右侧同行，仅销售形态录入，保存到 buried.deceasedRelation 20260924 新增；
                        改为可选择可输入下拉（t-select filterable+creatable），
-                       参考数据取 taginfo 表 tagType=deceasedRelation（选择设置页维护）20261003 修改 -->
+                       参考数据取 taginfo 表 tagType=deceasedRelation（选择设置页维护）20261003 修改；
+                       新增死亡日期列后销售形态字段序为 安葬者/死亡日期/下葬日期/身份证号，逝者关系与备注同行占末行左右两列 20261011 修改 -->
                   <t-col :span="6">
                     <t-form-item :label="$t('pages.gravePlotBusiness.deceasedRelation')" name="deceasedRelation">
                       <t-select
@@ -554,6 +580,19 @@
                         :options="deceasedRelationOptions"
                         :style="{ width: '322px' }"
                         :placeholder="$t('pages.gravePlotBusiness.deceasedRelationPlaceholder')"
+                      />
+                    </t-form-item>
+                  </t-col>
+                  <!-- 备注（sale.remark）：由字段块下方的整行输入框提进字段网格，与逝者关系同行（右位），
+                       字数上限 30 收紧到 20（与下葬形态备注一致）；宽度同列内其它控件取 322px 20261011 修改 -->
+                  <t-col :span="6">
+                    <t-form-item :label="$t('pages.gravePlotBusiness.remark')" name="remark">
+                      <t-input
+                        v-model="formBusinessData.remark"
+                        :maxcharacter="20"
+                        show-limit-number
+                        :style="{ width: '322px' }"
+                        :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
                       />
                     </t-form-item>
                   </t-col>
@@ -625,7 +664,7 @@
                   </t-form-item>
                 </t-col>
               </template>
-              <!-- 下葬形态新增/修改视图字段（安葬者/身份证号/下葬日期/联系人三字段）；安葬证设置视图展示专属字段分支 20260924 新增 20260927 修改 -->
+              <!-- 下葬形态新增/修改视图字段（安葬者/身份证号/死亡日期/下葬日期/联系人三字段）；安葬证设置视图展示专属字段分支 20260924 新增 20260927 修改 20261011 修改 -->
               <template v-if="formMode === 'buried' && (buriedEditMode === 'add' || buriedEditMode === 'modify')">
                 <t-col :span="6">
                   <t-form-item :required-mark="true" :label="$t('pages.gravePlotBusiness.deceased')" name="deceased">
@@ -646,6 +685,19 @@
                       show-limit-number
                       :style="{ width: '322px' }"
                       :placeholder="$t('pages.gravePlotBusiness.deceasedIDCardPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <!-- 死亡日期（库列 buried.deathDate）：紧接下葬日期左侧、非必填不加星（口径同下葬页登记表单与墓位销售形态）20261011 新增 -->
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.deathDate')" name="deathDate">
+                    <t-date-picker
+                      v-model="formBusinessData.deathDate"
+                      :style="{ width: '322px' }"
+                      theme="primary"
+                      mode="date"
+                      separator="/"
+                      :placeholder="$t('pages.gravePlotBusiness.deathDatePlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -707,6 +759,36 @@
                       show-limit-number
                       :style="{ width: '322px' }"
                       :placeholder="$t('pages.gravePlotBusiness.contactsIDCardPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <!-- 逝者关系：由字段块下方的独立行提进字段网格，跟联系人身份证号同行（右位），
+                     顺带补齐上一轮新增死亡日期后末行右列的空位；下拉写法与销售形态一致 20261011 修改 -->
+                <t-col :span="6">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.deceasedRelation')" name="deceasedRelation">
+                    <!-- 参考数据取 taginfo 表 tagType=deceasedRelation（选择设置页维护）20261003 新增 -->
+                    <t-select
+                      v-model="formBusinessData.deceasedRelation"
+                      filterable
+                      creatable
+                      clearable
+                      :options="deceasedRelationOptions"
+                      :style="{ width: '322px' }"
+                      :placeholder="$t('pages.gravePlotBusiness.deceasedRelationPlaceholder')"
+                    />
+                  </t-form-item>
+                </t-col>
+                <!-- 备注：单独占满一行（span=12），输入框经 remark-fullrow-input 撑满行宽（同墓位备注形态写法）；
+                     字数上限 20 与原多行高度维持不动 20261011 修改 -->
+                <t-col :span="12">
+                  <t-form-item :label="$t('pages.gravePlotBusiness.remark')" name="remark">
+                    <t-input
+                      v-model="formBusinessData.remark"
+                      class="remark-fullrow-input"
+                      :maxcharacter="20"
+                      show-limit-number
+                      :height="124"
+                      :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
                     />
                   </t-form-item>
                 </t-col>
@@ -904,39 +986,11 @@
                 </t-form-item>
               </t-col>
             </t-row>
-            <!-- 备注改回单行输入框，宽度与联系人电话输入框右缘对齐（实测681），字数限制50并在输入框右侧计数，同电话 20260916 修改；
-                 下葬形态例外：仅新增/修改视图展示（列表视图不显示输入框），原备注行拆为两个输入框——
-                 左侧逝者关系（单行，同列宽 322px），右侧备注（多行 height 124）20260923 修改 20260924 修改 20260925 修改 -->
-            <!-- 下葬形态备注行仅新增/修改视图展示（安葬证设置视图无备注列，burial_cert 表无 remark）20260923 修改 20260924 修改 20260925 修改 20260927 修改 -->
-            <div
-              v-if="formMode === 'buried' && (buriedEditMode === 'add' || buriedEditMode === 'modify')"
-              class="buried-relation-remark-row"
-            >
-              <t-form-item :label="$t('pages.gravePlotBusiness.deceasedRelation')" name="deceasedRelation">
-                <!-- 逝者关系改为可选择可输入下拉（同销售形态 20261003 修改），
-                     参考数据取 taginfo 表 tagType=deceasedRelation（选择设置页维护）20261003 新增 -->
-                <t-select
-                  v-model="formBusinessData.deceasedRelation"
-                  filterable
-                  creatable
-                  clearable
-                  :options="deceasedRelationOptions"
-                  :style="{ width: '322px' }"
-                  :placeholder="$t('pages.gravePlotBusiness.deceasedRelationPlaceholder')"
-                />
-              </t-form-item>
-              <t-form-item :label="$t('pages.gravePlotBusiness.remark')" name="remark">
-                <t-input
-                  v-model="formBusinessData.remark"
-                  :maxcharacter="20"
-                  show-limit-number
-                  :height="124"
-                  :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
-                />
-              </t-form-item>
-            </div>
+            <!-- 备注整行输入框（690px、30 字）仅用于墓位预定形态：销售形态备注已进字段网格与逝者关系同行，
+                 下葬形态备注已进字段网格单独占满一行（span=12），联系人形态无备注列、墓位备注形态有 t-row 内整行框，
+                 均不进本分支 20261011 修改 -->
             <t-form-item
-              v-else-if="formMode !== 'buried' && formMode !== 'business' && formMode !== 'remark'"
+              v-if="formMode !== 'buried' && formMode !== 'business' && formMode !== 'remark' && formMode !== 'sale'"
               :label="$t('pages.gravePlotBusiness.remark')"
               name="remark"
             >
@@ -1167,6 +1221,8 @@ import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
 import { buildRoomCardOverlayBHtml, buildRoomCardOverlayHtml } from '@/utils/burialCertificate';
+import { getCardStatusClass, isUnsold } from '@/utils/cardStatus';
+import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
@@ -1188,35 +1244,10 @@ useTabCacheName('GravePlotBusiness');
 // 经办人字段不再展示，后端保存时仍自动写入当前登录用户 operator 20260916 修改,
 
 // 卡片状态胶囊行已移除，状态配色函数 statusKey 随之移除 20260923 修改,
-// 销售状态判定：已销售时预定人标题恢复默认灰色，不再应用主题绿 20260923 新增
-const isSold = (status?: string) => status === 'statusType.saleStatusEnum.sold';
-
-// 未销售判定：卡片背景色用（与墓位类型胶囊同色）20261002 新增
-const isUnsold = (status?: string) => status === 'statusType.saleStatusEnum.unsold';
-
-// 卡片外框状态色类名：管理到期浅红 > 已下葬蓝 > 已销售绿（优先级降序，同一卡片只取一种）；
-// 未销售背景色类独立叠加，不参与外框优先级，可与任一外框状态色共存（实际业务中未销售不会同时到期/已下葬）
-// 20260926 新增 20261002 叠加未销售背景色
-const cardStatusClass = (row: GravePlotBusinessRoomRow | null | undefined) => {
-  if (!row) {
-    return '';
-  }
-  const classes: string[] = [];
-  // 未销售：背景色与墓位类型胶囊一致（--td-warning-color-light）20261002 新增
-  if (isUnsold(row.saleStatus)) {
-    classes.push('gravePlotBusiness-card--unsold');
-  }
-  // 管理期结束日期早于今天（不含当天）即到期
-  if (row.endDate && dayjs(row.endDate).isBefore(dayjs(), 'day')) {
-    classes.push('gravePlotBusiness-card--expired');
-  } else if (row.deceased) {
-    // 已下葬：安葬者已写入 room.deceased
-    classes.push('gravePlotBusiness-card--buried');
-  } else if (isSold(row.saleStatus)) {
-    classes.push('gravePlotBusiness-card--sold');
-  }
-  return classes.join(' ');
-};
+// 卡片状态类名判定已收至 utils/cardStatus.getCardStatusClass（四页同一套「勾选递补」规则，
+// 本页保留同名薄封装以免模板四处调用点改名）20261011 修改,
+const cardStatusClass = (row: GravePlotBusinessRoomRow | null | undefined) =>
+  getCardStatusClass('gravePlotBusiness', row, { withUnsold: true });
 // 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容
 // （预定人已从卡面移除，原预定人专用截断函数 truncateText 一并移除 20261002 修改）
 const truncateBuriedText = (value?: string | null) => {
@@ -1401,6 +1432,12 @@ const formMode = ref<'sale' | 'business' | 'reserve' | 'buried' | 'remark'>('bus
 const formRowGutter = computed(() =>
   formMode.value === 'buried' || formMode.value === 'business' || formMode.value === 'remark' ? [32, 5] : [62, 5],
 );
+
+// 返回按钮右缘对齐右列输入框右缘（口径同墓位预定页 20261011）：字段行左右各外扩 gutter/2，
+// 故右列输入框右缘 = 内容宽一半 + gutter/2 + 322（cms-form-inputs-fixed 定宽），
+// 按钮 float:right 默认贴内容宽右界，用 margin-right 补上这段差值即可严格重合；
+// 本形态 gutter 在 62/32 间切换，差值跟着算：结果就是「内容宽一半 - （322 + gutter/2）」，正值左移、负值右移，不依赖表单具体宽度 20261011 新增,
+const backBtnStyle = computed(() => `float: right; margin-right: calc(50% - ${322 + formRowGutter.value[0] / 2}px);`);
 
 // 逝者关系下拉参考数据：取 taginfo 表 tagType=deceasedRelation（选择设置页维护），
 // 销售形态输入框可选择也可自由输入（t-select filterable+creatable）20261003 新增
@@ -1607,6 +1644,8 @@ const fillBusinessForm = async (idRoom: number, type?: GravePlotBusinessFormType
       serialNo: record.serialNo ?? '',
       // 安葬者三字段：销售形态按 idSale 联查 buried 带出；下葬形态直接由 buried 记录带出 20260923 修改,
       deceased: record.deceased ?? '',
+      // 死亡日期：库列为 datetime（联查/SELECT * 回传 ISO 串），日期控件只认 yyyy-MM-dd，无 buried 记录或未填时为空 20261011 新增,
+      deathDate: formatDate(record.deathDate ?? ''),
       burialDate: record.burialDate ?? '',
       deceasedIDCard: record.deceasedIDCard ?? '',
       // 逝者关系：销售形态联查 buried 带出（仅销售表单录入）20260924 新增,
@@ -1658,6 +1697,8 @@ const fillBuriedFormRecord = (record: GravePlotBusinessModel) => {
     idRoom: record.idRoom,
     deceased: record.deceased ?? '',
     deceasedIDCard: record.deceasedIDCard ?? '',
+    // 死亡日期：下葬形态虽无该控件，仍需随记录回填，避免提交时把已有日期抹空 20261011 新增,
+    deathDate: formatDate(record.deathDate ?? ''),
     burialDate: record.burialDate ?? '',
     // 逝者关系：随下葬记录回填（同安葬者字段）20260925 新增,
     deceasedRelation: record.deceasedRelation ?? '',
@@ -2145,6 +2186,7 @@ const submitCore = async () => {
     payee,
     serialNo,
     deceased,
+    deathDate,
     burialDate,
     deceasedIDCard,
     deceasedRelation,
@@ -2301,6 +2343,8 @@ const submitCore = async () => {
     serialNo: serialNo.trim(),
     // 安葬者三字段：销售形态随提交同步 buried 表；下葬形态直接写入 buried 表 20260923 修改,
     deceased: deceased.trim(),
+    // 死亡日期：销售形态随开单同步 buried.deathDate（可空，未选为空串→后端归一 null）20261011 新增,
+    deathDate,
     burialDate,
     deceasedIDCard: deceasedIDCard.trim(),
     // 逝者关系：销售形态随提交保存到 buried.deceasedRelation 20260924 新增,

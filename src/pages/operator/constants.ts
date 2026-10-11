@@ -19,5 +19,6 @@ export const INITIAL_DATA = {
   team: '',
   useStatus: '',
   joinDate: '',
-  remark: '',
+  // 区域多选：表单内为数组，与后端逗号分隔字符串在回显/提交两处互转 20261010 修改
+  region: [] as string[],
 };

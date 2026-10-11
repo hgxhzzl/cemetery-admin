@@ -231,21 +231,22 @@
           <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-toolbar">
             <span>{{ listTotalText }}</span>
             <div class="transferOut-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售 -->
+              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售；
+                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261011 修改, -->
               <div class="transferOut-list-toolbar__legend">
-                <span class="transferOut-legend-item">
+                <span v-if="isCardStateEnabled('unsold')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
-                <span class="transferOut-legend-item">
+                <span v-if="isCardStateEnabled('sold')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
                 </span>
-                <span class="transferOut-legend-item">
+                <span v-if="isCardStateEnabled('buried')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--buried" />
                   {{ $t('statusType.intoStatusEnum.buried') }}
                 </span>
-                <span class="transferOut-legend-item">
+                <span v-if="isCardStateEnabled('expired')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--expired" />
                   {{ $t('pages.gravePlotBusiness.legendExpired') }}
                 </span>
@@ -580,6 +581,7 @@ import {
 } from '@/hooks';
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
+import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';

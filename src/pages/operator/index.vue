@@ -214,15 +214,21 @@
               </t-col>
             </t-row>
 
-            <!-- 备注限字：操作员页调为 20 字（原统一 50 字）20261005 修改 -->
-            <t-form-item :label="$t('pages.operator.remark')" name="remark">
-              <t-input
-                v-model="formData.remark"
-                :height="124"
-                :maxcharacter="20"
-                show-limit-number
-                :placeholder="$t('pages.operator.remarkPlaceholder')"
-              />
+            <!-- 区域多选选择器：选项与园区设置页同源（/park-query/region，taginfo tagType='region'），
+                 存库为逗号分隔字符串，回显时拆为数组 20261010 修改 -->
+            <t-form-item :required-mark="true" :label="$t('pages.operator.region')" name="region">
+              <t-select
+                v-model="formData.region"
+                :style="{ width: '322px' }"
+                multiple
+                clearable
+                :placeholder="$t('pages.operator.regionPlaceholder')"
+                class="demo-select-base"
+              >
+                <t-option v-for="(item, index) in dataRegionList" :key="index" :value="item.value" :label="item.label">
+                  {{ item.label }}
+                </t-option>
+              </t-select>
             </t-form-item>
           </div>
         </div>
@@ -420,6 +426,8 @@ import {
   updateOperator,
   updatePower,
 } from '@/api/operator';
+// 区域选项与园区设置页共用同一接口（taginfo tagType='region'）20261010 新增
+import { getRegionList } from '@/api/park';
 import { TYPE_USE_STATUS } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
@@ -448,6 +456,8 @@ const isListTotal = ref(false);
 
 const dataDutiesList = ref<SelectModel[]>([]);
 const dataTeamList = ref<SelectModel[]>([]);
+// 区域多选选项（与园区设置页同源）20261010 新增
+const dataRegionList = ref<SelectModel[]>([]);
 const deleteIdx = ref(-1);
 const dialogHeader = translate('operate.deleteDataCPrompt');
 let listTotal = '';
@@ -618,11 +628,22 @@ const handleClickPower = async (row: { row: OperatorModel }) => {
   controlPageShow('operatePower');
 };
 
+// 区域存库为逗号分隔字符串，与多选数组互转：回显拆分 20261010 新增
+// 分隔符同时兼容全角逗号并去空白：表单提交用半角，但历史数据/手工维护的库可能写全角“，”，
+// 不兼容会把“福东，福西”整串当成一个区域名，选项回显不出来 20261010 加固，
+const splitRegion = (value?: string) =>
+  value
+    ? String(value)
+        .split(/[,，]/)
+        .map((item) => item.trim())
+        .filter((item) => item !== '')
+    : [];
+
 const getOperatorID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
     const dataQuery = list[0];
-    formData.value = dataQuery;
+    formData.value = { ...dataQuery, region: splitRegion(dataQuery.region) };
   } catch (e) {
     logError(e);
   }
@@ -639,6 +660,13 @@ const editSelectData = async () => {
   try {
     const { list } = await getTeamList();
     dataTeamList.value = list;
+  } catch (e) {
+    logError(e);
+  }
+  // region（区域多选选项，与园区设置页同源）20261010 新增
+  try {
+    const { list } = await getRegionList();
+    dataRegionList.value = list;
   } catch (e) {
     logError(e);
   }
@@ -712,7 +740,9 @@ const detailData = [
 // detail end
 // creat begin
 const formCreate = ref<{ reset: () => void } | null>(null);
-const formData = ref({ ...INITIAL_DATA });
+// 表单内 region 为多选数组（string[]），与后端逗号分隔字符串在回显/提交两处互转 20261010 修改
+type OperatorFormData = Omit<OperatorModel, 'region'> & { region: string[] };
+const formData = ref<OperatorFormData>({ ...INITIAL_DATA });
 const ClickCreateClose = () => {
   formCreate.value?.reset();
   // reset 只恢复表单挂载时的快照，修改流程下快照本身带记录数据，需显式还原初始值 20260824 修复，
@@ -739,8 +769,12 @@ const toMysqlDateTime = (value: string) => {
     d.getMinutes(),
   )}:${padTwo(d.getSeconds())}`;
 };
-const formatSubmitData = (data: Partial<OperatorModel> & { password?: string; createDate?: string }) => {
-  const submitData = { ...data };
+const formatSubmitData = (data: Partial<OperatorFormData> & { password?: string; createDate?: string }) => {
+  // 区域多选数组提交前拼回逗号分隔字符串（后端 region 为 varchar 列）20261010 新增
+  const submitData = {
+    ...data,
+    region: Array.isArray(data.region) ? data.region.join(',') : data.region,
+  };
   // 修改表单无密码输入框，回填的旧哈希不能随提交，否则后端二次哈希导致登录失效 20260916 修复
   delete submitData.password;
   if (submitData.joinDate) {
@@ -774,6 +808,11 @@ const submitCore = async () => {
 
   if (formData.value.joinDate === '' || formData.value.joinDate === null) {
     return MessagePlugin.warning(translate('pages.operator.joinDatePlaceholder'));
+  }
+
+  // 区域必选：新建/修改未选中任何区域时不允许保存，提示沿用页面统一的 Placeholder 文案 20261010 新增
+  if (!formData.value.region || formData.value.region.length === 0) {
+    return MessagePlugin.warning(translate('pages.operator.regionPlaceholder'));
   }
 
   try {

@@ -25,6 +25,8 @@ coverage
 test-report.html
 .idea/
 yarn-error.log
+# 设备 Agent 安装脚本的运行日志(本机排障用,不入库) 20261010 新增,
+device-agent/install.log
 *.zip
 .history
 .stylelintcache

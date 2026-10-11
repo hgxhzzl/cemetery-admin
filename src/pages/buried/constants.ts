@@ -27,6 +27,8 @@ export const INITIAL_SALE_DATA = {
   deceased: '',
   // 安葬者身份证号，原库列名 burierIDCard，改为 deceasedIDCard 20260912 修改,
   deceasedIDCard: '',
+  // 死亡日期（库列 buried.deathDate）：非必填、不加星，未选时提交空串由后端归一为 null 20261011 新增,
+  deathDate: '',
   burialDate: '',
   // 联系人/联系人电话：contacts 对应库列 contacts，contactsphone 对应库列 contactsphone(全小写) 20260909 新增,
   contacts: '',

@@ -13,6 +13,9 @@ export interface ReserveModel {
   idRoom: number;
   liaison: string;
   liaisonPhone: string;
+  // 预定限期（库列 reserve.reservationExpireDate，datetime）：到期未付款则预定失效、墓位可再次销售；
+  // 后端回传 ISO 串，展示/回填统一用 formatDate 取日期部分 20261011 新增 20261011 由 endDate 改名,
+  reservationExpireDate: string;
   remark: string;
   operator: string;
   isDeleted: number;

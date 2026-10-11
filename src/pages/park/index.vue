@@ -18,13 +18,16 @@
           </t-form-item>
 
           <t-form-item :label="$t('pages.park.park')" name="park">
+            <!-- 园区标签开启拖拽排序：拖动换位后点确认即按新顺序重建该区域园区（后端按数组序逐条 insert）20261011 新增 -->
             <t-tag-input
               v-model="park"
               :placeholder="$t('pages.park.parkPlaceholder')"
               :tag-props="{ theme: 'warning' }"
               :max="20"
               :maxcharacter="12"
+              :drag-sort="true"
               excess-tags-display-type="break-line"
+              @drag-sort="onDragSortPark"
               @enter="onEnterPark"
             />
           </t-form-item>
@@ -68,6 +71,12 @@ type ParkFormData = Omit<typeof INITIAL_DATA, 'region'> & {
 
 interface TagInputEnterContext {
   inputValue?: string;
+}
+
+// 拖拽排序回调上下文：只回传起止下标（组件内部不自己重排数组）20261011 新增,
+interface TagDragSortContext {
+  currentIndex: number;
+  targetIndex: number;
 }
 
 type TagInputValue = Array<string | number>;
@@ -151,6 +160,21 @@ const onEnterPark = (value: TagInputValue, context: TagInputEnterContext) => {
   if (value.length >= 20 && context.inputValue) {
     MessagePlugin.warning(translate('pages.park.tagAtMost') + 20 + translate('pages.park.tag'));
   }
+};
+
+// 拖拽换位：tdesign v1.20.7 的 TagInput 拖拽只把 dragSort 透传给标签并抛出 drag-sort 事件（带 newTags 的类型声明
+// 在运行时从未被填充），数组顺序全靠调用方自己改——不接这个回调的话拖动什么也不会发生，松手就回到原样 20261011 新增,
+const onDragSortPark = ({ currentIndex, targetIndex }: TagDragSortContext) => {
+  if (currentIndex === targetIndex) {
+    return;
+  }
+  const list = [...park.value];
+  const [moved] = list.splice(currentIndex, 1);
+  if (moved === undefined) {
+    return;
+  }
+  list.splice(targetIndex, 0, moved);
+  park.value = list;
 };
 </script>
 <style lang="less" scoped>

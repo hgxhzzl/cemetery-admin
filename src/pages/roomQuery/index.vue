@@ -79,13 +79,13 @@
               />
             </t-form-item>
 
-            <!-- 销售状态/迁出状态四个多选框：已销售默认勾选；一对复选框只勾其一时按该状态过滤，
-                 都勾或都不勾时不过滤该状态 20260924 新增 -->
+            <!-- 销售状态/迁出状态多选框：已销售默认勾选；销售状态一对，只勾其一时按该状态过滤，
+                 都勾或都不勾时不过滤；迁出状态只留「已迁出」（未迁出就是不限，无需再勾一个反选框）
+                 20260924 新增 20261011 去掉未迁出 -->
             <div class="cms-query-filter-status-group">
               <t-checkbox v-model="formData.sold">{{ t('statusType.saleStatusEnum.sold') }}</t-checkbox>
               <t-checkbox v-model="formData.unsold">{{ t('statusType.saleStatusEnum.unsold') }}</t-checkbox>
               <t-checkbox v-model="formData.out">{{ t('statusType.transferOutStatusEnum.out') }}</t-checkbox>
-              <t-checkbox v-model="formData.notOut">{{ t('statusType.transferOutStatusEnum.notOut') }}</t-checkbox>
             </div>
           </div>
         </t-form>
@@ -107,6 +107,10 @@
         >
           <template #createDate="{ row }">
             {{ formatDate(row.createDate) }}
+          </template>
+          <!-- 销售金额：千分位展示，写法同销售查询页 realPrice 插槽（20261011 新增） -->
+          <template #realPrice="{ row }">
+            {{ formatPrice(row.realPrice) }}
           </template>
           <template #op="{ row }">
             <t-link theme="primary" @click="handleClickDetail(row)">
@@ -160,6 +164,7 @@ import { useInfiniteScrollQuery, useLayoutScrollRestore, useRoomDetail, useTabCa
 import { t, translate } from '@/locales';
 import { exportCsv } from '@/utils/csv';
 import { formatDate } from '@/utils/date';
+import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
 // ============================================================
@@ -184,6 +189,9 @@ const COLUMNS: PrimaryTableCol<TableRowData>[] = [
   { title: translate('pages.roomQuery.park'), align: 'left', width: 200, colKey: 'park', ellipsis: true },
   { title: translate('pages.roomQuery.xyNumber'), width: 130, colKey: 'xyNumber', ellipsis: true },
   { title: translate('pages.roomQuery.buyer'), width: 100, colKey: 'buyer', ellipsis: true },
+  // 销售金额（sale.realPrice）：跟在购墓人后、销售日期前凑成销售信息簇，右对齐同销售查询页；
+  // 未销售墓位无活动销售记录，该列为空 20261011 新增
+  { title: translate('pages.roomQuery.realPrice'), width: 120, align: 'right', colKey: 'realPrice' },
   { title: translate('pages.roomQuery.createDate'), width: 120, colKey: 'createDate' },
   { title: translate('pages.roomQuery.deceased'), width: 120, colKey: 'deceased', ellipsis: true },
   { title: translate('pages.roomQuery.contacts'), width: 300, colKey: 'contacts', ellipsis: true },
@@ -204,10 +212,10 @@ interface FormData {
   dateRange: string[];
   keyword: string;
   // 销售状态/迁出状态多选：true 为勾选，已销售默认勾选（只看已销售），其余默认不勾（不过滤）20260924 新增
+  // 迁出状态不再提供「未迁出」选项：不勾即不限迁出状态 20261011 修改
   sold: boolean;
   unsold: boolean;
   out: boolean;
-  notOut: boolean;
 }
 
 const searchForm: FormData = {
@@ -219,7 +227,6 @@ const searchForm: FormData = {
   sold: true,
   unsold: false,
   out: false,
-  notOut: false,
 };
 
 // 区域初值在区域列表加载后默认选第一项（本页菜单不在区域三级菜单下，路由不下发 region）20260925 修改,
@@ -280,11 +287,11 @@ const getQueryParams = (current: number, pageSize: number) => {
     endDate,
     // 关键词：按墓区编号/购墓人/联系人/电话/安葬者/备注拼串包含查找，为空时后端不拼接该条件 20260924 新增 20261003 加备注
     keyword: formData.value.keyword,
-    // 销售状态/迁出状态多选：一对复选框只勾其一时后端按该状态过滤，都勾或都不勾时不过滤 20260924 新增
+    // 销售状态多选：一对复选框只勾其一时后端按该状态过滤，都勾或都不勾时不过滤；
+    // 迁出状态只传 out：勾上只看已迁出，不勾不限（后端收不到 notOut 就不会走反选分支）20260924 新增 20261011 去掉未迁出
     sold: formData.value.sold,
     unsold: formData.value.unsold,
     out: formData.value.out,
-    notOut: formData.value.notOut,
     current,
     pageSize,
   };
@@ -301,7 +308,7 @@ const handleExport = async () => {
   }
   exporting.value = true;
   try {
-    // 表头与表格列一致：序号/区域/园区/墓位编号/购墓人/销售日期/安葬者/联系人/备注（购墓人电话列已不显示）20260924 修改 20260926 修改 20261003 加备注
+    // 表头与表格列一致：序号/区域/园区/墓位编号/购墓人/销售金额/销售日期/安葬者/联系人/备注（购墓人电话列已不显示）20260924 修改 20260926 修改 20261003 加备注 20261011 加销售金额
     await exportCsv<RoomQueryModel>({
       fileName: '墓位信息查询',
       headers: [
@@ -310,19 +317,21 @@ const handleExport = async () => {
         translate('pages.roomQuery.park'),
         translate('pages.roomQuery.xyNumber'),
         translate('pages.roomQuery.buyer'),
+        translate('pages.roomQuery.realPrice'),
         translate('pages.roomQuery.createDate'),
         translate('pages.roomQuery.deceased'),
         translate('pages.roomQuery.contacts'),
         translate('pages.roomQuery.remark'),
       ],
       fetchPage: (current, pageSize) => getRoomQueryList(getQueryParams(current, pageSize)),
-      // 序号从 1 连续编号；日期与列表一致格式化 20260924 修改
+      // 序号从 1 连续编号；日期与列表一致格式化；销售金额导出原始数值（不千分位）便于 Excel 求和 20260924 修改 20261011 加销售金额,
       rowToLine: (row, index) => [
         index + 1,
         row.region,
         row.park,
         row.xyNumber,
         row.buyer,
+        row.realPrice,
         formatDate(row.createDate ?? undefined),
         row.deceased,
         row.contacts,

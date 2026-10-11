@@ -27,6 +27,12 @@
           <h1>{{ $t('pages.reserve.liaisonPhone') }}</h1>
           <span>{{ display(reserve?.liaisonPhone) }}</span>
         </div>
+        <!-- 预定限期(reserve.reservationExpireDate)：紧接电话之后，与预定登记表单字段顺序一致；
+             库列为 datetime，旧记录未填时 formatDate 回空串、display 统一展示“未填写” 20261011 新增 20261011 由 endDate 改名 -->
+        <div class="info-item">
+          <h1>{{ $t('pages.reserve.reservationExpireDate') }}</h1>
+          <span>{{ display(formatDate(reserve?.reservationExpireDate)) }}</span>
+        </div>
         <div class="info-item">
           <h1>{{ $t('pages.reserve.remark') }}</h1>
           <span>{{ display(reserve?.remark) }}</span>
@@ -250,12 +256,14 @@ const handleClose = () => {
   emit('close');
 };
 
-// 下葬记录列表列定义：序号/安葬者/安葬者身份证号/下葬日期/联系人/联系人电话/逝者关系/经办人/创建日期，
-// 各列左对齐；列宽 64/240/160/110/110/130/90/90/110，总宽 1104 与其它两表统一 20260912 修改 20260925 备注改逝者关系,
+// 下葬记录列表列定义：序号/安葬者/安葬者身份证号/死亡日期/下葬日期/联系人/联系人电话/逝者关系/经办人/创建日期，
+// 各列左对齐；列宽 50/130/160/110/110/110/130/90/90/110，合计 1090 与收款/联系人两表一致（三表等宽为详情卡约定） 20260912 修改 20260925 备注改逝者关系；
+// 20261011 新增死亡日期列（110）：宽度全部由富余最大的安葬者列让出（240→130，约容纳 8 个中文字，超长省略号 + tooltip），
+// 安葬者列原与“收款金额+缴费年限”两列对齐，现改为与“收款金额”列对齐，其后各列相对其它两表整体右移一列 20261011 修改
 const buriedColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   { colKey: 'serial-number', title: translate('pages.buried.index'), width: 50, align: 'left' },
-  // 安葬者列宽 240：容纳约 15 个中文字符，与收款金额+缴费年限两列合计上下对齐 20260912 修改
-  { colKey: 'deceased', title: translate('pages.buried.deceased'), width: 240, align: 'left', ellipsis: true },
+  // 安葬者列宽 240 → 130：为新增的死亡日期列让位，详情三表等宽不变 20261011 修改
+  { colKey: 'deceased', title: translate('pages.buried.deceased'), width: 130, align: 'left', ellipsis: true },
   // 安葬者身份证号列：位于安葬者右侧，与开始日期列上下对齐 20260912 新增
   {
     colKey: 'deceasedIDCard',
@@ -264,6 +272,8 @@ const buriedColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
     align: 'left',
     ellipsis: true,
   },
+  // 死亡日期列（库列 buried.deathDate）：紧挨下葬日期左侧，与下葬登记表单字段顺序一致；datetime 取日期部分，旧记录未填展示“未填写” 20261011 新增
+  { colKey: 'deathDate', title: translate('pages.buried.deathDate'), width: 110, align: 'left', ellipsis: true },
   // 下葬日期列：与结束日期列上下对齐 20260912 修改
   { colKey: 'burialDate', title: translate('pages.buried.burialDate'), width: 110, align: 'left', ellipsis: true },
   // 联系人列：与付款人列上下对齐 20260912 修改
@@ -306,6 +316,7 @@ const buriedRows = computed(() =>
       idBuried: row.idBuried,
       deceased: display(row.deceased),
       deceasedIDCard: display(row.deceasedIDCard),
+      deathDate: display(formatDate(row.deathDate)),
       burialDate: display(formatDate(row.burialDate)),
       contacts: display(row.contacts),
       contactsphone: display(row.contactsphone),

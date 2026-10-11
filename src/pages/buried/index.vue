@@ -307,6 +307,19 @@
                   />
                 </t-form-item>
               </t-col>
+              <!-- 死亡日期（库列 buried.deathDate）：新增于下葬日期左侧，非必填不加星；控件写法同下葬日期 20261011 新增 -->
+              <t-col v-if="!isDeleteMode" :span="6">
+                <t-form-item :label="$t('pages.buried.deathDate')" name="deathDate">
+                  <t-date-picker
+                    v-model="formBuriedData.deathDate"
+                    :style="{ width: '322px' }"
+                    theme="primary"
+                    mode="date"
+                    separator="/"
+                    :placeholder="$t('pages.buried.deathDatePlaceholder')"
+                  />
+                </t-form-item>
+              </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :required="true" :label="$t('pages.buried.burialDate')" name="burialDate">
                   <t-date-picker
@@ -736,6 +749,8 @@ const fillBuriedForm = (record: BuriedModel) => {
     idRoom: record.idRoom,
     deceased: record.deceased ?? '',
     deceasedIDCard: record.deceasedIDCard ?? '',
+    // 死亡日期回填：库列为 datetime（后端回传 ISO 串），日期控件只认 yyyy-MM-dd，旧记录未填时保持空 20261011 新增,
+    deathDate: formatDate(record.deathDate ?? ''),
     burialDate: record.burialDate ?? '',
     // 联系人/联系人电话回填：库列 contactsphone(全小写)，SELECT * 返回同名键 20260909 新增,
     contacts: record.contacts ?? '',

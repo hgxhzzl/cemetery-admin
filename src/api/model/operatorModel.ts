@@ -18,7 +18,7 @@ export interface OperatorModel {
   useStatus: string;
   team: string;
   joinDate: string;
-  remark: string;
+  region: string;
 }
 export interface SelectResult {
   list: Array<SelectModel>;

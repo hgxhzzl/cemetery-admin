@@ -4,6 +4,8 @@ const Api = {
   querySummary: '/dashboard-query/summary',
   // 管理到期记录独立分页：首页管理到期卡片滚动加载用（每页 40 条）20260926 新增
   queryExpiredList: '/dashboard-query/expired-list',
+  // 预定记录独立分页：首页预定卡片滚动加载用，条件同管理到期卡片（每页 40 条）20261011 新增
+  queryReserveList: '/dashboard-query/reserve-list',
 };
 
 // 首页区域名称行：用于两张销售记录卡片标题前缀 20260914 新增
@@ -61,6 +63,24 @@ export interface ExpiredListResult {
   total: number;
 }
 
+// 首页预定记录行：活动预定记录且预定限期 >= 当天、墓位未售出未迁出（走 reserve 表）20261011 新增
+// 字段：idReserve（行主键）/区域/园区/编号/预定限期/联系人/联系人电话（后端已将 liaison/liaisonPhone 映射为后两者）
+export interface ReserveRecordModel {
+  idReserve: number;
+  region: string;
+  park: string;
+  xyNumber: string;
+  reservationExpireDate: string;
+  contacts: string;
+  contactsphone: string;
+}
+
+// 预定记录分页结果：结构同管理到期 20261011 新增
+export interface ReserveListResult {
+  list: ReserveRecordModel[];
+  total: number;
+}
+
 // 首页指标按区域分解行：第一行卡片内的小字（如「九泉山：¥20,000」）20260915 新增
 export interface RegionStatModel {
   region: string;
@@ -95,6 +115,14 @@ export function getDashboardSummary() {
 export function getDashboardExpiredList(params: Record<string, unknown>) {
   return request.get<ExpiredListResult>({
     url: Api.queryExpiredList,
+    params,
+  });
+}
+
+// 按区域分页查询预定记录（首页预定卡片滚动加载用）20261011 新增
+export function getDashboardReserveList(params: Record<string, unknown>) {
+  return request.get<ReserveListResult>({
+    url: Api.queryReserveList,
     params,
   });
 }

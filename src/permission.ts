@@ -6,6 +6,7 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import router from '@/router';
 import { getPermissionStore, useUserStore } from '@/store';
+import { fetchAndApplyCardColors, resetCardThemeCache } from '@/utils/cardTheme';
 import { PAGE_NOT_FOUND_ROUTE } from '@/utils/route/constant';
 
 NProgress.configure({ showSpinner: false });
@@ -25,6 +26,10 @@ router.beforeEach(async (to, from, next) => {
     }
     try {
       await userStore.getUserInfo();
+
+      // 卡片配色：登录后首次导航时拉取并写进 html 行内 CSS 变量（模块内缓存，后续跳转不再请求）；
+      // 有意不 await——配色接口异常或尚未建表时不能阻塞页面进入，卡片自然回落 CSS 默认色 20261011 新增,
+      fetchAndApplyCardColors();
 
       const { asyncRoutes } = permissionStore;
       let justBuilt = false;
@@ -94,6 +99,8 @@ router.afterEach((to) => {
 
     userStore.logout();
     permissionStore.restoreRoutes();
+    // 配色跟着库走：退出时清掉拉取缓存与行内变量，避免下一个账号（另一个库）拉到失败时沿用上一个账号的颜色 20261011 新增,
+    resetCardThemeCache();
   }
   NProgress.done();
 });

@@ -449,33 +449,33 @@
   // 外框色在 hover 下保持不变，
   // 覆盖公共 cms-card-hover-highlight 的 hover 品牌色（特异性相同，页面 less 后声明优先，
   // 故本页 mixin 调用需位于 cms-card-hover-highlight 之后）20261003 抽取
+  // 四态色值已抽至 style/card-color.less 的 CSS 变量（用户在卡片颜色页自定义后由 utils/cardTheme.ts 行内覆盖），
+  // 本 mixin 只引用变量、不再写死色值，默认值与改造前一致 20261011 修改,
   .@{prefix}-card--sold,
   .@{prefix}-card--sold:hover {
-    border-color: var(--td-success-color);
-    background-color: #f4fef9;
+    border-color: var(--cms-card-sold-border);
+    background-color: var(--cms-card-sold-bg);
   }
 
-  // 已下葬固定默认主题蓝 #0052D9（同 config/style 默认 brandTheme），不用 --td-brand-color：
-  // 品牌主题色可在设置中切换，切换为绿色时蓝框会变成绿色、与已销售绿混淆
   .@{prefix}-card--buried,
   .@{prefix}-card--buried:hover {
-    border-color: #0052d9;
-    background-color: #f4f8fe;
+    border-color: var(--cms-card-buried-border);
+    background-color: var(--cms-card-buried-bg);
   }
 
   .@{prefix}-card--expired,
   .@{prefix}-card--expired:hover {
-    border-color: var(--td-error-color);
-    background-color: #fce5e5;
+    border-color: var(--cms-card-expired-border);
+    background-color: var(--cms-card-expired-bg);
   }
 
-  // 未销售：浅橙背景 #fcf6ef + 橙色外框 #fca678，悬停不变（hover 高亮仅改边框与阴影）。
-  // 该态为独立叠加类，是否渲染由类名下发方控制：墓位业务页 cardStatusClass 直接叠加，
-  // 墓位设置/墓位迁出/收管理费经 getCardStatusClass 的 withUnsold 选项开启，四页均已启用该态 20261003 抽取
+  // 未销售态：墓位业务页 cardStatusClass 与其余三页 getCardStatusClass 的 withUnsold 选项均已启用该态 20261003 抽取
+  // 注：自 20261011 起类名下发方（utils/cardStatus.ts）保证一张卡最多命中一个状态类，
+  // 四态不再共存，本块居于末位不再产生覆盖；保留本态与其余三态同结构（底色+外框）以便日后恢复叠加 20261011 修改,
   .@{prefix}-card--unsold,
   .@{prefix}-card--unsold:hover {
-    background-color: #fcf6ef;
-    border-color: #fca678;
+    background-color: var(--cms-card-unsold-bg);
+    border-color: var(--cms-card-unsold-border);
   }
 }
 

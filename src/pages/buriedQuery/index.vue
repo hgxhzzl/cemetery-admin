@@ -20,12 +20,12 @@
               name="region"
               class="cms-filter-item cms-filter-item-query cms-filter-item-basic"
             >
+              <!-- 区域为必选项：有初值且不提供清除按钮，避免无区域的全量查询 20261010 修改 -->
               <t-select
                 v-model="formData.region"
                 class="cms-filter-control"
                 :options="regionOptions"
                 :placeholder="t('pages.buriedQuery.regionPlaceholder')"
-                clearable
                 @change="onRegionChange"
               />
             </t-form-item>
@@ -64,9 +64,24 @@
               <t-button theme="default" :loading="exporting" @click="handleExport">{{ t('operate.export') }}</t-button>
             </div>
           </div>
+
+          <!-- 第二行：记录排序方式单选（服务端排序，切换即重查首页）20261011 新增 -->
+          <div class="cms-query-filter-row cms-query-filter-row-second">
+            <t-form-item
+              :label="t('pages.buriedQuery.sortLabel')"
+              name="sortMode"
+              class="cms-filter-item buried-sort-item"
+            >
+              <t-radio-group v-model="formData.sortMode" @change="onSortModeChange">
+                <t-radio value="park">{{ t('pages.buriedQuery.sortParkFirst') }}</t-radio>
+                <t-radio value="date">{{ t('pages.buriedQuery.sortDateFirst') }}</t-radio>
+              </t-radio-group>
+            </t-form-item>
+          </div>
         </t-form>
 
         <!-- 表格高度随屏幕自适应：每页 40 条(约1920px)远超表格高度，滚动条必然出现，无需再封顶 20260913 修改 -->
+        <!-- 筛选区拆为两行（新增排序单选行）：高度多占约 44px（12px 行距+32px 控件高），表格区最大高度相应扣减，同墓位信息查询页 20261011 修改 -->
         <t-table
           ref="tableRef"
           class="cms-query-table"
@@ -74,7 +89,7 @@
           :columns="COLUMNS"
           row-key="idBuried"
           table-layout="fixed"
-          max-height="calc(100vh - 378px)"
+          max-height="calc(100vh - 422px)"
           :bordered="false"
           lazy-load
           stripe
@@ -82,6 +97,20 @@
         >
           <template #burialDate="{ row }">
             {{ formatDate(row.burialDate) }}
+          </template>
+          <!-- 墓位类型库中存的是 i18n key(statusType.roomTypeEnum.*)，需翻译后展示，同墓位详情/卡片页写法 20261011 新增 -->
+          <template #roomType="{ row }">
+            {{ row.roomType ? t(row.roomType) : '' }}
+          </template>
+          <!-- 新增三列的展示格式：两个日期列与既有日期列同样走 formatDate，金额千分位写法同墓位信息查询页 20261011 新增 -->
+          <template #deathDate="{ row }">
+            {{ formatDate(row.deathDate) }}
+          </template>
+          <template #saleDate="{ row }">
+            {{ formatDate(row.saleDate) }}
+          </template>
+          <template #realPrice="{ row }">
+            {{ formatPrice(row.realPrice) }}
           </template>
           <template #createDate="{ row }">
             {{ formatDate(row.createDate) }}
@@ -126,7 +155,6 @@ export default {
 };
 </script>
 <script setup lang="ts">
-import dayjs from 'dayjs';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { computed, nextTick, onMounted, ref } from 'vue';
 
@@ -140,6 +168,7 @@ import { useInfiniteScrollQuery, useLayoutScrollRestore, useRoomDetail, useTabCa
 import { t, translate } from '@/locales';
 import { exportCsv } from '@/utils/csv';
 import { formatDate } from '@/utils/date';
+import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
 // ============================================================
@@ -163,8 +192,18 @@ const COLUMNS: PrimaryTableCol<TableRowData>[] = [
   { title: translate('pages.buriedQuery.region'), align: 'left', width: 110, colKey: 'region', ellipsis: true },
   { title: translate('pages.buriedQuery.park'), align: 'left', width: 200, colKey: 'park', ellipsis: true },
   { title: translate('pages.buriedQuery.xyNumber'), width: 130, colKey: 'xyNumber', ellipsis: true },
+  // 墓位类型（room.roomType）：与详情页字段序一致，紧跟位置之后 20261011 新增
+  { title: translate('pages.buriedQuery.roomType'), width: 100, colKey: 'roomType' },
   { title: translate('pages.buriedQuery.deceased'), width: 140, colKey: 'deceased', ellipsis: true },
+  // 身份证号列宽 200px 确保 18 位号码完整显示（同下葬登记页）20261011 新增
+  { title: translate('pages.buriedQuery.deceasedIDCard'), width: 200, colKey: 'deceasedIDCard' },
+  // 死亡日期排在下葬日期前：先亡后葬符合读序 20261011 新增
+  { title: translate('pages.buriedQuery.deathDate'), width: 120, colKey: 'deathDate' },
   { title: translate('pages.buriedQuery.burialDate'), width: 120, colKey: 'burialDate' },
+  // 销售价格/销售日期（sale.realPrice / sale.createDate）：右对齐同销售查询页，
+  // 未销售墓位无活动销售记录，这两列为空 20261011 新增
+  { title: translate('pages.buriedQuery.realPrice'), width: 120, align: 'right', colKey: 'realPrice' },
+  { title: translate('pages.buriedQuery.saleDate'), width: 120, colKey: 'saleDate' },
   { title: translate('pages.buriedQuery.contacts'), width: 110, colKey: 'contacts', ellipsis: true },
   { title: translate('pages.buriedQuery.contactsphone'), width: 170, colKey: 'contactsphone' },
   { title: translate('pages.buriedQuery.operator'), width: 100, colKey: 'operator', ellipsis: true },
@@ -182,13 +221,18 @@ interface FormData {
   region: string;
   park: string;
   dateRange: string[];
+  // 记录排序方式：park=园区/排号/序号/下葬日期，date=下葬日期/园区/排号/序号（均升序，后端排序；
+  // 园区层级按园区设置页的拖拽顺序，不是中文编码序）20261011 新增
+  sortMode: string;
 }
 
 const searchForm: FormData = {
   region: '',
   park: '',
-  // 下葬时间段默认最近一个月：如今天 2026-09-11，则默认 2026-08-11 至 2026-09-11
-  dateRange: [dayjs().subtract(1, 'month').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD')],
+  // 下葬时间段默认为空：不设初值即不按时间过滤，由使用者按需选定 20261010 修改,
+  dateRange: [],
+  // 默认按墓位位置排序（园区→排→号→下葬日期）：单选框必须有且仅有一项选中，取需求列出的第一项 20261011 新增,
+  sortMode: 'park',
 };
 
 const formData = ref<FormData>({ ...searchForm });
@@ -226,6 +270,8 @@ const getQueryParams = (current: number, pageSize: number) => {
     park: formData.value.park,
     startDate,
     endDate,
+    // 排序方式一并下发后端：列表滚动分页与全量导出共用同一参数，保证导出行序与屏显一致 20261011 新增
+    sortMode: formData.value.sortMode,
     current,
     pageSize,
   };
@@ -242,7 +288,7 @@ const handleExport = async () => {
   }
   exporting.value = true;
   try {
-    // 表头与表格列一致：序号/区域/园区/墓区编号/安葬者/身份证号/下葬日期/联系人/联系人电话/备注/经办人/创建日期
+    // 表头与表格列一致：序号/区域/园区/位置/墓位类型/安葬者/身份证号/死亡日期/下葬日期/销售价格/销售日期/联系人/联系人电话/备注/经办人/创建日期 20261011 扩充
     await exportCsv<BuriedQueryModel>({
       fileName: '墓区下葬查询',
       headers: [
@@ -250,9 +296,13 @@ const handleExport = async () => {
         translate('pages.buriedQuery.region'),
         translate('pages.buriedQuery.park'),
         translate('pages.buriedQuery.xyNumber'),
+        translate('pages.buriedQuery.roomType'),
         translate('pages.buriedQuery.deceased'),
         translate('pages.buriedQuery.deceasedIDCard'),
+        translate('pages.buriedQuery.deathDate'),
         translate('pages.buriedQuery.burialDate'),
+        translate('pages.buriedQuery.realPrice'),
+        translate('pages.buriedQuery.saleDate'),
         translate('pages.buriedQuery.contacts'),
         translate('pages.buriedQuery.contactsphone'),
         translate('pages.buriedQuery.remark'),
@@ -260,15 +310,19 @@ const handleExport = async () => {
         translate('pages.buriedQuery.createDate'),
       ],
       fetchPage: (current, pageSize) => getBuriedQueryList(getQueryParams(current, pageSize)),
-      // 序号从 1 连续编号；日期与列表一致格式化
+      // 序号从 1 连续编号；日期与列表一致格式化；销售金额写原值（不千分位，便于表格求和）；墓位类型写翻译后的标签而不是 i18n key 20261011 修改
       rowToLine: (row, index) => [
         index + 1,
         row.region,
         row.park,
         row.xyNumber,
+        row.roomType ? translate(row.roomType) : '',
         row.deceased,
         row.deceasedIDCard,
+        formatDate(row.deathDate),
         formatDate(row.burialDate),
+        row.realPrice,
+        formatDate(row.saleDate),
         row.contacts,
         row.contactsphone,
         row.remark,
@@ -286,6 +340,11 @@ const handleExport = async () => {
 // 切换区域时清空园区选择，避免园区与区域不匹配
 const onRegionChange = () => {
   formData.value.park = '';
+};
+
+// 切换排序方式：排序纯服务端，无需改筛选条件，直接重查首页并回到顶部（与点“查询”同一动作）20261011 新增
+const onSortModeChange = () => {
+  onSubmit();
 };
 
 // 滚动到底部自动加载下一页逻辑收敛于公共 useInfiniteScrollQuery 20260914 抽取
@@ -350,8 +409,15 @@ const loadParkOptions = async () => {
   }
 };
 
-onMounted(() => {
-  loadRegionOptions();
+onMounted(async () => {
+  // 区域初值取下拉首项：本页挂在"查询统计"下，不属于墓区业务的区域三级菜单组，拿不到路由 meta.region；
+  // 又因区域不可清除，必须等下拉加载完再取首项作为初值，然后才发首个查询，
+  // 否则首屏会先以空区域拉一次全量数据 20261010 新增,
+  await loadRegionOptions();
+  if (!formData.value.region && dataRegionList.value.length > 0) {
+    // SelectModel.value 声明为 number,但区域接口实际返回 tagName(字符串),故显式转 string 对齐 formData.region 20261010 新增,
+    formData.value.region = String(dataRegionList.value[0].value);
+  }
   loadParkOptions();
   fetchData(true);
 });

@@ -4,7 +4,6 @@
 const http = require('node:http');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const { Buffer } = require('node:buffer');
 const { exec } = require('node:child_process');
 
 const PORT = 19700;
@@ -16,18 +15,34 @@ const ALLOWED_ORIGINS = [
   'http://124.221.213.247',
 ];
 
-// 执行命令并取输出(wmic 默认输出 UTF-16LE,统一按 UTF-16 解码再容错 ASCII)
+// 执行命令并取输出:wmic 输出为 UTF-16LE,被 node 按 UTF-8 解码后会残留大量 NUL 字符;
+// PowerShell/CIM 输出为普通文本。统一剥 NUL 与 BOM 即可兼容两者,
+// 不再做 Buffer utf16le 二次转码(会把正常的 PowerShell 输出解成乱码) 20261010 修改,
 function run(cmd) {
   return new Promise((resolve) => {
     exec(cmd, { windowsHide: true }, (err, stdout) => {
       if (err) return resolve('');
-      const text = Buffer.from(stdout, 'utf16le').toString('utf8');
-      resolve(text || stdout || '');
+      // 去 NUL 采用 split/join 而非正则:ESLint no-control-regex 不允许正则字面量含控制字符
+      const text = String(stdout || '')
+        .split('\u0000')
+        .join('')
+        .replace(/^\uFEFF/, '');
+      resolve(text);
     });
   });
 }
 
-// 从 wmic 输出中提取序列号:跳过标题行,取第一条非空值
+// 从 CIM(PowerShell) 输出中提取序列号:无列名标题行,直接取第一条非空值;
+// 多块硬盘时按 Win32_DiskDrive 返回顺序取第一块(顺序由 DeviceID 决定,同机稳定) 20261010 新增,
+function pickCimSerial(output) {
+  const lines = String(output)
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return lines[0] || '';
+}
+
+// 从 wmic 输出中提取序列号:跳过标题行,取第一条非空值(仅作老系统兜底)
 function pickSerial(wmicOutput) {
   const lines = String(wmicOutput)
     .split(/\r?\n/)
@@ -38,13 +53,20 @@ function pickSerial(wmicOutput) {
   return '';
 }
 
+// 读取硬件序列号:优先 Get-CimInstance —— Windows 11 25H2 起 wmic 已从系统移除,继续依赖会拿到 NO-DISK/NO-BOARD;
+// CIM 取不到时回退 wmic,兼容仍带 wmic 的老系统 20261010 修复,
+async function readSerial(cimClass, wmicClass) {
+  const psCmd = `powershell -NoProfile -NonInteractive -Command "(Get-CimInstance -ClassName ${cimClass}).SerialNumber"`;
+  const fromCim = pickCimSerial(await run(psCmd));
+  if (fromCim) return fromCim;
+  return pickSerial(await run(`wmic ${wmicClass} get serialnumber`));
+}
+
 // 采集硬件指纹:硬盘序列号 + 主板序列号 + MachineGuid(任一缺失仍可计算,稳定性由三项组合保证)
 async function collectFingerprint() {
-  const diskRaw = await run('wmic diskdrive get serialnumber');
-  const boardRaw = await run('wmic baseboard get serialnumber');
+  const disk = (await readSerial('Win32_DiskDrive', 'diskdrive')) || 'NO-DISK';
+  const board = (await readSerial('Win32_BaseBoard', 'baseboard')) || 'NO-BOARD';
   const guidRaw = await run('reg query HKLM\\SOFTWARE\\Microsoft\\Cryptography /v MachineGuid');
-  const disk = pickSerial(diskRaw) || 'NO-DISK';
-  const board = pickSerial(boardRaw) || 'NO-BOARD';
   const guidMatch = String(guidRaw).match(/MachineGuid\s+REG_SZ\s+(\S+)/i);
   const guid = (guidMatch && guidMatch[1]) || 'NO-GUID';
   const deviceHash = crypto.createHash('sha256').update([disk, board, guid].join('|')).digest('hex');
@@ -96,6 +118,10 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[device-agent] listening on http://127.0.0.1:${PORT}`);
+  // 启动即预热指纹:首次采集要起两次 PowerShell 调 CIM,冷启动可达秒级;
+  // 而登录页请求超时只有 2 秒,开机后第一个用户登录很容易撞上超时被误判为"未安装 Agent";
+  // 提前算好写入缓存,让首个请求直接命中 20261010 修复,
+  getFingerprint().catch(() => {});
 });
 
 // 端口被占(已有实例在跑)时直接退出,避免报错弹窗

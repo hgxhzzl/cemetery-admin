@@ -14,6 +14,8 @@ export interface RoomQueryModel {
   buyer: string;
   payerPhone: string | null;
   createDate: string | null;
+  // 销售金额（sale.realPrice）：活动销售记录的实收金额，未销售墓位为 null 20261011 新增
+  realPrice: number | null;
   deceased: string;
   contacts: string;
   // 备注（room.remark）：列表新增备注列并参与关键词查找 20261003 新增

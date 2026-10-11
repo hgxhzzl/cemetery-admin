@@ -28,11 +28,39 @@
   justify-content: flex-end;
 }
 
+// 区域筛选项与下拉框收窄：尺寸与墓区业务页的 gravePlotBusiness-filter-item-narrow / -control-narrow 完全一致
+// （下拉框 120px，项宽 = label 84 + 控件 120 = 204px），保证同组业务页的区域下拉视觉对齐 20261010 新增,
+// 页面 less 在公共库之后引入，同特异性下后声明的宽度覆盖 cms-filter-control 的 200px 20261010 新增,
+.reserve-filter-item-narrow {
+  width: 204px;
+  max-width: 204px;
+}
+
+.reserve-filter-control-narrow {
+  width: 120px;
+}
+
+// 排序筛选项：分段控件内容窄（label 84px + 升/降两枚小按钮），不沿用 basic 的 286px 固定宽，
+// 按内容自适应收缩，避免 4 个条件项累计超宽触发筛选行换行窜行；尺寸口径同墓区业务页 20261010 新增
+.reserve-filter-item-sort {
+  flex: 0 0 auto;
+  width: auto;
+  max-width: none;
+}
+
 // ==================== 预定登记表单（紧凑版） ====================
 .form-basic-container {
   .cms-form-basic-compact();
   // 输入框行固定宽度与销售页一致，随公共库拆分保留在本页 20260917 修改
   .cms-form-inputs-fixed();
+
+  // 返回按钮右缘与备注（及电话）输入框右缘对齐：按钮原本 float: right 贴表单内容右缘，
+  // 而输入框是固定 322px 靠列内容左缘摆放，两者右缘会差“列宽 - 322”这段空白。
+  // 字段行是 t-row gutter 62（行左右各 -31、列再各内边距 31），所以右列输入框右缘 = 内容宽一半 + 31 + 322，
+  // 把按钮用外边距往左推“一半宽 - 353”（353 = 322 输入框 + 31 列内边距）即与它严格重合，不依赖表单具体宽度 20261011 新增,
+  .form-basic-container-title .cms-back-btn {
+    margin-right: calc(50% - 353px);
+  }
 }
 
 .form-submit-container {

@@ -1,0 +1,72 @@
+// ============================================================
+// 卡片颜色设置页样式：公共结构引自业务公共样式库（与收据配制页同构）20261011 新增
+// ============================================================
+@import '../../style/business/index.less';
+
+// ==================== 配色表单 ====================
+.form-basic-container {
+  .cms-form-basic();
+  .cms-form-title-gap();
+
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-m) 0 var(--td-comp-margin-m) 0;
+    }
+  }
+
+  :deep(.t-form__item) {
+    margin-bottom: var(--td-comp-margin-m);
+  }
+}
+
+.form-submit-container {
+  .cms-form-submit();
+  .cms-form-submit-upload();
+}
+
+// 说明行：全区域共用一套配色 + 立即生效，避免用户以为要按区域分别设置 20261011 新增
+.card-color-tip {
+  margin-bottom: var(--td-comp-margin-l);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--td-text-color-secondary);
+}
+
+// 一行内容：着色勾选 + 颜色值输入 + 底色矩形 + 外框标签 + 外框矩形 20261011 新增
+.card-color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+}
+
+// 颜色矩形：仅作展示（勾选/输入即时反映），与卡片实际用色同源 20261011 新增
+.card-color-swatch {
+  display: inline-block;
+  width: 40px;
+  height: 20px;
+  border: 1px solid var(--td-border-level-2-color);
+  border-radius: var(--td-radius-small);
+}
+
+.card-color-caption {
+  font-size: 12px;
+  color: var(--td-text-color-secondary);
+}
+
+// 预览：所见即所得地呈现四态卡面（未启用态回白底细灰框），避免凭感觉提交后又不满意 20261011 新增
+.card-color-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--td-comp-margin-l);
+  margin: var(--td-comp-margin-s) 0 var(--td-comp-margin-l);
+}
+
+.card-color-sample {
+  min-width: 120px;
+  padding: 8px 10px;
+  font-size: 12px;
+  line-height: 20px;
+  text-align: center;
+  border: 1px solid;
+  border-radius: var(--td-radius-large);
+}
