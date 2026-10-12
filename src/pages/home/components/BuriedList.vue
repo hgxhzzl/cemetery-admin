@@ -15,7 +15,7 @@
           :columns="BURIED_COLUMNS"
           row-key="idBuried"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
         >
           <template #index="{ rowIndex }">
@@ -40,7 +40,7 @@
           :columns="BURIED_COLUMNS"
           row-key="idBuried"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
         >
           <template #index="{ rowIndex }">

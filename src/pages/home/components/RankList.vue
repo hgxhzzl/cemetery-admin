@@ -14,7 +14,7 @@
           :columns="WEEK_COLUMNS"
           row-key="idSale"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
         >
           <template #index="{ rowIndex }">
@@ -39,7 +39,7 @@
           :columns="WEEK_COLUMNS"
           row-key="idSale"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
         >
           <template #index="{ rowIndex }">

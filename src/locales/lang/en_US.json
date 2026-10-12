@@ -564,6 +564,7 @@
       "reservationExpireDateRequiredPlaceholder": "please select reservation expire date (required)",
       "operator": "Operator",
       "createDate": "Create Date",
+      "legendExpired": "Period Expired",
       "remark": "Remark",
       "remarkPlaceholder": "Please enter remark",
       "deleteInfoPrompt": " reservation information will be cleared and cannot be restored"

@@ -132,6 +132,11 @@
                           <div class="room-card__type">{{ $t(card.row.roomType) }}</div>
                         </div>
                         <div class="room-card__body">
+                          <!-- 墓型（room.roomType）：正文新增一行带标签展示，值同首行右侧胶囊文案，便于识别 20261012 新增 -->
+                          <div class="room-card__meta">
+                            <span class="room-card__meta-label">{{ $t('pages.room.roomType') }}</span>
+                            <span class="room-card__meta-value">{{ $t(card.row.roomType) }}</span>
+                          </div>
                           <!-- 规格/价格信息行：标签在左、值在右两端对齐 20260916 修改 -->
                           <div class="room-card__meta">
                             <span class="room-card__meta-label">{{ $t('pages.room.specs') }}</span>
@@ -142,14 +147,17 @@
                             <span class="room-card__meta-label">{{ $t('pages.room.price') }}</span>
                             <span class="room-card__meta-value">{{ formatPrice(card.row.price) }}</span>
                           </div>
-                          <!-- 销售/下葬状态改为两枚胶囊标签两端分布，去掉标题 20260916 修改 -->
-                          <div class="room-card__status">
-                            <span class="room-card__tag" :class="`room-card__tag--${statusKey(card.row.saleStatus)}`">
-                              {{ $t(card.row.saleStatus) }}
-                            </span>
-                            <span class="room-card__tag" :class="`room-card__tag--${statusKey(card.row.intoStatus)}`">
-                              {{ $t(card.row.intoStatus) }}
-                            </span>
+                          <!-- 购墓人（room.buyer）/管理期（room.endDate，后端在下葬/收款事务中维护）：
+                               替代原销售/下葬状态两枚胶囊行，标签与写法同墓位业务/迁出页卡片，无值统一显示“无” 20261012 调整 -->
+                          <div class="room-card__meta">
+                            <span class="room-card__meta-label">{{ $t('pages.room.buyer') }}</span>
+                            <span class="room-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
+                          </div>
+                          <div class="room-card__meta">
+                            <span class="room-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
+                            <span class="room-card__meta-value">{{
+                              formatDate(card.row.endDate) || $t('common.none')
+                            }}</span>
                           </div>
                         </div>
                         <div class="room-card__actions">
@@ -457,6 +465,7 @@ import { useCardGrid, useParkRoomFilter, usePermission, useRoomDetail, useSubmit
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
+import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
@@ -479,8 +488,7 @@ const menuRegion = (useRoute().meta.region as string) || '';
 
 const dialogHeader = translate('operate.deleteDataCPrompt');
 
-// 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260916 新增
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+// 卡片销售/下葬状态胶囊行已换为购墓人/管理期两行，不再需要状态配色函数 statusKey 20261012 移除
 
 // 迁出状态枚举 key：已迁出。设置页列表不展示已迁出的墓位，已迁出的墓位也不可修改 20260921 新增
 const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';

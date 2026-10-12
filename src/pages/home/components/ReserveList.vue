@@ -16,7 +16,7 @@
           :columns="RESERVE_COLUMNS"
           row-key="idReserve"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
           @scroll="firstHandleScroll"
         >
@@ -41,7 +41,7 @@
           :columns="RESERVE_COLUMNS"
           row-key="idReserve"
           size="small"
-          :max-height="288"
+          :max-height="250"
           table-layout="fixed"
           @scroll="secondHandleScroll"
         >

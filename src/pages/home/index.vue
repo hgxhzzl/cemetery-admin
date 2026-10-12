@@ -91,13 +91,16 @@ onActivated(async () => {
    - 中间段：少于 5 行明细时由内容撑高，行高取“本行两张卡自然高度的较大值”。
      需显式写 align-items: stretch：TDesign 的 t-row 根节点默认带 t-row--align-top（align-items: flex-start），
      不覆盖则行高能拉到最大值但短卡不会被拉伸，短卡下方会多出空断层（实测：4 条 270px / 2 条 192.7px）20261004 新增
-   - 上限 328px：与原固定值一致。表格自身 max-height 288 + 卡片 padding/header 占位已够 5 行以上内滚，
-     所以记录 >= 5 行时的表现与改动前完全相同 20261011 补预定记录行 */
+   - 上限 328px：与原固定值一致。20261012 修复：卡片自然高度 = 上下 padding(16×2) + header(26) + body margin-top(16)
+     + 表格，原表格 max-height 288 使卡片合计约 362px > 328px，行未设 overflow 会让满记录的卡向下溢出、
+     压到下一行标题（首页“管理到期记录”与“预定记录”挤到一起即此因）。现将表格 max-height 收窄至 250（卡片约 324 ≤ 328），
+     并给本组行补 overflow: hidden 作为兜底，杜绝任何估算误差导致的溢出压行 20261012 修改 */
 .home-row--buried,
 .home-row--bottom,
 .home-row--expired,
 .home-row--reserve {
   align-items: stretch;
+  overflow: hidden;
   min-height: 90px;
   max-height: 328px;
 }

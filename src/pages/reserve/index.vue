@@ -97,7 +97,10 @@
                       v-for="card in rowGroup.cards"
                       :key="`${rowGroup.yNum}-${card.xNum}`"
                       class="reserve-card"
-                      :class="{ 'reserve-card--empty': card.placeholder }"
+                      :class="{
+                        'reserve-card--empty': card.placeholder,
+                        [cardStatusClass(card.row)]: !card.placeholder,
+                      }"
                     >
                       <template v-if="card.placeholder">
                         <!-- 空位卡序号与正常卡同样顶部对齐 -->
@@ -117,9 +120,9 @@
                           <span class="reserve-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="reserve-card__body">
-                          <!-- 卡片内容参照墓位迁出页布局，行为：购墓人/预定人/预定期/备注（去掉原规格/价格/状态胶囊行），
+                          <!-- 卡片内容参照墓位迁出页布局，行为：购墓人/预定人/预定期/管理期/备注（去掉原规格/价格/状态胶囊行），
                                长文本超 7 字截断 + 悬停提示、无值统一显示“无”；按钮区维持本页原有预定/修改/删除口径不变 20261012 调整,
-                               管理期行于 20261012 去掉（预定阶段不关注管理费到期）,
+                               管理期行于 20261012 去掉后应需求同日恢复（取 room.endDate，行位、标签、写法同墓区业务页卡片管理期行）,
                                预定人行：下葬者 改名并改取 reserve.liaison（后端 /canSale LEFT JOIN 活动预定记录）20261012 调整,
                                手机号行于 20261012 去掉（卡片不展示预定人电话；后端 /canSale 仍回传 reserveLiaisonPhone 作为多余列，不影响其它展示） -->
                           <div class="reserve-card__meta">
@@ -146,6 +149,14 @@
                             </span>
                             <span class="reserve-card__meta-value">{{
                               formatDate(card.row.reservationExpireDate) || $t('common.none')
+                            }}</span>
+                          </div>
+                          <!-- 管理期（room.endDate，后端在下葬/收款事务中维护）：行位、标签、写法均同墓区业务页卡片管理期行，
+                               无值时 formatDate 回空串、默认展示“无” 20261012 恢复 -->
+                          <div class="reserve-card__meta">
+                            <span class="reserve-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
+                            <span class="reserve-card__meta-value">{{
+                              formatDate(card.row.endDate) || $t('common.none')
                             }}</span>
                           </div>
                           <div class="reserve-card__meta">
@@ -207,13 +218,35 @@
             </div>
           </div>
 
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 -->
+          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页）+ 放大/缩小卡片列表 20261012 新增图例 -->
           <div v-if="hasQueried && reserveCardRows.length" class="reserve-list-toolbar">
             <span>{{ listTotalText }}</span>
-            <span class="reserve-list-toolbar__zoom">
-              <zoom-in-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
+            <div class="reserve-list-toolbar__right">
+              <!-- 卡片外框颜色说明：未销售橙/已销售绿/已下葬蓝/管理到期浅红，与墓位业务页同源；
+                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261012 新增 -->
+              <div class="reserve-list-toolbar__legend">
+                <span v-if="isCardStateEnabled('unsold')" class="reserve-legend-item">
+                  <i class="reserve-legend-item__swatch reserve-legend-item__swatch--unsold" />
+                  {{ $t('statusType.saleStatusEnum.unsold') }}
+                </span>
+                <span v-if="isCardStateEnabled('sold')" class="reserve-legend-item">
+                  <i class="reserve-legend-item__swatch reserve-legend-item__swatch--sold" />
+                  {{ $t('statusType.saleStatusEnum.sold') }}
+                </span>
+                <span v-if="isCardStateEnabled('buried')" class="reserve-legend-item">
+                  <i class="reserve-legend-item__swatch reserve-legend-item__swatch--buried" />
+                  {{ $t('statusType.intoStatusEnum.buried') }}
+                </span>
+                <span v-if="isCardStateEnabled('expired')" class="reserve-legend-item">
+                  <i class="reserve-legend-item__swatch reserve-legend-item__swatch--expired" />
+                  {{ $t('pages.reserve.legendExpired') }}
+                </span>
+              </div>
+              <span class="reserve-list-toolbar__zoom">
+                <zoom-in-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomIn" />
+                <zoom-out-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomOut" />
+              </span>
+            </div>
           </div>
 
           <!-- 删除预定二次确认弹窗，参照墓区设置页 20260907 新增 -->
@@ -395,6 +428,8 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
+import { getCardStatusClass } from '@/utils/cardStatus';
+import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
@@ -437,6 +472,9 @@ const truncateText = (value?: string | null) => {
 };
 // 是否超过7字需要截断并显示悬停提示 20261012 新增
 const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// 卡片外框状态色类名：与墓位业务页共用 utils/cardStatus 的同一套「已勾选态按优先级递补」判定，
+// 本页启用未销售态（withUnsold），优先级 未销售<已销售<已下葬<管理到期，全未命中时白底细灰框 20261012 新增
+const cardStatusClass = (row: RoomModel | null | undefined) => getCardStatusClass('reserve', row, { withUnsold: true });
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const reserveCardViewport = ref<HTMLElement | null>(null);
 
