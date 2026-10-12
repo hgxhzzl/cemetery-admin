@@ -110,36 +110,52 @@
                       </template>
                       <template v-else>
                         <div class="reserve-card__header">
-                          <!-- 卡片首行改为展示xyNumber编号字段，与墓区设置/销售页一致 20260917 修改 -->
-                          <div class="reserve-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓位类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
-                          <div class="reserve-card__type">{{ $t(card.row.roomType) }}</div>
+                          <!-- 首行编号取 xyNumber，缺失时回退“排/号”拼接；墓位类型为右侧胶囊，口径同墓位迁出页卡片 20261012 调整 -->
+                          <div class="reserve-card__serial">
+                            {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
+                          </div>
+                          <span class="reserve-card__type">{{ $t(card.row.roomType).trim() }}</span>
                         </div>
                         <div class="reserve-card__body">
-                          <!-- 规格/价格：标签在左、值在右两端对齐 20260917 修改 -->
+                          <!-- 卡片内容参照墓位迁出页布局，行为：购墓人/预定人/预定期/备注（去掉原规格/价格/状态胶囊行），
+                               长文本超 7 字截断 + 悬停提示、无值统一显示“无”；按钮区维持本页原有预定/修改/删除口径不变 20261012 调整,
+                               管理期行于 20261012 去掉（预定阶段不关注管理费到期）,
+                               预定人行：下葬者 改名并改取 reserve.liaison（后端 /canSale LEFT JOIN 活动预定记录）20261012 调整,
+                               手机号行于 20261012 去掉（卡片不展示预定人电话；后端 /canSale 仍回传 reserveLiaisonPhone 作为多余列，不影响其它展示） -->
                           <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.room.specs') }}</span>
-                            <span class="reserve-card__meta-value">{{ card.row.specs }}</span>
+                            <span class="reserve-card__meta-label">{{ $t('pages.room.buyer') }}</span>
+                            <span class="reserve-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
                           </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
                           <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="reserve-card__meta-value">{{ formatPrice(card.row.price) }}</span>
+                            <span class="reserve-card__meta-label">{{ $t('pages.reserve.reserver') }}</span>
+                            <t-tooltip
+                              v-if="isOverflow(card.row.reserveLiaison)"
+                              :content="String(card.row.reserveLiaison)"
+                            >
+                              <span class="reserve-card__meta-value">{{ truncateText(card.row.reserveLiaison) }}</span>
+                            </t-tooltip>
+                            <span v-else class="reserve-card__meta-value">{{
+                              card.row.reserveLiaison || $t('common.none')
+                            }}</span>
                           </div>
-                          <!-- 销售/预定状态两枚胶囊标签两端分布：去掉下葬状态，预定状态胶囊样式与下葬状态一致 20260917 修改 -->
-                          <div class="reserve-card__status">
-                            <span
-                              class="reserve-card__tag"
-                              :class="`reserve-card__tag--${statusKey(card.row.saleStatus)}`"
-                            >
-                              {{ $t(card.row.saleStatus) }}
+                          <!-- 预定期（room.reservationExpireDate，活动预定记录的限期副本）：位置、标签、写法均同墓区业务页卡片对应行，
+                               无活动预定/未填限期时 formatDate 回空串、默认展示“无” 20261012 新增 -->
+                          <div class="reserve-card__meta">
+                            <span class="reserve-card__meta-label">
+                              {{ $t('pages.gravePlotBusiness.reservationPeriod') }}
                             </span>
-                            <span
-                              class="reserve-card__tag"
-                              :class="`reserve-card__tag--${statusKey(card.row.reserveStatus)}`"
-                            >
-                              {{ $t(card.row.reserveStatus) }}
-                            </span>
+                            <span class="reserve-card__meta-value">{{
+                              formatDate(card.row.reservationExpireDate) || $t('common.none')
+                            }}</span>
+                          </div>
+                          <div class="reserve-card__meta">
+                            <span class="reserve-card__meta-label">{{ $t('pages.room.remark') }}</span>
+                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
+                              <span class="reserve-card__meta-value">{{ truncateText(card.row.remark) }}</span>
+                            </t-tooltip>
+                            <span v-else class="reserve-card__meta-value">{{
+                              card.row.remark || $t('common.none')
+                            }}</span>
                           </div>
                         </div>
                         <div class="reserve-card__actions">
@@ -414,8 +430,13 @@ const { controlPageShow } = usePageSwitch({
 // ==================== 列表：状态与筛选下拉数据 ====================
 // 区域由墓区预定下区域三级菜单经路由meta下发，挂载时读取一次
 const menuRegion = (useRoute().meta.region as string) || '';
-// 状态胶囊修饰类：提取枚举 key 最后一段（如 sold/buried），与墓区设置/销售页一致 20260917 新增
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+// 卡片长文本截断：超过7字显示前6字+4个半角点，悬停 tooltip 展示完整内容（口径同墓位迁出页卡片）20261012 新增
+const truncateText = (value?: string | null) => {
+  const text = String(value || '');
+  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
+};
+// 是否超过7字需要截断并显示悬停提示 20261012 新增
+const isOverflow = (value?: string | null) => String(value || '').length > 7;
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const reserveCardViewport = ref<HTMLElement | null>(null);
 

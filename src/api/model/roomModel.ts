@@ -53,4 +53,7 @@ export interface RoomModel {
   // 预定限期（库列 room.reservationExpireDate，datetime）：活动预定记录的限期副本，由后端在预定登记/修改/取消事务中同步，
   // 无活动预定时为 NULL（展示“未填写”），前端只读不可编辑 20261011 新增,
   reservationExpireDate: string | null;
+  // 预定人/预定人电话：/canSale LEFT JOIN 活动预定记录带出（预定页卡片“预定人/手机号”行），无活动预定时为 null 20261012 新增,
+  reserveLiaison: string | null;
+  reserveLiaisonPhone: string | null;
 }

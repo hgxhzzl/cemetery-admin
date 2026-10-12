@@ -214,8 +214,8 @@
               </t-col>
             </t-row>
 
-            <!-- 区域多选选择器：选项与园区设置页同源（/park-query/region，taginfo tagType='region'），
-                 存库为逗号分隔字符串，回显时拆为数组 20261010 修改 -->
+            <!-- 区域选项取操作员专用的全量接口（/operator-query/region，taginfo tagType='region'），
+                 不能用 /park-query/region：那会按当前操作员自身区域收窄，导致分配不到范围外的区域 20261012 修改 -->
             <t-form-item :required-mark="true" :label="$t('pages.operator.region')" name="region">
               <t-select
                 v-model="formData.region"
@@ -421,13 +421,12 @@ import {
   getHavePhone,
   getIdList,
   getOperatorPowerList,
+  getOperatorRegionList,
   getTeamList,
   insertOperator,
   updateOperator,
   updatePower,
 } from '@/api/operator';
-// 区域选项与园区设置页共用同一接口（taginfo tagType='region'）20261010 新增
-import { getRegionList } from '@/api/park';
 import { TYPE_USE_STATUS } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
@@ -456,7 +455,7 @@ const isListTotal = ref(false);
 
 const dataDutiesList = ref<SelectModel[]>([]);
 const dataTeamList = ref<SelectModel[]>([]);
-// 区域多选选项（与园区设置页同源）20261010 新增
+// 区域多选选项（取全量区域 /operator-query/region，不按本操作员自身区域收窄）20261012 修改
 const dataRegionList = ref<SelectModel[]>([]);
 const deleteIdx = ref(-1);
 const dialogHeader = translate('operate.deleteDataCPrompt');
@@ -663,9 +662,9 @@ const editSelectData = async () => {
   } catch (e) {
     logError(e);
   }
-  // region（区域多选选项，与园区设置页同源）20261010 新增
+  // region（区域多选选项：分配区域属管理动作，取全量区域 /operator-query/region，不按本操作员自身区域收窄）20261012 修改
   try {
-    const { list } = await getRegionList();
+    const { list } = await getOperatorRegionList();
     dataRegionList.value = list;
   } catch (e) {
     logError(e);

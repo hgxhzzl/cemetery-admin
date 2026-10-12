@@ -64,6 +64,12 @@ export function getTeamList() {
     url: `${Api.queryOperator}/team`,
   });
 }
+// 区域接口：操作员分配区域用，返回全量区域（不走 /park-query/region 的本操作员收窄）20261012 新增
+export function getOperatorRegionList() {
+  return request.get<SelectResult>({
+    url: `${Api.queryOperator}/region`,
+  });
+}
 // 模板遗留的运维接口 getMaintenanceList 全仓库零调用，20261003 清理删除
 // 修改密码（后端 /operator-save/password：成功返回 data=1，旧密码错误/用户不存在返回 data=0）
 export function updatePassword(data: { idOperator: number; oldPassword: string; newPassword: string }) {

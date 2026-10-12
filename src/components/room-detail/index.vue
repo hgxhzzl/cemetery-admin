@@ -41,6 +41,12 @@
           <h1>{{ $t('pages.reserve.operator') }}</h1>
           <span>{{ display(reserve?.operator) }}</span>
         </div>
+        <!-- 预定创建日期（reserve.createDate）：卡片末尾补充一行，写法同本卡预定限期行（display + formatDate）
+             旧记录无 createDate 时 formatDate 回空串、display 统一展示“未填写” 20261012 新增 -->
+        <div class="info-item">
+          <h1>{{ $t('pages.reserve.createDate') }}</h1>
+          <span>{{ display(formatDate(reserve?.createDate)) }}</span>
+        </div>
       </div>
     </t-card>
     <!-- 该墓位存在有效销售时展示只读销售信息卡片，样式参照墓位信息 20260907 新增 -->

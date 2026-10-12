@@ -552,6 +552,7 @@
       "creatTitle": "预定墓位",
       "modifyTitle": "修改预定",
       "reserveInfoTitle": "预定信息",
+      "reserver": "预定人",
       "liaison": "联系人",
       "liaisonPlaceholder": "请必填联系人",
       "liaisonRequiredPlaceholder": "请必填联系人",
@@ -562,6 +563,7 @@
       "reservationExpireDatePlaceholder": "请选择预定限期",
       "reservationExpireDateRequiredPlaceholder": "请必选预定限期",
       "operator": "经办人",
+      "createDate": "创建日期",
       "remark": "备注",
       "remarkPlaceholder": "请输入备注",
       "deleteInfoPrompt": " 预定信息将被清空，且无法恢复"
