@@ -260,4 +260,17 @@
     display: inline-flex;
     gap: 12px;
   }
+
+  // 下葬记录列表：下葬日期列与操作列之间不画竖线。该线由两处叠成：下葬日期格右边框（公共 mixin）
+  // + 操作格左边框（TDesign .t-table--bordered 逐格 border-left），两处都需去掉；按列 className/thClassName
+  // 定位（非 nth-child，避开固定表头滚动时表头与表体单元格数不一致），其余列间竖线保留 20261012 新增
+  &--burial {
+    :deep(.buried-col-date) {
+      border-right: none;
+    }
+
+    :deep(.buried-col-op) {
+      border-left: none;
+    }
+  }
 }

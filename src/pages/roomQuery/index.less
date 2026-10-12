@@ -17,12 +17,14 @@
     margin-top: 12px;
   }
 
-  // 销售状态/迁出状态四个多选框：与关键词同行横排，间距 16px 20260924 新增
+  // 预定/销售/下葬/迁出状态多选框：与关键词同行横排，间距 16px；四对八个复选框宽度可能超出整行，
+  // 允许换行并加行距避免裁切 20260924 新增 20261012 扩为四对
   .cms-query-filter-status-group {
     display: flex;
     align-items: center;
     flex: 0 0 auto;
-    column-gap: 16px;
+    flex-wrap: wrap;
+    gap: 8px 16px;
     padding-left: 8px;
   }
 

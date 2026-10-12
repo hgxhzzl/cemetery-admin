@@ -5,6 +5,8 @@ import type { RoomModel } from './model/roomModel';
 const Api = {
   queryGravePlotBusiness: '/gravePlotBusiness-query',
   queryGravePlotBusinessContacts: '/gravePlotBusiness-query/contacts-list',
+  // 新建销售取号：按区域取区内最大编号+1（定宽6位前导零） 20261012 新增
+  nextSerialNo: '/gravePlotBusiness-query/nextSerialNo',
   deleteGravePlotBusiness: '/gravePlotBusiness-delete',
   cancelGravePlotBusinessSale: '/gravePlotBusiness-cancelSale',
   insertGravePlotBusiness: '/gravePlotBusiness-save/insert',
@@ -24,6 +26,18 @@ export interface ListGravePlotBusinessRoomResult {
 export function getGravePlotBusinessRoomList(park: string, region: string) {
   return request.get<ListGravePlotBusinessRoomResult>({
     url: `${Api.queryGravePlotBusiness}/room-list?park=${park}&region=${region}`,
+  });
+}
+
+// 新建销售取号结果：后端按区域返回单行 { nextNo }（区内最大值+1、定宽6位前导零）20261012 新增
+export interface NextSerialNoResult {
+  list: { nextNo: string }[];
+}
+
+// 新建销售取号：按区域(region)取区内最大编号+1，前端进销售表单时预填（可手改）20261012 新增
+export function getNextSerialNo(region: string) {
+  return request.get<NextSerialNoResult>({
+    url: `${Api.nextSerialNo}?region=${encodeURIComponent(region)}`,
   });
 }
 

@@ -79,13 +79,17 @@
               />
             </t-form-item>
 
-            <!-- 销售状态/迁出状态多选框：已销售默认勾选；销售状态一对，只勾其一时按该状态过滤，
-                 都勾或都不勾时不过滤；迁出状态只留「已迁出」（未迁出就是不限，无需再勾一个反选框）
-                 20260924 新增 20261011 去掉未迁出 -->
+            <!-- 预定/销售/下葬/迁出状态多选框：四对已/未复选框（已销售默认勾选）；每个勾选项各自成一组按 room 状态列过滤，
+                 所有勾中组取并集(union all 去重：命中任一即包括)，全部不勾则状态维度不限 20260924 新增 20261012 扩为四对并改为并集 -->
             <div class="cms-query-filter-status-group">
+              <t-checkbox v-model="formData.reserved">{{ t('statusType.reserveStatusEnum.reserved') }}</t-checkbox>
+              <t-checkbox v-model="formData.unreserved">{{ t('statusType.reserveStatusEnum.unreserved') }}</t-checkbox>
               <t-checkbox v-model="formData.sold">{{ t('statusType.saleStatusEnum.sold') }}</t-checkbox>
               <t-checkbox v-model="formData.unsold">{{ t('statusType.saleStatusEnum.unsold') }}</t-checkbox>
+              <t-checkbox v-model="formData.buried">{{ t('statusType.intoStatusEnum.buried') }}</t-checkbox>
+              <t-checkbox v-model="formData.notBuried">{{ t('statusType.intoStatusEnum.incomplet') }}</t-checkbox>
               <t-checkbox v-model="formData.out">{{ t('statusType.transferOutStatusEnum.out') }}</t-checkbox>
+              <t-checkbox v-model="formData.notOut">{{ t('statusType.transferOutStatusEnum.notOut') }}</t-checkbox>
             </div>
           </div>
         </t-form>
@@ -211,11 +215,15 @@ interface FormData {
   park: string;
   dateRange: string[];
   keyword: string;
-  // 销售状态/迁出状态多选：true 为勾选，已销售默认勾选（只看已销售），其余默认不勾（不过滤）20260924 新增
-  // 迁出状态不再提供「未迁出」选项：不勾即不限迁出状态 20261011 修改
+  // 预定/销售/下葬/迁出状态多选：四对已/未布尔，true 为勾选；已销售默认勾选（只看已销售），其余默认不勾（不过滤）20260924 新增 20261012 扩为四对
+  reserved: boolean;
+  unreserved: boolean;
   sold: boolean;
   unsold: boolean;
+  buried: boolean;
+  notBuried: boolean;
   out: boolean;
+  notOut: boolean;
 }
 
 const searchForm: FormData = {
@@ -224,9 +232,14 @@ const searchForm: FormData = {
   // 时间段默认空值：不限销售日期 20260924 修改
   dateRange: [],
   keyword: '',
+  reserved: false,
+  unreserved: false,
   sold: true,
   unsold: false,
+  buried: false,
+  notBuried: false,
   out: false,
+  notOut: false,
 };
 
 // 区域初值在区域列表加载后默认选第一项（本页菜单不在区域三级菜单下，路由不下发 region）20260925 修改,
@@ -287,11 +300,15 @@ const getQueryParams = (current: number, pageSize: number) => {
     endDate,
     // 关键词：按墓区编号/购墓人/联系人/电话/安葬者/备注拼串包含查找，为空时后端不拼接该条件 20260924 新增 20261003 加备注
     keyword: formData.value.keyword,
-    // 销售状态多选：一对复选框只勾其一时后端按该状态过滤，都勾或都不勾时不过滤；
-    // 迁出状态只传 out：勾上只看已迁出，不勾不限（后端收不到 notOut 就不会走反选分支）20260924 新增 20261011 去掉未迁出
+    // 预定/销售/下葬/迁出状态多选：8 个布尔全量下发，后端按每个勾选项单独成组再取并集(union all) 20260924 新增 20261012 扩为四对并改为并集
+    reserved: formData.value.reserved,
+    unreserved: formData.value.unreserved,
     sold: formData.value.sold,
     unsold: formData.value.unsold,
+    buried: formData.value.buried,
+    notBuried: formData.value.notBuried,
     out: formData.value.out,
+    notOut: formData.value.notOut,
     current,
     pageSize,
   };

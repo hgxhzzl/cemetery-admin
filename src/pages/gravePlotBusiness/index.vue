@@ -362,7 +362,7 @@
               <t-col v-if="formMode === 'buried' && buriedEditMode === 'list'" :span="12">
                 <t-form-item name="idBuried">
                   <t-table
-                    class="buried-record-table"
+                    class="buried-record-table buried-record-table--burial"
                     :data="buriedRecords"
                     :columns="buriedRecordColumns"
                     row-key="idBuried"
@@ -375,9 +375,10 @@
                       {{ formatDate(row.burialDate) }}
                     </template>
                     <!-- 操作列：修改回填表单、删除二次确认后软删该条记录 20260923 新增；
-                         idSale 有值的记录由销售开单联动生成，不展示修改/删除（去销售单修改）20260925 新增 -->
+                         idSale 有值的记录由销售开单联动生成，不展示修改/删除（去销售单修改）20260925 新增；
+                         仅平台管理员（operator.isAccount=1）可看到并操作“修改/删除”，普通操作员（isAccount=0）不展示不可操作 20261012 新增 -->
                     <template #op="{ row }">
-                      <div v-if="!row.idSale" class="record-op-links">
+                      <div v-if="!row.idSale && userStore.isAccount === 1" class="record-op-links">
                         <t-link theme="primary" @click="onModifyBuriedRecord(row)">
                           {{ $t('operate.modify') }}
                         </t-link>
@@ -1209,6 +1210,7 @@ import {
   getGravePlotBusinessByRoom,
   getGravePlotBusinessContacts,
   getGravePlotBusinessRoomList,
+  getNextSerialNo,
   insertGravePlotBusiness,
   updateGravePlotBusiness,
 } from '@/api/gravePlotBusiness';
@@ -1468,13 +1470,22 @@ const buriedRecordColumns: PrimaryTableCol[] = [
   { title: translate('pages.gravePlotBusiness.deceased'), colKey: 'deceased' },
   // 安葬者身份证号列加宽至 200px，确保 18 位号码完整显示（同下葬页）
   { title: translate('pages.gravePlotBusiness.deceasedIDCard'), colKey: 'deceasedIDCard', width: 200 },
-  { title: translate('pages.gravePlotBusiness.burialDate'), colKey: 'burialDate' },
+  // 下葬日期列加 className/thClassName：供页面 less 去掉本列右边框（与操作列之间不画竖线）20261012 新增
+  {
+    title: translate('pages.gravePlotBusiness.burialDate'),
+    colKey: 'burialDate',
+    className: 'buried-col-date',
+    thClassName: 'buried-col-date',
+  },
   // 操作列表头改为“新增”“证件”两个链接按钮（同款 t-link，间距同行内操作列）：
   // 新增点击清空表单新增下葬记录；证件进入安葬证设置视图（内容暂时同修改视图，后续调整）20260923 修改 20260927 修改
   {
     colKey: 'op',
     width: 110,
     align: 'center',
+    // 操作列加 className/thClassName：供页面 less 去掉本列左边框（TDesign bordered 逐格 border-left 会在此画线）20261012 新增
+    className: 'buried-col-op',
+    thClassName: 'buried-col-op',
     title: (h) =>
       h('div', { class: 'record-op-links' }, [
         h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add')),
@@ -1599,6 +1610,30 @@ const handleClickRemark = (row: GravePlotBusinessRoomRow) => {
   controlPageShow('createModify');
 };
 
+// 提取后端错误响应体提示信息（4xx 以 AxiosError 抛出，response.data.error 为后端消息），
+// 用于将“编号重复”等具体拒绝原因回显给用户；无则返回空串由调用方回退通用文案 20261012 新增
+const extractServerError = (e: unknown): string => {
+  const data = (e as { response?: { data?: { error?: string } } })?.response?.data;
+  return data?.error ? String(data.error) : '';
+};
+
+// 新建销售取号预填：调用后端按区域取区内最大编号+1（定宽6位）填入编号字段（仍可手改）；
+// 取号失败不阻断进入表单，编号留空由用户自行填写 20261012 新增
+const prefillSaleSerialNo = async (region: string) => {
+  if (region === '') {
+    return;
+  }
+  try {
+    const { list } = await getNextSerialNo(region);
+    const nextNo = list && list.length > 0 ? String(list[0].nextNo ?? '') : '';
+    if (nextNo !== '') {
+      formBusinessData.value.serialNo = nextNo;
+    }
+  } catch (e) {
+    logError(e);
+  }
+};
+
 // 进入表单公共流程：重置表单 + 回填墓位信息区 + 按墓位查活动记录回填（无记录则保持新建空表单）20260923 抽取
 const enterBusinessForm = async (row: GravePlotBusinessRoomRow) => {
   resetBusinessForm(row.idRoom);
@@ -1615,6 +1650,11 @@ const enterBusinessForm = async (row: GravePlotBusinessRoomRow) => {
       ? formMode.value
       : undefined;
   await fillBusinessForm(row.idRoom, formType);
+  // 新建销售预填编号：无活动记录(idBusiness===0)时按区域取号（区内最大值+1、定宽6位）填入编号字段，仍可手改；
+  // 修改已有销售(idBusiness!==0)保留原编号不重取 20261012 新增
+  if (formMode.value === 'sale' && formBusinessData.value.idBusiness === 0) {
+    await prefillSaleSerialNo(String(row.region ?? ''));
+  }
   controlPageShow('createModify');
 };
 
@@ -2029,8 +2069,10 @@ const printReceipt = async () => {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
     payee: String(formBusinessData.value.payee ?? '').trim(),
-    // 票据编号后缀取墓位编号（yyyyymm+编号）20260926 修改 20261003 墓位卡号改编号 serialNo
-    serialNo: String(formRoomData.value.serialNo ?? ''),
+    // 票据编号后缀取编号（yyyyymm+编号）20260926 修改 20261003 墓位卡号改编号 serialNo；
+    // 改取 formBusinessData.serialNo（编号输入框绑定值）：原取 formRoomData.serialNo 在新建销售提交后停留表单时
+    // 仍是销售前旧值(未售墓位为空)致前缀后缺编号，而销售提交的编号落 sale/room 时前端只更新了业务表单值 20261012 修复
+    serialNo: String(formBusinessData.value.serialNo ?? ''),
     // 票据编号前缀取业务创建日期，新建未保存时为空由工具回退当天日期 20260922 新增
     createDate: String(formBusinessData.value.createDate ?? ''),
     region: String(formRoomData.value.region ?? ''),
@@ -2381,7 +2423,8 @@ const submitCore = async () => {
       businessSubmitted.value = true;
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.createdFailedPrompt'));
+      // 优先回显后端具体拒绝原因（如“编号重复”），无则回退通用创建失败文案 20261012 新增
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     // 修改：idBusiness 非0 走更新接口；提交成功不返回，留在表单页可继续调整或打印票据；
@@ -2399,7 +2442,8 @@ const submitCore = async () => {
       }
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      // 优先回显后端具体拒绝原因（如“编号重复”），无则回退通用修改失败文案 20261012 新增
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };
