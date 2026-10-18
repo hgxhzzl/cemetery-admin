@@ -89,7 +89,11 @@
           <div v-if="hasQueried && !reserveCardRows.length" class="reserve-no-data">暂无数据</div>
 
           <div v-if="hasQueried && reserveCardRows.length" class="reserve-list-body">
-            <div ref="reserveCardViewport" class="table-container reserve-card-layout">
+            <div
+              ref="reserveCardViewport"
+              class="table-container reserve-card-layout"
+              @scroll.passive="onCardViewportScroll"
+            >
               <div v-if="reserveCardRows.length" class="reserve-card-rows" :style="{ zoom: reserveZoom }">
                 <div v-for="rowGroup in reserveCardRows" :key="rowGroup.yNum" class="reserve-card-row">
                   <div class="reserve-card-grid">
@@ -229,6 +233,10 @@
                   <i class="reserve-legend-item__swatch reserve-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
+                <span v-if="isCardStateEnabled('reserved')" class="reserve-legend-item">
+                  <i class="reserve-legend-item__swatch reserve-legend-item__swatch--reserved" />
+                  {{ $t('statusType.reserveStatusEnum.reserved') }}
+                </span>
                 <span v-if="isCardStateEnabled('sold')" class="reserve-legend-item">
                   <i class="reserve-legend-item__swatch reserve-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -344,6 +352,7 @@
                     show-limit-number
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.reserve.liaisonPhonePlaceholder')"
+                    @change="onPhoneChange"
                   />
                 </t-form-item>
               </t-col>
@@ -407,9 +416,10 @@ export default {
 };
 </script>
 <script setup lang="ts">
+import dayjs from 'dayjs';
 import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { RoomModel } from '@/api/model/roomModel';
@@ -512,6 +522,26 @@ const {
 const reserveCardRows = computed(() =>
   formfindData.value.sortOrder === 'asc' ? rawReserveCardRows.value : rawReserveCardRows.value.slice().reverse(),
 );
+
+// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
+// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
+// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行（口径同墓位业务页）20261017 新增
+const reserveCardScrollTop = ref(0);
+const onCardViewportScroll = (e: Event) => {
+  reserveCardScrollTop.value = (e.target as HTMLElement).scrollTop;
+};
+
+onActivated(() => {
+  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
+  if (!isListShow.value || !reserveCardRows.value.length) {
+    return;
+  }
+  nextTick(() => {
+    if (reserveCardViewport.value) {
+      reserveCardViewport.value.scrollTop = reserveCardScrollTop.value;
+    }
+  });
+});
 
 // ==================== 列表：查询与筛选事件 ====================
 // 按园区+区域请求墓位，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片
@@ -709,6 +739,12 @@ const onConfirmDelete = async () => {
 // 确认提交防重复：首个 await 前无任何锁，双击/慢网络会并发发出两次写接口→重复记录；submitting 同步上锁并在 finally 复位 20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
+// 电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断，防止字母/符号混入 20261017 新增
+const onPhoneChange = (value: string | number) => {
+  formReserveData.value.liaisonPhone = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+};
 const submitCore = async () => {
   const { liaison, liaisonPhone, reservationExpireDate, remark, idRoom, idReserve } = formReserveData.value;
 
@@ -718,9 +754,17 @@ const submitCore = async () => {
   if (liaisonPhone === undefined || liaisonPhone.trim() === '') {
     return MessagePlugin.warning(translate('pages.reserve.liaisonPhoneRequiredPlaceholder'));
   }
+  // 电话必须为 11 位数字，不足 11 位提交时提示 20261017 新增
+  if (!/^\d{11}$/.test(liaisonPhone.trim())) {
+    return MessagePlugin.warning(translate('pages.reserve.liaisonPhoneLengthPlaceholder'));
+  }
   // 预定限期必填：库列为可空，必填口径只靠应用层守住（后端同样会 400 拦下），前端先提示 20261011 新增 20261011 可空口径统一
   if (reservationExpireDate === undefined || String(reservationExpireDate).trim() === '') {
     return MessagePlugin.warning(translate('pages.reserve.reservationExpireDateRequiredPlaceholder'));
+  }
+  // 预定限期不得晚于当前日期 10 天（即最晚今天+10 天），超出提交时提示 20261017 新增
+  if (dayjs(String(reservationExpireDate).trim()).isAfter(dayjs().add(10, 'day'), 'day')) {
+    return MessagePlugin.warning(translate('pages.reserve.reservationExpireDateLimitPlaceholder'));
   }
 
   const payload = {

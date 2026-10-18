@@ -137,6 +137,7 @@
                     show-limit-number
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.operator.phonePlaceholder')"
+                    @change="onPhoneChange"
                   />
                 </t-form-item>
               </t-col>
@@ -201,7 +202,7 @@
                 </t-form-item>
               </t-col>
               <t-col :span="6">
-                <t-form-item :required-mark="true" :label="$t('pages.operator.joinDate')" name="joinDate">
+                <t-form-item :label="$t('pages.operator.joinDate')" name="joinDate">
                   <t-date-picker
                     v-model="formData.joinDate"
                     :style="{ width: '322px' }"
@@ -214,22 +215,54 @@
               </t-col>
             </t-row>
 
-            <!-- 区域选项取操作员专用的全量接口（/operator-query/region，taginfo tagType='region'），
-                 不能用 /park-query/region：那会按当前操作员自身区域收窄，导致分配不到范围外的区域 20261012 修改 -->
-            <t-form-item :required-mark="true" :label="$t('pages.operator.region')" name="region">
-              <t-select
-                v-model="formData.region"
-                :style="{ width: '322px' }"
-                multiple
-                clearable
-                :placeholder="$t('pages.operator.regionPlaceholder')"
-                class="demo-select-base"
-              >
-                <t-option v-for="(item, index) in dataRegionList" :key="index" :value="item.value" :label="item.label">
-                  {{ item.label }}
-                </t-option>
-              </t-select>
-            </t-form-item>
+            <!-- 区域与缴费年限同行：区域左、缴费年限右，均为多选（同区域样式与操作）20261017 新增缴费年限 -->
+            <t-row class="row-gap" :gutter="[32, 5]">
+              <!-- 区域选项取操作员专用的全量接口（/operator-query/region，taginfo tagType='region'），
+                   不能用 /park-query/region：那会按当前操作员自身区域收窄，导致分配不到范围外的区域 20261012 修改 -->
+              <t-col :span="6">
+                <t-form-item :required-mark="true" :label="$t('pages.operator.region')" name="region">
+                  <t-select
+                    v-model="formData.region"
+                    :style="{ width: '322px' }"
+                    multiple
+                    clearable
+                    :placeholder="$t('pages.operator.regionPlaceholder')"
+                    class="demo-select-base"
+                  >
+                    <t-option
+                      v-for="(item, index) in dataRegionList"
+                      :key="index"
+                      :value="item.value"
+                      :label="item.label"
+                    >
+                      {{ item.label }}
+                    </t-option>
+                  </t-select>
+                </t-form-item>
+              </t-col>
+              <!-- 缴费年限：多选下拉，选项固定 1/2/3/5/10，样式与操作同区域；库存 operator.termYears 逗号分隔串 20261017 新增 -->
+              <t-col :span="6">
+                <t-form-item :label="$t('pages.operator.termYears')" name="termYears">
+                  <t-select
+                    v-model="formData.termYears"
+                    :style="{ width: '322px' }"
+                    multiple
+                    clearable
+                    :placeholder="$t('pages.operator.termYearsPlaceholder')"
+                    class="demo-select-base"
+                  >
+                    <t-option
+                      v-for="item in TERM_YEARS_OPTIONS"
+                      :key="item.value"
+                      :value="item.value"
+                      :label="item.label"
+                    >
+                      {{ item.label }}
+                    </t-option>
+                  </t-select>
+                </t-form-item>
+              </t-col>
+            </t-row>
           </div>
         </div>
 
@@ -457,6 +490,14 @@ const dataDutiesList = ref<SelectModel[]>([]);
 const dataTeamList = ref<SelectModel[]>([]);
 // 区域多选选项（取全量区域 /operator-query/region，不按本操作员自身区域收窄）20261012 修改
 const dataRegionList = ref<SelectModel[]>([]);
+// 缴费年限多选固定选项（同区域样式）：值用字符串以匹配 splitRegion 回显产出的字符串，避免数字/字符串不等致勾选丢失 20261017 新增
+const TERM_YEARS_OPTIONS: { value: string; label: string }[] = [
+  { value: '1', label: '1' },
+  { value: '2', label: '2' },
+  { value: '3', label: '3' },
+  { value: '5', label: '5' },
+  { value: '10', label: '10' },
+];
 const deleteIdx = ref(-1);
 const dialogHeader = translate('operate.deleteDataCPrompt');
 let listTotal = '';
@@ -642,7 +683,11 @@ const getOperatorID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
     const dataQuery = list[0];
-    formData.value = { ...dataQuery, region: splitRegion(dataQuery.region) };
+    formData.value = {
+      ...dataQuery,
+      region: splitRegion(dataQuery.region),
+      termYears: splitRegion(dataQuery.termYears),
+    };
   } catch (e) {
     logError(e);
   }
@@ -739,8 +784,8 @@ const detailData = [
 // detail end
 // creat begin
 const formCreate = ref<{ reset: () => void } | null>(null);
-// 表单内 region 为多选数组（string[]），与后端逗号分隔字符串在回显/提交两处互转 20261010 修改
-type OperatorFormData = Omit<OperatorModel, 'region'> & { region: string[] };
+// 表单内 region/termYears 为多选数组（string[]），与后端逗号分隔字符串在回显/提交两处互转 20261010 修改 20261017 加 termYears
+type OperatorFormData = Omit<OperatorModel, 'region' | 'termYears'> & { region: string[]; termYears: string[] };
 const formData = ref<OperatorFormData>({ ...INITIAL_DATA });
 const ClickCreateClose = () => {
   formCreate.value?.reset();
@@ -773,6 +818,8 @@ const formatSubmitData = (data: Partial<OperatorFormData> & { password?: string;
   const submitData = {
     ...data,
     region: Array.isArray(data.region) ? data.region.join(',') : data.region,
+    // 缴费年限多选数组提交前拼回逗号分隔字符串（后端 termYears 为 varchar 列，同区域）20261017 新增
+    termYears: Array.isArray(data.termYears) ? data.termYears.join(',') : data.termYears,
   };
   // 修改表单无密码输入框，回填的旧哈希不能随提交，否则后端二次哈希导致登录失效 20260916 修复
   delete submitData.password;
@@ -788,12 +835,22 @@ const formatSubmitData = (data: Partial<OperatorFormData> & { password?: string;
 // 确认提交防重复：首个 await（含前置重电话查重）前无任何锁，双击/慢网络会并发发出两次写接口；submitting 同步上锁并在 finally 复位 20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
+// 电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断，防止字母/符号混入 20261017 新增
+const onPhoneChange = (value: string | number) => {
+  formData.value.phone = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+};
 const submitCore = async () => {
   if (formData.value.name === '') {
     return MessagePlugin.warning(translate('pages.operator.namePlaceholder'));
   }
   if (formData.value.phone === '') {
     return MessagePlugin.warning(translate('pages.operator.phonePlaceholder'));
+  }
+  // 电话必须为 11 位数字，不足 11 位提交时提示 20261017 新增
+  if (!/^\d{11}$/.test(formData.value.phone)) {
+    return MessagePlugin.warning(translate('pages.operator.phoneLengthPlaceholder'));
   }
   if (formData.value.duties === '' || formData.value.duties === undefined) {
     return MessagePlugin.warning(translate('pages.operator.dutiesPlaceholder'));
@@ -803,10 +860,6 @@ const submitCore = async () => {
   }
   if (formData.value.useStatus === '' || formData.value.useStatus === undefined) {
     return MessagePlugin.warning(translate('pages.operator.useStatusPlaceholder'));
-  }
-
-  if (formData.value.joinDate === '' || formData.value.joinDate === null) {
-    return MessagePlugin.warning(translate('pages.operator.joinDatePlaceholder'));
   }
 
   // 区域必选：新建/修改未选中任何区域时不允许保存，提示沿用页面统一的 Placeholder 文案 20261010 新增

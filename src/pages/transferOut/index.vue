@@ -238,6 +238,10 @@
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
+                <span v-if="isCardStateEnabled('reserved')" class="transferOut-legend-item">
+                  <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--reserved" />
+                  {{ $t('statusType.reserveStatusEnum.reserved') }}
+                </span>
                 <span v-if="isCardStateEnabled('sold')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}

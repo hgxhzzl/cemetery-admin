@@ -25,6 +25,8 @@ export interface LoginResult {
     dataBaseName?: string;
     // account 表记录的 account 字段（账户/园区名称），供系统左上角 logo 文字展示 20261005 新增
     accountName?: string;
+    // 当前操作员缴费年限候选（operator.termYears 逗号分隔串），供收管理费等页下拉取值 20261017 新增
+    termYears?: string;
     userInfo?: {
       roles?: UserPermission[];
     };

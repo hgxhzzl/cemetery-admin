@@ -56,6 +56,10 @@
       background-color: var(--cms-card-unsold-border);
     }
 
+    &--reserved {
+      background-color: var(--cms-card-reserved-border);
+    }
+
     &--sold {
       background-color: var(--cms-card-sold-border);
     }
@@ -141,4 +145,13 @@
 // ==================== 记录选择列表（修改页/删除页）：外框 + 竖格线 ====================
 .adminfee-record-table {
   .cms-record-table-vertical();
+
+  // 统一表头行与数据行的上下内边距与行高，使收款记录列表行高度与列名（表头）行保持一致
+  // （本页表格因 max-height 使表头/表体分为两张 table，small 下默认行高不一，口径同墓位详情三张列表）20261017 新增
+  :deep(th),
+  :deep(td) {
+    padding-top: var(--td-comp-paddingTB-s);
+    padding-bottom: var(--td-comp-paddingTB-s);
+    line-height: 22px;
+  }
 }

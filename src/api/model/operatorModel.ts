@@ -19,6 +19,8 @@ export interface OperatorModel {
   team: string;
   joinDate: string;
   region: string;
+  // 缴费年限：库列 operator.termYears，逗号分隔串，表单内按多选数组互转（同区域）20261017 新增
+  termYears: string;
 }
 export interface SelectResult {
   list: Array<SelectModel>;

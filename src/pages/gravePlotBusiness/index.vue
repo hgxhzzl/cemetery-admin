@@ -250,6 +250,10 @@
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
+                <span v-if="isCardStateEnabled('reserved')" class="gravePlotBusiness-legend-item">
+                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--reserved" />
+                  {{ $t('statusType.reserveStatusEnum.reserved') }}
+                </span>
                 <span v-if="isCardStateEnabled('sold')" class="gravePlotBusiness-legend-item">
                   <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -485,6 +489,7 @@
                       show-limit-number
                       :style="{ width: '312px' }"
                       :placeholder="$t('pages.gravePlotBusiness.buyerPhonePlaceholder')"
+                      @change="onPayerPhoneChange"
                     />
                   </t-form-item>
                 </t-col>
@@ -531,9 +536,13 @@
                       />
                     </t-form-item>
                   </t-col>
-                  <!-- 死亡日期（库列 buried.deathDate）：销售形态随开单同步 buried 表，位置在下葬日期左侧、非必填不加星（口径同下葬页）20261011 新增 -->
+                  <!-- 死亡日期（库列 buried.deathDate）：销售形态随开单同步 buried 表，位置在下葬日期左侧、必填加星（口径同安葬者）20261011 新增 20261017 改为必填 -->
                   <t-col :span="6">
-                    <t-form-item :label="$t('pages.gravePlotBusiness.deathDate')" name="deathDate">
+                    <t-form-item
+                      :required-mark="true"
+                      :label="$t('pages.gravePlotBusiness.deathDate')"
+                      name="deathDate"
+                    >
                       <t-date-picker
                         v-model="formBusinessData.deathDate"
                         :style="{ width: '312px' }"
@@ -650,6 +659,7 @@
                       show-limit-number
                       :style="{ width: '322px' }"
                       :placeholder="$t('pages.gravePlotBusiness.contactsPhoneRequiredPlaceholder')"
+                      @change="onContactsPhoneChange"
                     />
                   </t-form-item>
                 </t-col>
@@ -1414,6 +1424,9 @@ const ClickDetailClose = () => {
 const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formBusinessData = ref<BusinessFormData>({ ...INITIAL_BUSINESS_DATA });
 
+// 当前登录用户信息：票据经办人展示、新建销售收款人默认、销售只读门控等复用（声明前移至表单区，供 enterBusinessForm 调用）20261017 前移
+const userStore = useUserStore();
+
 // 新建提交成功后置灰确认按钮防重复提交，重新进入表单时重置 20260922 新增
 const businessSubmitted = ref(false);
 
@@ -1653,6 +1666,8 @@ const enterBusinessForm = async (row: GravePlotBusinessRoomRow) => {
   // 新建销售预填编号：无活动记录(idBusiness===0)时按区域取号（区内最大值+1、定宽6位）填入编号字段，仍可手改；
   // 修改已有销售(idBusiness!==0)保留原编号不重取 20261012 新增
   if (formMode.value === 'sale' && formBusinessData.value.idBusiness === 0) {
+    // 新建销售收款人默认当前登录人姓名（仍可手改）；修改已有销售(idBusiness!==0)保留记录原值不覆盖 20261017 新增
+    formBusinessData.value.payee = String(userStore.userName ?? '');
     await prefillSaleSerialNo(String(row.region ?? ''));
   }
   controlPageShow('createModify');
@@ -2046,8 +2061,7 @@ const onCancelBuried = () => {
 };
 
 // ==================== 新建：票据打印 ====================
-// 经办人显示当前登录操作员姓名，开单保存时后端同样自动写入 20260921 新增
-const userStore = useUserStore();
+// 经办人显示当前登录操作员姓名，开单保存时后端同样自动写入（userStore 已前移至表单区声明）20260921 新增
 
 // 销售形态只读门控：存在销售记录且操作员非平台管理员（isAccount=0）时表单内容不可操作；
 // 平台管理员（isAccount=1）可修改；新建销售（无记录）不受限；打印票据按钮除外（打印属只读操作，不受门控影响）20260924 新增
@@ -2216,6 +2230,18 @@ const ClickCreateClose = () => {
 // 确认提交防重复：请求在途期间忽略后续点击（businessSubmitted 仅部分形态成功后置位，不覆盖在途窗口与各修改分支）20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
+// 购墓人/付款人电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断 20261017 新增
+const onPayerPhoneChange = (value: string | number) => {
+  formBusinessData.value.payerPhone = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+};
+// 联系人电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断 20261017 新增
+const onContactsPhoneChange = (value: string | number) => {
+  formContactsData.value.contactsPhone = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+};
 const submitCore = async () => {
   const {
     realPriceString,
@@ -2246,6 +2272,10 @@ const submitCore = async () => {
     // 联系人电话调整为必填（联系人形态新增/修改）：空值拦截，占位与提示同键 20261005 新增
     if (contactsPhone === undefined || contactsPhone.trim() === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPhoneRequiredPlaceholder'));
+    }
+    // 联系人电话必须为 11 位数字（空值已在上方拦截），不足 11 位提交时提示 20261017 新增
+    if (!/^\d{11}$/.test(contactsPhone.trim())) {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPhoneLengthPlaceholder'));
     }
     const contactsPayload = {
       idRoom,
@@ -2357,6 +2387,10 @@ const submitCore = async () => {
   if (!isReserveMode && !isBuriedMode && (payerPhone === undefined || payerPhone.trim() === '')) {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerPhonePlaceholder'));
   }
+  // 销售/收款形态购墓人电话必须为 11 位数字（空值已在上方拦截），不足 11 位提交时提示 20261017 新增
+  if (!isReserveMode && !isBuriedMode && !/^\d{11}$/.test(payerPhone.trim())) {
+    return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerPhoneLengthPlaceholder'));
+  }
   // 销售形态额外必填：编号、购墓人身份证号、安葬者（购墓人/购墓人电话已在上方校验），
   // 确认提交时逐项判断未填写则给出提示 20261003 新增 20261005 编号改为必填
   if (formMode.value === 'sale') {
@@ -2366,8 +2400,16 @@ const submitCore = async () => {
     if (payerIDCard === undefined || payerIDCard.trim() === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerIDCardPlaceholder'));
     }
+    // 销售形态购墓人身份证号必须为 18 位（前 17 位数字 + 末位数字或 X，空值已在上方拦截），不足 18 位提交时提示 20261017 新增
+    if (!/^\d{17}[\dx]$/i.test(payerIDCard.trim())) {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerIDCardLengthPlaceholder'));
+    }
     if (deceased === undefined || deceased.trim() === '') {
       return MessagePlugin.warning(translate('pages.gravePlotBusiness.deceasedRequiredPlaceholder'));
+    }
+    // 销售形态死亡日期必填（新建/修改同此分支），未选提交时提示 20261017 新增
+    if (deathDate === undefined || String(deathDate).trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.deathDateRequiredPlaceholder'));
     }
   }
 

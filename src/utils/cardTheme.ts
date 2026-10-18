@@ -10,8 +10,8 @@ import { logError } from '@/utils/logger';
 // 故无需 !important；清掉行内变量即回到默认色 20261011 新增
 // ============================================================
 
-// 四个状态与卡片外框状态类一一对应（unsold/sold/buried/expired）
-export const CARD_COLOR_STATES: CardColorState[] = ['unsold', 'sold', 'buried', 'expired'];
+// 五个状态与卡片外框状态类一一对应（unsold/reserved/sold/buried/expired），页面行序与着色优先级同此序 20261017 新增 reserved
+export const CARD_COLOR_STATES: CardColorState[] = ['unsold', 'reserved', 'sold', 'buried', 'expired'];
 
 // 外框加深步长：HSL 亮度绝对值下调 16 个百分点（定值，改这一处即全局生效）
 // 例：#DBD53A → #A59F1F。外框只由底色派生，用户在页面上只调一个颜色，深浅天然协调 20261011 新增,
@@ -21,6 +21,8 @@ export const BORDER_DARKEN_STEP = 16;
 // 保证「拉取失败」与「没配置」表现一致（都是历史那套色），不出现卡片失色 20261011 新增,
 export const DEFAULT_CARD_COLORS: CardColorConfig = {
   unsold: { color: '#fcf6ef', border: '#fca678', isEnabled: true },
+  // 已预定：浅黄底 + 金黄框（初始黄色，与未销售浅橙/已销售浅绿区分）20261017 新增
+  reserved: { color: '#fdf6cf', border: '#e8cc3e', isEnabled: true },
   sold: { color: '#f4fef9', border: '#00a870', isEnabled: true },
   buried: { color: '#f4f8fe', border: '#0052d9', isEnabled: true },
   expired: { color: '#fce5e5', border: '#d54941', isEnabled: true },

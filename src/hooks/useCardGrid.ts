@@ -2,6 +2,7 @@ import type { Ref } from 'vue';
 import { computed, ref } from 'vue';
 
 import { translate } from '@/locales';
+import { fetchAndApplyCardColors } from '@/utils/cardTheme';
 
 // 字符串/数字转数字，非数字归 0（排号/列号比较用）
 const toNumber = (value: number | string) => {
@@ -29,6 +30,12 @@ export type CardRowArg<T> = T & { row?: T };
  * 20260914 从 6 页抽取
  */
 export const useCardGrid = <T extends CardRowItem>(list: Ref<T[]>) => {
+  // 卡片配色兜底补拉：登录后路由守卫里的 fetchAndApplyCardColors 是故意不 await 的，首登时若那次
+  // 请求失败/未完成，applied 仍为 false、cardColorConfig 停在默认「四态全启用」，会让卡片页首帧出现
+  // 兜底白底卡、图例多显未勾选态（要重登/刷新才正常）。这里在卡片页 setup 再调一次：函数内部有 applied
+  // 缓存，正常情况为空操作，仅当守卫那次没成功时补拉一次，闭合首登兜底窗口 20261017 新增
+  fetchAndApplyCardColors();
+
   // 卡片列表缩放比例，放大/缩小图标每次增减10%，限制在0.5～2倍之间
   const zoom = ref(1);
   const handleZoomIn = () => {

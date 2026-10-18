@@ -274,12 +274,12 @@ const buriedColumns = computed<PrimaryTableCol<TableRowData>[]>(() => [
   {
     colKey: 'deceasedIDCard',
     title: translate('pages.buried.deceasedIDCard'),
-    width: 160,
+    width: 170,
     align: 'left',
     ellipsis: true,
   },
   // 死亡日期列（库列 buried.deathDate）：紧挨下葬日期左侧，与下葬登记表单字段顺序一致；datetime 取日期部分，旧记录未填展示“未填写” 20261011 新增
-  { colKey: 'deathDate', title: translate('pages.buried.deathDate'), width: 110, align: 'left', ellipsis: true },
+  { colKey: 'deathDate', title: translate('pages.buried.deathDate'), width: 100, align: 'left', ellipsis: true },
   // 下葬日期列：与结束日期列上下对齐 20260912 修改
   { colKey: 'burialDate', title: translate('pages.buried.burialDate'), width: 110, align: 'left', ellipsis: true },
   // 联系人列：与付款人列上下对齐 20260912 修改

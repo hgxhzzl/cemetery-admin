@@ -3,26 +3,29 @@ import dayjs from 'dayjs';
 import type { CardColorState } from '@/api/model/cardColorModel';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 
-// 卡片状态色最小行字段集：销售状态/安葬者/管理费结束日期，RoomModel 及扩展行类型均满足 20260926 新增
+// 卡片状态色最小行字段集：销售状态/预定状态/安葬者/管理费结束日期，RoomModel 及扩展行类型均满足 20260926 新增 20261017 补 reserveStatus
 export interface CardStatusRow {
   saleStatus?: string;
+  reserveStatus?: string;
   deceased?: string | null;
   endDate?: string | null;
 }
 
-// 未销售/已销售判定（墓位业务页与本页共用同一口径）20261003 新增 20261011 导出已销售判定
+// 未销售/已销售/已预定判定（墓位业务页与本页共用同一口径）20261003 新增 20261011 导出已销售判定 20261017 补已预定判定
 export const isUnsold = (status?: string) => status === 'statusType.saleStatusEnum.unsold';
 export const isSold = (status?: string) => status === 'statusType.saleStatusEnum.sold';
+// 已预定：预定登记只置 room.reserveStatus（不动 saleStatus），故按预定状态枚举单独命中 20261017 新增
+const isReserved = (status?: string) => status === 'statusType.reserveStatusEnum.reserved';
 // 历史 reserve 脏值判定：早期预定登记会把 room.saleStatus 改写为 reserve（20261011 已修正为只写 reserveStatus），
-// 存量行归入未销售则不会出现白底无色的空档；单独成函数而不并入 isUnsold，因墓位业务页有按钮拿 isUnsold
-// 做禁用判断，合并会放开这类墓位的操作入口 20261011 新增,
+// 现已新增专门的已预定态，此类存量行归入已预定（而非未销售），色语义与新链路一致；仍单独成函数
+// 而不并入 isUnsold，因墓位业务页有按钮拿 isUnsold 做禁用判断，这类行本就非 unsold、不影响禁用 20261011 新增 20261017 改归入已预定,
 const isLegacyReserved = (status?: string) => status === 'statusType.saleStatusEnum.reserve';
 
-// 各态命中条件：key 与卡片颜色页、配色 CSS 变量同源（unsold/sold/buried/expired）20261011 新增,
-// 未销售含历史 reserve 脏值：四态里没有预定态，预定中的墓位本质仍未售出；修正写入链路后新预定
-// 不再产该值，此处仅为修数据前的存量行兜底（gm_data_003 福东 8排3号 实例）20261011 修改,
+// 各态命中条件：key 与卡片颜色页、配色 CSS 变量同源（unsold/reserved/sold/buried/expired）20261011 新增 20261017 加 reserved,
 const STATE_MATCHERS: Record<CardColorState, (row: CardStatusRow) => boolean> = {
-  unsold: (row) => isUnsold(row.saleStatus) || isLegacyReserved(row.saleStatus),
+  unsold: (row) => isUnsold(row.saleStatus),
+  // 已预定：预定状态为 reserved，兼容历史把 saleStatus 写成 reserve 的存量行 20261017 新增
+  reserved: (row) => isReserved(row.reserveStatus) || isLegacyReserved(row.saleStatus),
   sold: (row) => isSold(row.saleStatus),
   // 已下葬：安葬者已写入 room.deceased
   buried: (row) => Boolean(row.deceased),
@@ -30,8 +33,8 @@ const STATE_MATCHERS: Record<CardColorState, (row: CardStatusRow) => boolean> = 
   expired: (row) => Boolean(row.endDate) && dayjs(row.endDate).isBefore(dayjs(), 'day'),
 };
 
-// 着色优先级升序：未销售 < 已销售 < 已下葬 < 管理到期（越靠后越优先）20261011 新增,
-const STATE_PRIORITY: CardColorState[] = ['unsold', 'sold', 'buried', 'expired'];
+// 着色优先级升序：未销售 < 已预定 < 已销售 < 已下葬 < 管理到期（越靠后越优先）20261011 新增 20261017 插入已预定,
+const STATE_PRIORITY: CardColorState[] = ['unsold', 'reserved', 'sold', 'buried', 'expired'];
 
 // getCardStatusClass 选项 20261003 新增
 export interface CardStatusClassOptions {

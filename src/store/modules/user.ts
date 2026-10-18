@@ -46,6 +46,8 @@ export const useUserStore = defineStore('user', {
     accountName: '',
     // 是否平台管理员账号（1管理员/0普通操作员），由登录响应透传 20260924 新增
     isAccount: 0,
+    // 当前操作员缴费年限候选（operator.termYears 逗号分隔串），由登录响应透传，供收管理费等页下拉取值 20261017 新增
+    termYears: '',
     userInfo: { ...InitUserInfo },
   }),
   getters: {
@@ -76,6 +78,8 @@ export const useUserStore = defineStore('user', {
         this.dataBaseName =
           res.data.dataBaseName || `${roleItems.find((item: UserPermission) => item.dataBaseName)?.dataBaseName || ''}`;
         this.accountName = res.data.accountName || '';
+        // 登录响应透传的当前操作员缴费年限（逗号分隔串），持久化后刷新页仍可用 20261017 新增
+        this.termYears = res.data.termYears || '';
         this.userInfo = {
           name: this.userName || account,
           roles: roleItems,
@@ -163,6 +167,7 @@ export const useUserStore = defineStore('user', {
       this.dataBaseName = '';
       this.accountName = '';
       this.isAccount = 0;
+      this.termYears = '';
       this.userInfo = { ...InitUserInfo };
     },
   },
@@ -172,7 +177,7 @@ export const useUserStore = defineStore('user', {
       permissionStore.initRoutes();
     },
     key: 'user',
-    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'accountName', 'isAccount', 'userInfo'],
+    pick: ['token', 'phone', 'userName', 'userId', 'dataBaseName', 'accountName', 'isAccount', 'termYears', 'userInfo'],
   },
 });
 

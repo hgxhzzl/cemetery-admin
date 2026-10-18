@@ -21,4 +21,6 @@ export const INITIAL_DATA = {
   joinDate: '',
   // 区域多选：表单内为数组，与后端逗号分隔字符串在回显/提交两处互转 20261010 修改
   region: [] as string[],
+  // 缴费年限多选：同区域口径，表单内为数组（选项固定 1/2/3/5/10），提交拼逗号分隔串 20261017 新增
+  termYears: [] as string[],
 };

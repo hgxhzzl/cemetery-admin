@@ -1,5 +1,6 @@
 // 卡片状态配色数据模型：库表 card_color 单行存储，configJson 解析后为本结构 20261011 新增
-export type CardColorState = 'unsold' | 'sold' | 'buried' | 'expired';
+// 新增 reserved（已预定）态：预定登记只置 room.reserveStatus，与未销售/已销售并列成独立色态 20261017 新增
+export type CardColorState = 'unsold' | 'reserved' | 'sold' | 'buried' | 'expired';
 
 export interface CardColorItem {
   // 卡片底色：用户在卡片颜色页设定的主色
@@ -10,7 +11,7 @@ export interface CardColorItem {
   isEnabled: boolean;
 }
 
-// 四态配色集合：key 固定为 unsold/sold/buried/expired
+// 五态配色集合：key 固定为 unsold/reserved/sold/buried/expired
 export type CardColorConfig = Record<CardColorState, CardColorItem>;
 
 export interface CardColorModel {

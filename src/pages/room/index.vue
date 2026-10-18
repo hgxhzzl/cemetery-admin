@@ -192,6 +192,10 @@
                   <i class="room-legend-item__swatch room-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
+                <span v-if="isCardStateEnabled('reserved')" class="room-legend-item">
+                  <i class="room-legend-item__swatch room-legend-item__swatch--reserved" />
+                  {{ $t('statusType.reserveStatusEnum.reserved') }}
+                </span>
                 <span v-if="isCardStateEnabled('sold')" class="room-legend-item">
                   <i class="room-legend-item__swatch room-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}

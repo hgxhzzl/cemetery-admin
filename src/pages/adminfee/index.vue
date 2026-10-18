@@ -229,6 +229,10 @@
                   <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--unsold" />
                   {{ $t('statusType.saleStatusEnum.unsold') }}
                 </span>
+                <span v-if="isCardStateEnabled('reserved')" class="adminfee-legend-item">
+                  <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--reserved" />
+                  {{ $t('statusType.reserveStatusEnum.reserved') }}
+                </span>
                 <span v-if="isCardStateEnabled('sold')" class="adminfee-legend-item">
                   <i class="adminfee-legend-item__swatch adminfee-legend-item__swatch--sold" />
                   {{ $t('statusType.saleStatusEnum.sold') }}
@@ -381,6 +385,7 @@
                     show-limit-number
                     :style="{ width: '322px' }"
                     :placeholder="$t('pages.adminfee.payePrhonePlaceholder')"
+                    @change="onPayePrhoneChange"
                   />
                 </t-form-item>
               </t-col>
@@ -410,14 +415,20 @@
               </t-col>
               <t-col v-if="!isDeleteMode" :span="6">
                 <t-form-item :required-mark="true" :label="$t('pages.adminfee.termYears')" name="termYears">
-                  <t-input-number
+                  <t-select
                     v-model="formFeeData.termYears"
-                    theme="normal"
-                    :min="0"
-                    :decimal-places="0"
                     :style="{ width: '322px' }"
+                    class="demo-select-base"
+                    clearable
                     :placeholder="$t('pages.adminfee.termYearsPlaceholder')"
-                  />
+                  >
+                    <t-option
+                      v-for="item in termYearsOptions"
+                      :key="item.value"
+                      :value="item.value"
+                      :label="item.label"
+                    />
+                  </t-select>
                 </t-form-item>
               </t-col>
               <!-- 开始日期只读：自动取该墓位首次下葬时间，新建时后端锚定，修改时取记录原值 20260909 新增（与缴费年限互换位置 20261004 调整） -->
@@ -1045,6 +1056,18 @@ const handleCloseContactsSelect = () => {
 // 经办人显示当前登录操作员姓名，收款保存时后端同样自动写入 20260922 新增
 const userStore = useUserStore();
 
+// 缴费年限下拉候选：取当前登录操作员 operator.termYears（逗号分隔串），拆分为数字选项；
+// 同时兼容全角逗号并去空白/非数，避免脏字符使选项为空（拆分口径同操作员页区域多选）20261017 新增
+const termYearsOptions = computed(() =>
+  String(userStore.termYears ?? '')
+    .split(/[,，]/)
+    .map((item) => item.trim())
+    .filter((item) => item !== '')
+    .map((item) => Number(item))
+    .filter((num) => Number.isFinite(num))
+    .map((num) => ({ value: num, label: String(num) })),
+);
+
 // 打印票据：校验付款人与金额后，点击手势内同步打开空白新标签页（原系统页不动），
 // 查询收据配制后把完整管理费票据文档直接写入新标签页并唤起浏览器打印对话框，不经 SPA 页面加载无中间页闪现 20260922 修改
 const printReceipt = async () => {
@@ -1112,12 +1135,22 @@ const printReceipt = async () => {
 // 确认提交防重复：请求在途期间忽略后续点击（feeSubmitted 仅新建成功后置位，不覆盖在途窗口与修改分支）20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
+// 付款人电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断，防止字母/符号混入（口径同预定页/墓位业务页）20261017 新增
+const onPayePrhoneChange = (value: string | number) => {
+  formFeeData.value.payePrhone = String(value ?? '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+};
 const submitCore = async () => {
   if (formFeeData.value.payer === '') {
     return MessagePlugin.warning(translate('pages.adminfee.payerPlaceholder'));
   }
   if (!formFeeData.value.payePrhone || String(formFeeData.value.payePrhone).trim() === '') {
     return MessagePlugin.warning(translate('pages.adminfee.payePrhonePlaceholder'));
+  }
+  // 电话必须为 11 位数字，不足 11 位提交时提示 20261017 新增
+  if (!/^\d{11}$/.test(String(formFeeData.value.payePrhone).trim())) {
+    return MessagePlugin.warning(translate('pages.adminfee.payePrhoneLengthPlaceholder'));
   }
   if (!formFeeData.value.payAmount || Number(formFeeData.value.payAmount) <= 0) {
     return MessagePlugin.warning(translate('pages.adminfee.payAmountPlaceholder'));

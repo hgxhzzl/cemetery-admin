@@ -10,14 +10,7 @@
             <t-radio-button value="tomorrow">{{ t('pages.dashboardBase.buriedList.tomorrow') }}</t-radio-button>
           </t-radio-group>
         </template>
-        <t-table
-          :data="firstTendData"
-          :columns="BURIED_COLUMNS"
-          row-key="idBuried"
-          size="small"
-          :max-height="250"
-          table-layout="fixed"
-        >
+        <t-table :data="firstTendData" :columns="BURIED_COLUMNS" row-key="idBuried" size="small" table-layout="fixed">
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
               {{ rowIndex + 1 }}
@@ -35,14 +28,7 @@
             <t-radio-button value="tomorrow">{{ t('pages.dashboardBase.buriedList.tomorrow') }}</t-radio-button>
           </t-radio-group>
         </template>
-        <t-table
-          :data="secondTendData"
-          :columns="BURIED_COLUMNS"
-          row-key="idBuried"
-          size="small"
-          :max-height="250"
-          table-layout="fixed"
-        >
+        <t-table :data="secondTendData" :columns="BURIED_COLUMNS" row-key="idBuried" size="small" table-layout="fixed">
           <template #index="{ rowIndex }">
             <span :class="getRankClass(rowIndex)">
               {{ rowIndex + 1 }}
@@ -160,7 +146,7 @@ const getRankClass = (index: number) => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  // 固定高度内收紧卡片 padding 与标题间距，给 5 行表格留足空间 20260925 新增
+  // 下葬记录不受 5 条上限约束、全量展示，卡片 padding 与销售记录一致（原“收紧给 5 行留空间”的限高前提已取消 20261017 修改）
   padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-xl);
 
   :deep(.t-card__header) {

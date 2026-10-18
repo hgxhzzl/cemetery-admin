@@ -477,6 +477,13 @@
     background-color: var(--cms-card-unsold-bg);
     border-color: var(--cms-card-unsold-border);
   }
+
+  // 已预定态：浅黄底 + 金黄框（优先级高于未销售、低于已销售，见 utils/cardStatus）20261017 新增
+  .@{prefix}-card--reserved,
+  .@{prefix}-card--reserved:hover {
+    background-color: var(--cms-card-reserved-bg);
+    border-color: var(--cms-card-reserved-border);
+  }
 }
 
 // 卡片操作行两端对齐 + 链接字号覆盖（13px/20px，t-link 默认 14px/22px）
