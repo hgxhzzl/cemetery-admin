@@ -246,7 +246,7 @@ const detailData = computed<{ name: string; value: string }[]>(() => {
     // 购墓人不再展示：销售信息卡片已有购墓人字段（原标“付款人”），避免重复 20260917 移除；安葬者保留 20260912 新增
     { name: translate('pages.room.deceased'), value: display(room.deceased) },
     { name: translate('pages.room.price'), value: display(formatPrice(room.price)) },
-    // 管理费结束日期：后端在下葬/收款事务中维护，详情统一展示并格式化为 YYYY-MM-DD 20260912 新增
+    // 管理期限（原标题「管理费结束日期」，后端仍取 room.endDate）：由后端在下葬/收款事务中维护，详情统一展示并格式化为 YYYY-MM-DD 20260912 新增 20261018 改标题
     { name: translate('pages.room.endDate'), value: display(formatDate(room.endDate)) },
     // 预定状态不再展示（与销售/下葬状态语义重叠）20261003 统一
     { name: translate('pages.room.saleStatus'), value: displayKey(room.saleStatus) },
