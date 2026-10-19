@@ -16,6 +16,9 @@
 @cms-query-filter-date-width: 360px;
 @cms-query-filter-keyword-width: 480px;
 
+// 卡片列表结构套件（纯 mixin，不产出 CSS）拆至子库：便于卡片子组件单独引用而不携带全量裸类规则 20261019
+@import './card-page-mixins.less';
+
 // ============ 模块：base.less ============
 
 // ============================================================
@@ -131,45 +134,7 @@
   margin-right: 0;
 }
 
-// 列表主体：卡片区弹性占满剩余高度
-.cms-list-body(@prefix) {
-  .@{prefix}-list-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-}
-
-// 列表底部工具行：左侧记录数、右侧缩放图标
-.cms-list-toolbar(@prefix) {
-  .@{prefix}-list-toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 0;
-    color: var(--td-text-color-secondary);
-    font-size: var(--td-font-size-body-medium);
-
-    &__zoom {
-      display: inline-flex;
-      align-items: center;
-      gap: var(--td-comp-margin-m);
-    }
-
-    &__zoom-icon {
-      cursor: pointer;
-      font-size: 18px;
-      color: var(--td-text-color-secondary);
-      transition: color 0.2s linear;
-
-      &:hover {
-        color: var(--td-brand-color);
-      }
-    }
-  }
-}
+// 列表主体 / 列表底部工具行 两个 mixin 已迁至 card-page-mixins.less（顶部转引，定义可见性不变）20261019 拆分
 
 // 无数据提示：筛选表单下方居中
 .cms-no-data(@prefix) {
@@ -181,207 +146,10 @@
   }
 }
 
-// 卡片区：自身滚动条（横竖按需出现）+ 排/行/网格结构
-.cms-card-layout(@prefix) {
-  .@{prefix}-card-layout {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--td-scrollbar-color) var(--td-bg-color-secondarycontainer);
+// 卡片区网格结构 mixin 已迁至 card-page-mixins.less 20261019 拆分
 
-    &::-webkit-scrollbar:vertical {
-      width: 10px;
-      height: auto;
-    }
-
-    &::-webkit-scrollbar:horizontal {
-      height: 10px;
-      width: auto;
-    }
-
-    &::-webkit-scrollbar-thumb:vertical {
-      background-color: var(--td-scrollbar-color);
-      border-radius: 999px;
-    }
-
-    &::-webkit-scrollbar-thumb:horizontal {
-      background-color: var(--td-scrollbar-color);
-      border-radius: 999px;
-    }
-
-    &::-webkit-scrollbar-track:vertical {
-      background-color: var(--td-bg-color-secondarycontainer);
-    }
-
-    &::-webkit-scrollbar-track:horizontal {
-      background-color: var(--td-bg-color-secondarycontainer);
-    }
-
-    .@{prefix}-card-rows {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      min-width: 100%;
-      width: max-content;
-    }
-
-    .@{prefix}-card-row {
-      display: block;
-    }
-
-    .@{prefix}-card-grid {
-      display: flex;
-      flex-wrap: nowrap;
-      gap: 4px;
-      width: max-content;
-      padding-bottom: 0;
-    }
-  }
-}
-
-// 卡片基体与信息结构：卡片宽度/圆角/内边距可参数化；空位卡与操作行由独立 mixin 提供
-.cms-card-basic(@prefix, @card-width: 142px, @card-radius: var(--td-radius-large), @card-padding: 8px 10px) {
-  .@{prefix}-card {
-    flex: 0 0 @card-width;
-    min-height: 152px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: @card-padding;
-    border: 1px solid var(--td-border-level-1-color);
-    border-radius: @card-radius;
-    background-color: var(--td-bg-color-container);
-  }
-
-  .@{prefix}-card__header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--td-comp-margin-s);
-    margin-bottom: var(--td-comp-margin-s);
-  }
-
-  .@{prefix}-card__serial {
-    color: var(--td-text-color-primary);
-    font-size: 14px;
-    font-weight: 600;
-    line-height: 22px;
-  }
-
-  .@{prefix}-card__body {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-bottom: var(--td-comp-margin-s);
-  }
-
-  .@{prefix}-card__meta {
-    color: var(--td-text-color-secondary);
-    font-size: 12px;
-    line-height: 16px;
-    word-break: break-all;
-  }
-
-  .@{prefix}-card__empty-text {
-    line-height: 22px;
-  }
-}
-
-// 空位卡（虚线边框 + 灰底）：sale/reserve/adminfee/contacts
-.cms-card-empty-dashed(@prefix) {
-  // 与 plain 版相同的骨架复用统一名称，仅补虚线边框与灰底差异 20260917 合并
-  .cms-card-empty-plain(@prefix);
-
-  .@{prefix}-card--empty {
-    border-style: dashed;
-    background-color: var(--td-bg-color-page);
-  }
-}
-
-// 空位卡（与正常卡同边框同底色，仅“空位”文字占位色）：room
-.cms-card-empty-plain(@prefix) {
-  .@{prefix}-card--empty {
-    justify-content: flex-start;
-    color: var(--td-text-color-placeholder);
-
-    .@{prefix}-card__body {
-      flex: 1;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 0;
-    }
-  }
-}
-
-// ============================================================
-// 卡片统一迭代样式套件：墓区设置/销售页卡片共用（胶囊/两端对齐/hover 凸显）20260916 抽取
-// ============================================================
-
-// 卡片 hover 凸显：默认浅阴影，hover 外框加深品牌色 + 阴影加深；空位卡保持静止
-.cms-card-hover-highlight(@prefix) {
-  .@{prefix}-card {
-    box-shadow: 0 1px 4px rgb(0 0 0 / 4%);
-    transition:
-      border-color 0.2s linear,
-      box-shadow 0.2s linear;
-
-    &:hover {
-      // 不上移，避免上边框被上方卡片阴影遮挡
-      border-color: var(--td-brand-color);
-      box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
-    }
-  }
-
-  .@{prefix}-card--empty {
-    &:hover {
-      border-color: var(--td-border-level-1-color);
-      box-shadow: 0 1px 4px rgb(0 0 0 / 4%);
-    }
-  }
-}
-
-// 卡片胶囊公共基体：首行类型胶囊与状态胶囊共用（内边距/圆角/字号/不换行）20260917 合并
-.cms-card-pill() {
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-size: 12px;
-  line-height: 18px;
-  white-space: nowrap;
-}
-
-// 卡片首行右侧胶囊（墓位类型等类型值，橙色底）
-.cms-card-head-pill(@prefix) {
-  .@{prefix}-card__type {
-    flex-shrink: 0;
-    .cms-card-pill();
-
-    background-color: var(--td-warning-color-light);
-    color: var(--td-warning-color);
-  }
-}
-
-// 卡片信息行两端对齐：标签在左、值在右，长值省略号截断
-.cms-card-meta-between(@prefix) {
-  .@{prefix}-card__meta {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: var(--td-comp-margin-s);
-
-    &-label {
-      flex-shrink: 0;
-    }
-
-    &-value {
-      min-width: 0;
-      overflow: hidden;
-      text-align: right;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-  }
-}
+// 卡片基体 / 空位卡（虚线与 plain 两版）/ 迭代套件（hover 凸显/胶囊/两端对齐）
+// 均已迁至 card-page-mixins.less 20261019 拆分
 
 // 卡片状态胶囊：销售/下葬两枚两端分布，中性灰底 + 语义色文字，亮/暗主题自适应
 .cms-card-status-tags(@prefix) {
@@ -434,57 +202,7 @@
   }
 }
 
-// ============================================================
-// 卡片外框状态色套件：墓位业务/墓位设置/收管理费/墓位迁出 四页共用，
-// 原四页 index.less 逐字重复声明，以墓位业务页为标准抽取于此（改一处四页生效）20261003 抽取
-// ============================================================
-
-.cms-card-status-frame(@prefix) {
-  // 外框统一 1px：状态色外框保持醒目，与公共 cms-card-basic 边框宽度一致
-  .@{prefix}-card {
-    border-width: 1px;
-  }
-
-  // 已销售绿 / 已下葬蓝 / 管理到期红 / 未销售橙：四态外框色各配同色相浅底，
-  // 外框色在 hover 下保持不变，
-  // 覆盖公共 cms-card-hover-highlight 的 hover 品牌色（特异性相同，页面 less 后声明优先，
-  // 故本页 mixin 调用需位于 cms-card-hover-highlight 之后）20261003 抽取
-  // 四态色值已抽至 style/card-color.less 的 CSS 变量（用户在卡片颜色页自定义后由 utils/cardTheme.ts 行内覆盖），
-  // 本 mixin 只引用变量、不再写死色值，默认值与改造前一致 20261011 修改,
-  .@{prefix}-card--sold,
-  .@{prefix}-card--sold:hover {
-    border-color: var(--cms-card-sold-border);
-    background-color: var(--cms-card-sold-bg);
-  }
-
-  .@{prefix}-card--buried,
-  .@{prefix}-card--buried:hover {
-    border-color: var(--cms-card-buried-border);
-    background-color: var(--cms-card-buried-bg);
-  }
-
-  .@{prefix}-card--expired,
-  .@{prefix}-card--expired:hover {
-    border-color: var(--cms-card-expired-border);
-    background-color: var(--cms-card-expired-bg);
-  }
-
-  // 未销售态：墓位业务页 cardStatusClass 与其余三页 getCardStatusClass 的 withUnsold 选项均已启用该态 20261003 抽取
-  // 注：自 20261011 起类名下发方（utils/cardStatus.ts）保证一张卡最多命中一个状态类，
-  // 四态不再共存，本块居于末位不再产生覆盖；保留本态与其余三态同结构（底色+外框）以便日后恢复叠加 20261011 修改,
-  .@{prefix}-card--unsold,
-  .@{prefix}-card--unsold:hover {
-    background-color: var(--cms-card-unsold-bg);
-    border-color: var(--cms-card-unsold-border);
-  }
-
-  // 已预定态：浅黄底 + 金黄框（优先级高于未销售、低于已销售，见 utils/cardStatus）20261017 新增
-  .@{prefix}-card--reserved,
-  .@{prefix}-card--reserved:hover {
-    background-color: var(--cms-card-reserved-bg);
-    border-color: var(--cms-card-reserved-border);
-  }
-}
+// 卡片外框状态色套件（四页共用）已迁至 card-page-mixins.less 20261019 拆分
 
 // 卡片操作行两端对齐 + 链接字号覆盖（13px/20px，t-link 默认 14px/22px）
 .cms-card-actions-between(@prefix, @gap: var(--td-comp-margin-l)) {

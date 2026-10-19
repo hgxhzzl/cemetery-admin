@@ -5,94 +5,17 @@
 @import '../../style/business/index.less';
 
 // ==================== 卡片页公共结构（前缀 gravePlotBusiness） ====================
+// 卡片区/底部工具行的结构与状态样式已随模板拆至 components/BusinessCardList.vue（公共 mixin 传本页前缀调用）
+// 本页仅保留页面级容器与仍在页内的无数据提示 20261019 拆分
 .cms-list-panel(gravePlotBusiness);
-.cms-list-body(gravePlotBusiness);
-.cms-list-toolbar(gravePlotBusiness);
 .cms-no-data(gravePlotBusiness);
-.cms-card-layout(gravePlotBusiness);
-.cms-card-basic(gravePlotBusiness);
-.cms-card-empty-dashed(gravePlotBusiness);
-// 卡片统一迭代样式套件：与墓区设置页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐）
-.cms-card-hover-highlight(gravePlotBusiness);
-.cms-card-head-pill(gravePlotBusiness);
-.cms-card-meta-between(gravePlotBusiness);
-// 状态胶囊行已移除，cms-card-status-tags 不再调用 20260923 修改
-// 卡片操作行已移除，cms-card-actions-between 不再调用 20260923 修改
-// 信息行标题胶囊样式已取消，恢复 cms-card-meta-between 默认灰色文本标题 20260923 修改
 
-// 人员信息行标签（预定人/购墓人/下葬者/联系人）已改为 t-link 操作按钮，
-// 主题绿/悬停浅蓝及可点击标题样式随标题方案一并移除 20260923 修改
-
-// 人员按钮字号与内容值对齐：t-link 用 font 简写（14px/22px）覆盖继承，需 :deep 显式改回信息行 12px/16px 20260923 新增
-.gravePlotBusiness-card__meta {
-  :deep(.t-link) {
-    font-size: 12px;
-    line-height: 16px;
-  }
-}
-
-// 卡片编号可点击进详情：悬停小手，hover 品牌色提示可点（仅非空卡片，空位卡编号无点击事件）20260926 新增
-.gravePlotBusiness-card__serial--clickable {
-  cursor: pointer;
-
-  &:hover {
-    color: var(--td-brand-color);
-  }
-}
-
-// 卡片外框状态色（已销售绿/已下葬蓝/管理到期红/未销售浅橙底）：
-// 原为本页逐字声明、并被墓位设置/收管理费/墓位迁出三页复制，20261003 抽取为公共 mixin；
-// 调用需位于 cms-card-hover-highlight 之后，以保持状态色覆盖 hover 品牌色的声明顺序；
-// 卡片信息行数变化时最小高度同步调整：去预定人一行时曾收紧 152→134，
-// 20261002 底部新增备注行（room.remark）回到 5 行，恢复公共 mixin 默认 152px，原覆盖声明移除
-.cms-card-status-frame(gravePlotBusiness);
-
-// 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
-.gravePlotBusiness-list-toolbar__right {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
-// 外框颜色图例（同首页销售数量统计图例样式：小矩形色块 + 12px 文字）20260926 新增
-.gravePlotBusiness-list-toolbar__legend {
-  display: inline-flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.gravePlotBusiness-legend-item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--td-text-color-secondary);
-
-  &__swatch {
-    width: 12px;
-    height: 4px;
-    border-radius: 1px;
-
-    // 四态图例色 = 卡片外框色同源，统一引用 style/card-color.less 变量（避免逐页抄写色值、改色漏改图例）20261011 修改,
-    &--unsold {
-      background-color: var(--cms-card-unsold-border);
-    }
-
-    &--reserved {
-      background-color: var(--cms-card-reserved-border);
-    }
-
-    &--sold {
-      background-color: var(--cms-card-sold-border);
-    }
-
-    &--buried {
-      background-color: var(--cms-card-buried-border);
-    }
-
-    &--expired {
-      background-color: var(--cms-card-expired-border);
-    }
+// 卡片区滚动容器（.table-container）已随模板拆至子组件：公共库的
+// .list-common-table > .table-container 规则选择器末段带本页 scope，对子组件元素不再匹配，
+// 此处用 :deep（祖先元素带本页 scope、深层元素不加属性）保持筛选表单与卡片区的原上间距口径 20261019 拆分
+.list-common-table {
+  :deep(.table-container) {
+    margin-top: var(--td-comp-margin-xxl);
   }
 }
 

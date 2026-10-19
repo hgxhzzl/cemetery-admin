@@ -2,8 +2,10 @@
 import type { AxiosInstance, AxiosRequestConfig } from 'axios';
 import isString from 'lodash/isString';
 import merge from 'lodash/merge';
+import { MessagePlugin } from 'tdesign-vue-next';
 
 import { ContentTypeEnum } from '@/constants';
+import router from '@/router';
 import { useUserStore } from '@/store';
 
 import { VAxios } from './Axios';
@@ -11,6 +13,12 @@ import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
 import { formatRequestDate, joinTimestamp, setObjToUrlParams } from './utils';
 
 const env = import.meta.env.MODE || 'development';
+
+// 会话失效单飞标志：并发多个请求同时 401 时只提示/跳转一次 20261019 新增
+let sessionExpiredHandling = false;
+// 403 权限拒绝提示去重：短窗口内同文案只弹一次，避免并发请求刷屏 20261019 新增
+let lastForbiddenMsg = '';
+let lastForbiddenAt = 0;
 
 // 如果是mock模式 或 没启用直连代理 就不配置host 会走本地Mock拦截 或 Vite 代理
 const host = env === 'mock' || import.meta.env.VITE_IS_REQUEST_PROXY !== 'true' ? '' : import.meta.env.VITE_API_URL;
@@ -134,6 +142,49 @@ const transform: AxiosTransform = {
   responseInterceptorsCatch: (error: any, instance: AxiosInstance) => {
     const { config } = error;
     if (!config || !config.requestOptions.retry) return Promise.reject(error);
+
+    // 会话失效全局处理：后端 token 过期返回 401（纯文本），此前各页 catch 静默吞掉，
+    // 用户停留在失效会话里；统一提示并跳登录页（afterEach 进 /login 会 logout + 恢复路由 +
+    // 清配色缓存，此处不重复清理）；登录接口自身 401 由 api/login.ts 本地处理，排除在外 20261019 新增
+    const status = error.response?.status as number | undefined;
+    if (status === 401) {
+      const userStore = useUserStore();
+      const isLoginApi = String(config.url).includes('/login');
+      if (userStore.token && !isLoginApi && !sessionExpiredHandling) {
+        sessionExpiredHandling = true;
+        MessagePlugin.warning('登录已失效，请重新登录');
+        router
+          .push({
+            path: '/login',
+            query: { redirect: router.currentRoute.value.fullPath },
+          })
+          .finally(() => {
+            sessionExpiredHandling = false;
+          });
+      }
+      return Promise.reject(error);
+    }
+
+    // 403 权限拒绝透出后端语义文案（rbac 返回 { error: '无权限:...' }，原各页 catch 只显示
+    // “Request failed with status code 403”不可读）；登录接口的设备白名单 403 由 api/login.ts
+    // 本地处理，排除在外；不进重试 20261019 新增
+    if (status === 403) {
+      const forbiddenMsg = String(error.response?.data?.error || '');
+      const isLoginApi403 = String(config.url).includes('/login');
+      if (
+        forbiddenMsg &&
+        !isLoginApi403 &&
+        !(forbiddenMsg === lastForbiddenMsg && Date.now() - lastForbiddenAt < 3000)
+      ) {
+        lastForbiddenMsg = forbiddenMsg;
+        lastForbiddenAt = Date.now();
+        MessagePlugin.error(forbiddenMsg);
+      }
+      return Promise.reject(error);
+    }
+
+    // 4xx 为确定性业务/权限错误，重试无意义（原默认重试对 403/404 也空转 3 次），仅网络错误/超时/5xx 走退避重试 20261019 新增
+    if (status && status < 500) return Promise.reject(error);
 
     config.retryCount = config.retryCount || 0;
 

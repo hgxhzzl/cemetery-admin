@@ -37,7 +37,9 @@ function normalizePermissionRecord(permission: UserPermission) {
 
 export const useUserStore = defineStore('user', {
   state: () => ({
-    token: 'main_token', // 默认token不走权限
+    // 初始为空：未登录先访任意页直接走 permission 白名单分支静默进登录页，
+    // 不再携带模板遗留的假 token 触发后端 401 + 错误提示 20261019 修改
+    token: '',
     phone: '',
     userName: '',
     userId: 0,
@@ -70,7 +72,9 @@ export const useUserStore = defineStore('user', {
         const roleItems = (res.data.userInfo?.roles || []).map((item: UserPermission) =>
           normalizePermissionRecord(item),
         );
-        this.token = res.data.token || 'main_token';
+        // 后端登录成功必返 token；原 `|| 'main_token'` 兜底为模板 mock 遗留，会使无 token 响应
+        // 进入半登录态并触发假 token 请求，改空串后由路由守卫白名单分支自然回登录页 20261019 审查修正
+        this.token = res.data.token || '';
         this.phone = res.data.userPhone || '';
         this.userName = res.data.userName || account;
         this.userId = res.data.userId || 0;
@@ -89,19 +93,12 @@ export const useUserStore = defineStore('user', {
       }
     },
     async getUserInfo() {
-      const mockRemoteUserInfo = async (token: string) => {
-        if (token === 'main_token') {
-          return {
-            name: this.userName || 'Tencent',
-            roles: ['all'],
-          };
-        }
-        return {
-          name: this.userName || 'td_dev',
-          roles: this.userInfo.roles,
-        };
-      };
-      const res = await mockRemoteUserInfo(this.token);
+      // 模板遗留的 mock 取用户信息（本地返回，不发请求）；原 main_token 分支随登录兜底删除一并移除 20261019 审查修正
+      const localUserInfo = async () => ({
+        name: this.userName || 'td_dev',
+        roles: this.userInfo.roles,
+      });
+      const res = await localUserInfo();
 
       this.userInfo = res;
     },

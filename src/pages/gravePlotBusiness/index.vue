@@ -95,184 +95,24 @@
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260827 修改 -->
           <div v-if="hasQueried && !businessCardRows.length" class="gravePlotBusiness-no-data">暂无数据</div>
 
-          <div v-if="hasQueried && businessCardRows.length" class="gravePlotBusiness-list-body">
-            <div
-              ref="businessCardViewport"
-              class="table-container gravePlotBusiness-card-layout"
-              @scroll.passive="onCardViewportScroll"
-            >
-              <div v-if="businessCardRows.length" class="gravePlotBusiness-card-rows" :style="{ zoom: businessZoom }">
-                <div v-for="rowGroup in businessCardRows" :key="rowGroup.yNum" class="gravePlotBusiness-card-row">
-                  <div class="gravePlotBusiness-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="gravePlotBusiness-card"
-                      :class="{
-                        'gravePlotBusiness-card--empty': card.placeholder,
-                        [cardStatusClass(card.row)]: !card.placeholder,
-                      }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
-                        <div class="gravePlotBusiness-card__header">
-                          <div class="gravePlotBusiness-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
-                        </div>
-                        <div class="gravePlotBusiness-card__body">
-                          <div class="gravePlotBusiness-card__empty-text">空位</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="gravePlotBusiness-card__header">
-                          <!-- 排号改取 xyNumber 字段(自定义坐标名)，缺失时回退 yNum/xNum 拼接 20260923 修改；
-                               编号点击进详情（悬停小手），原整卡双击事件已移除 20260926 修改；
-                               20261003 取消整卡空白处点击进详情，点击事件回到编号本身 -->
-                          <div
-                            class="gravePlotBusiness-card__serial gravePlotBusiness-card__serial--clickable"
-                            @click="handleClickDetail(card.row)"
-                          >
-                            {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.xNum} 号` }}
-                          </div>
-                          <!-- 墓位类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 20260923 修改 -->
-                          <span class="gravePlotBusiness-card__type">{{ $t(card.row.roomType).trim() }}</span>
-                        </div>
-                        <div class="gravePlotBusiness-card__body">
-                          <!-- 卡片信息内容参照墓区下葬页：购墓人/下葬者/联系人/期限，标签在左灰色、值在右深色两端对齐
-                               20260923 修改 20261002 去掉预定人一行 -->
-                          <!-- 销售状态保留在卡片行数据 card.row.saleStatus 中，仅在卡面上不渲染展示；
-                               除交互门控外，未销售时卡片背景色与墓位类型胶囊同色（浅橙）20260923 新增 20261002 用于背景色 -->
-                          <div class="gravePlotBusiness-card__meta">
-                            <!-- 购墓人按钮：点击进入销售形态表单（同墓位销售页样式内容：有销售信息为“修改销售”、无则为“销售墓位”；数据仍走自有接口）20260923 修改 -->
-                            <t-link theme="primary" @click="handleClickBuyer(card.row)">
-                              {{ $t('pages.room.buyer') }}
-                            </t-link>
-                            <!-- 购墓人无值时默认显示“无” 20260923 新增 -->
-                            <span class="gravePlotBusiness-card__meta-value">{{
-                              card.row.buyer || $t('common.none')
-                            }}</span>
-                          </div>
-                          <div class="gravePlotBusiness-card__meta">
-                            <!-- 下葬者按钮：点击进入下葬形态表单（同下葬页修改页内容，数据走自有接口读写 buried 表） 20260923 修改；
-                                 未销售墓位置灰不可点（t-link disabled 内部拦截 click 事件） 20261005 新增 -->
-                            <t-link
-                              :disabled="isUnsold(card.row.saleStatus)"
-                              theme="primary"
-                              @click="handleClickBuried(card.row)"
-                            >
-                              {{ $t('pages.room.buriedPerson') }}
-                            </t-link>
-                            <!-- 下葬者超过7字截断为前6字+4个半角点，悬停提示完整内容 20260924 修改 -->
-                            <t-tooltip v-if="isOverflow(card.row.deceased)" :content="String(card.row.deceased)">
-                              <span class="gravePlotBusiness-card__meta-value">{{
-                                truncateBuriedText(card.row.deceased)
-                              }}</span>
-                            </t-tooltip>
-                            <!-- 下葬者无值时默认显示“无” 20260923 新增 -->
-                            <span v-else class="gravePlotBusiness-card__meta-value">
-                              {{ card.row.deceased || $t('common.none') }}
-                            </span>
-                          </div>
-                          <!-- 联系人：room 表字段，存所有联系人；标签为操作按钮，点击进入业务登记表单 20260923 修改；
-                               未销售墓位置灰不可点（t-link disabled 内部拦截 click 事件） 20261005 新增 -->
-                          <div class="gravePlotBusiness-card__meta">
-                            <t-link
-                              :disabled="isUnsold(card.row.saleStatus)"
-                              theme="primary"
-                              @click="handleClickPerson(card.row)"
-                            >
-                              {{ $t('pages.room.contacts') }}
-                            </t-link>
-                            <!-- 联系人超过7字截断为前6字+4个半角点，悬停提示完整内容 20260923 新增 20260924 修改 -->
-                            <t-tooltip v-if="isOverflow(card.row.contacts)" :content="String(card.row.contacts)">
-                              <span class="gravePlotBusiness-card__meta-value">{{
-                                truncateContactsText(card.row.contacts)
-                              }}</span>
-                            </t-tooltip>
-                            <!-- 联系人无值时默认显示“无” 20260923 新增 -->
-                            <span v-else class="gravePlotBusiness-card__meta-value">{{
-                              card.row.contacts || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 预定期（room.reservationExpireDate，活动预定记录的限期副本）：写法同下行管理期，
-                               无活动预定/未填限期时 formatDate 回空串、默认展示“无” 20261011 新增 -->
-                          <div class="gravePlotBusiness-card__meta">
-                            <span class="gravePlotBusiness-card__meta-label">
-                              {{ $t('pages.gravePlotBusiness.reservationPeriod') }}
-                            </span>
-                            <span class="gravePlotBusiness-card__meta-value">{{
-                              formatDate(card.row.reservationExpireDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 期限信息（管理费结束日期），标签用短词条避免卡片内换行，与下葬页卡片一致 20260923 新增 -->
-                          <div class="gravePlotBusiness-card__meta">
-                            <span class="gravePlotBusiness-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
-                            <!-- 期限无值时默认显示“无” 20260923 新增 -->
-                            <span class="gravePlotBusiness-card__meta-value">{{
-                              formatDate(card.row.endDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 备注信息（room.remark），显示形式同下葬者：超过7字截断为前6字+4个半角点，悬停提示完整内容，
-                               无值时默认显示“无”；列已在运行库存在且 room-list 接口 SELECT * 自动带出；
-                               标题与联系人标题样式相同（t-link 按钮），点击进入墓位备注（修改）页 20261002 新增 20261002 改可点击 -->
-                          <div class="gravePlotBusiness-card__meta">
-                            <t-link theme="primary" @click="handleClickRemark(card.row)">
-                              {{ $t('pages.gravePlotBusiness.remark') }}
-                            </t-link>
-                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
-                              <span class="gravePlotBusiness-card__meta-value">{{
-                                truncateRemarkText(card.row.remark)
-                              }}</span>
-                            </t-tooltip>
-                            <!-- 备注无值时默认显示“无” 20261002 新增 -->
-                            <span v-else class="gravePlotBusiness-card__meta-value">{{
-                              card.row.remark || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 销售/下葬状态胶囊行移除，卡片仅保留人员信息与期限；销售状态仍随行数据返回但不展示 20260923 修改 -->
-                        </div>
-                        <!-- 卡片操作行移除：详情/新建/修改/删除不再从卡片进入，交互方式后续调整 20260923 修改 -->
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <!-- 卡片列表区（卡片区 + 底部工具行）已拆至子组件，网格数据/缩放状态仍由本页 useCardGrid 提供，
+               卡片上的详情/购墓人/下葬者/联系人/备注点击与缩放事件由本组件接回原有处理函数 20261019 结构拆分 -->
+          <business-card-list
+            v-if="hasQueried && businessCardRows.length"
+            :rows="businessCardRows"
+            :zoom="businessZoom"
+            :total-text="listTotalText"
+            :list-visible="isListShow"
+            @detail="handleClickDetail"
+            @buyer="handleClickBuyer"
+            @buried="handleClickBuried"
+            @person="handleClickPerson"
+            @remark="handleClickRemark"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+          />
 
-          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同首页销售数量统计图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
-          <div v-if="hasQueried && businessCardRows.length" class="gravePlotBusiness-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <div class="gravePlotBusiness-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧 20260926 新增 20261002 补未销售；
-                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261011 修改, -->
-              <div class="gravePlotBusiness-list-toolbar__legend">
-                <span v-if="isCardStateEnabled('unsold')" class="gravePlotBusiness-legend-item">
-                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--unsold" />
-                  {{ $t('statusType.saleStatusEnum.unsold') }}
-                </span>
-                <span v-if="isCardStateEnabled('reserved')" class="gravePlotBusiness-legend-item">
-                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--reserved" />
-                  {{ $t('statusType.reserveStatusEnum.reserved') }}
-                </span>
-                <span v-if="isCardStateEnabled('sold')" class="gravePlotBusiness-legend-item">
-                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--sold" />
-                  {{ $t('statusType.saleStatusEnum.sold') }}
-                </span>
-                <span v-if="isCardStateEnabled('buried')" class="gravePlotBusiness-legend-item">
-                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--buried" />
-                  {{ $t('statusType.intoStatusEnum.buried') }}
-                </span>
-                <span v-if="isCardStateEnabled('expired')" class="gravePlotBusiness-legend-item">
-                  <i class="gravePlotBusiness-legend-item__swatch gravePlotBusiness-legend-item__swatch--expired" />
-                  {{ $t('pages.gravePlotBusiness.legendExpired') }}
-                </span>
-              </div>
-              <span class="gravePlotBusiness-list-toolbar__zoom">
-                <zoom-in-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomIn" />
-                <zoom-out-icon class="gravePlotBusiness-list-toolbar__zoom-icon" @click="handleZoomOut" />
-              </span>
-            </div>
-          </div>
+          <!-- 列表底部工具行（记录数/图例/缩放）随卡片区一并拆至 BusinessCardList 子组件 20260926 新增 20261019 拆分 -->
 
           <!-- 删除二次确认弹窗随卡片操作行一并移除 20260923 修改 -->
         </div>
@@ -1200,19 +1040,17 @@ export default {
 </script>
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { Link, MessagePlugin } from 'tdesign-vue-next';
-import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type {
-  GravePlotBusinessCertModel,
   GravePlotBusinessContactsModel,
   GravePlotBusinessFormType,
   GravePlotBusinessModel,
   GravePlotBusinessRoomRow,
-  ListGravePlotBusinessCertResult,
 } from '@/api/gravePlotBusiness';
 import {
   cancelGravePlotBusinessSale,
@@ -1233,15 +1071,19 @@ import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
 import { buildRoomCardOverlayBHtml, buildRoomCardOverlayHtml } from '@/utils/burialCertificate';
-import { getCardStatusClass, isUnsold } from '@/utils/cardStatus';
-import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import { printHtmlInNewTab } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml, numToChinese } from '@/utils/receipt';
 
+// 卡片列表区（卡片区 + 底部工具行）拆为页内子组件，卡片样式/截断/状态色判定随组件内聚 20261019 拆分
+import BusinessCardList from './components/BusinessCardList.vue';
 import { FIND_DATA, INITIAL_BUSINESS_DATA, INITIAL_CERT_DATA, INITIAL_ROOM_DATA } from './constants';
+// 安葬证设置（burial_cert）表单数据与进入/刷新/保存逻辑拆至页面局部模块，模板与表单容器仍在本页 20261019 拆分
+import type { BuriedEditMode } from './useCertificateForm';
+import { useCertificateForm } from './useCertificateForm';
 
 // ============================================================
 // 墓位业务基础页：列表卡片（人员信息）+ 详情 + 业务登记，前后端与墓位销售完全独立 20260923 修改,
@@ -1256,28 +1098,7 @@ useTabCacheName('GravePlotBusiness');
 // 经办人字段不再展示，后端保存时仍自动写入当前登录用户 operator 20260916 修改,
 
 // 卡片状态胶囊行已移除，状态配色函数 statusKey 随之移除 20260923 修改,
-// 卡片状态类名判定已收至 utils/cardStatus.getCardStatusClass（四页同一套「勾选递补」规则，
-// 本页保留同名薄封装以免模板四处调用点改名）20261011 修改,
-const cardStatusClass = (row: GravePlotBusinessRoomRow | null | undefined) =>
-  getCardStatusClass('gravePlotBusiness', row, { withUnsold: true });
-// 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容
-// （预定人已从卡面移除，原预定人专用截断函数 truncateText 一并移除 20261002 修改）
-const truncateBuriedText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
-};
-// 联系人截断：同下葬者，超过7字时显示前6字+4个半角点（用户指定 20260924）
-const truncateContactsText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
-};
-// 备注截断：同下葬者，超过7字时显示前6字+4个半角点（用户指定显示形式同下葬者）20261002 新增
-const truncateRemarkText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
-};
-// 是否超过7字需要截断并显示悬停提示 20260923 新增
-const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// 卡片状态类名判定与长文本截断函数随卡片列表区拆至 BusinessCardList 子组件 20261011 修改 20261019 拆分,
 
 type FilterFormData = typeof FIND_DATA;
 type RoomFormData = typeof INITIAL_ROOM_DATA;
@@ -1289,14 +1110,7 @@ type BusinessSubmitData = Omit<BusinessFormData, 'realPriceString' | 'createDate
   type?: GravePlotBusinessFormType;
 };
 
-// 安葬证设置表单数据（burial_cert 表字段）：idBusiness 承载主键 idCert，0 为新建 20260927 新增
-type CertFormData = typeof INITIAL_CERT_DATA;
-// 提交数据排除创建/修改日期（后端审计自动写入），type=certificate 后端据此落 burial_cert 表；
-// 等分转为 smallint 数值（未选中转 null）20260927 新增 20260928 修改
-type CertSubmitData = Omit<CertFormData, 'equalDivision'> & {
-  equalDivision: number | null;
-  type?: GravePlotBusinessFormType;
-};
+// 安葬证表单数据类型（CertFormData/CertSubmitData）随安葬证逻辑拆至 useCertificateForm 20261019 拆分
 
 // 三个视图互斥显示：列表 / 详情 / 新建销售开单，切换逻辑收敛于公共 usePageSwitch 20260828 梳理,
 // 联系人选择页（下葬形态）：与列表/详情/登记页互斥 20260923 新增
@@ -1304,7 +1118,7 @@ const isListShow = ref(false);
 const isDetailShow = ref(false);
 const isCreateShow = ref(false);
 const isContactsSelectShow = ref(false);
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   createModify: isCreateShow,
@@ -1316,27 +1130,8 @@ const { controlPageShow } = usePageSwitch({
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260831 新增,
 const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
-const businessCardViewport = ref<HTMLElement | null>(null);
 
-// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
-// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
-// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行 20260925 新增
-const businessCardScrollTop = ref(0);
-const onCardViewportScroll = (e: Event) => {
-  businessCardScrollTop.value = (e.target as HTMLElement).scrollTop;
-};
-
-onActivated(() => {
-  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
-  if (!isListShow.value || !businessCardRows.value.length) {
-    return;
-  }
-  nextTick(() => {
-    if (businessCardViewport.value) {
-      businessCardViewport.value.scrollTop = businessCardScrollTop.value;
-    }
-  });
-});
+// 卡片区滚动位置保持（滚动记录 + onActivated 恢复）随卡片区拆至 BusinessCardList 子组件 20260925 新增 20261019 迁移
 
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter 20260914 抽取
 const {
@@ -1385,9 +1180,7 @@ onMounted(() => {
   getParkData();
   loadDeceasedRelationOptions();
   // 列表不再默认查询展示，需用户选择园区后手动查询 20260831 修改,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================
@@ -1474,7 +1267,7 @@ const buriedRecords = ref<GravePlotBusinessModel[]>([]);
 // 下葬形态三视图：list=列表视图（墓位信息+记录列表，无输入框）、add=新增视图（空表单，无列表）、
 // modify=修改视图（数据带入，无列表）；点表头“新增”/行内“修改”进入，提交/取消/返回回列表视图 20260924 修改
 // certificate=安葬证设置视图（点表头“证件”进入）：暂时内容同修改视图（数据带入，后续将调整）20260927 新增
-const buriedEditMode = ref<'list' | 'add' | 'modify' | 'certificate'>('list');
+const buriedEditMode = ref<BuriedEditMode>('list');
 // 安葬证打印模式：'normal'正常打印（默认）/'joint'合葬打印；界面暂存供后续打印A逻辑取值，不落库 20260928 新增
 const printCertType = ref<'normal' | 'joint'>('normal');
 // 证件按钮词条：提前取出缩短表头渲染行（单行调用超 prettier 120 行宽与列表换行规则冲突）20260927 新增
@@ -1502,7 +1295,7 @@ const buriedRecordColumns: PrimaryTableCol[] = [
     title: (h) =>
       h('div', { class: 'record-op-links' }, [
         h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add')),
-        h(Link, { theme: 'primary', onClick: handleClickBuriedCertificate }, () => buriedCertificateText),
+        h(Link, { theme: 'primary', onClick: openCertificateView }, () => buriedCertificateText),
       ]),
   },
 ];
@@ -1949,108 +1742,12 @@ const handleClickBuriedAdd = () => {
 };
 
 // ==================== 安葬证设置（数据表 burial_cert，参照墓位销售方式读写）20260927 新增 ====================
-// 安葬证设置表单数据（独立于业务登记表单）：idBusiness 承载 burial_cert 主键 idCert，0 为新建
-const formCertData = ref<CertFormData>({ ...INITIAL_CERT_DATA });
-
-// 用安葬证设置记录回填表单（查询返回记录，含主键 idBusiness=idCert）
-const fillCertFormRecord = (record: GravePlotBusinessCertModel, idRoom: number) => {
-  // 等分回填：库中 smallint 可空，空值回落默认一分（单选框默认选中一分，空串已不会出现）20260928 修改
-  const equalDivision =
-    record.equalDivision === null || record.equalDivision === undefined ? '1' : String(record.equalDivision);
-  formCertData.value = {
-    idBusiness: record.idBusiness,
-    idRoom,
-    serialNo: record.serialNo ?? '',
-    certHolder: record.certHolder ?? '',
-    certHolderPhone: record.certHolderPhone ?? '',
-    deceasedRelation: record.deceasedRelation ?? '',
-    burialDate: record.burialDate ?? '',
-    jointBurialDate: record.jointBurialDate ?? '',
-    deceasedA: record.deceasedA ?? '',
-    deceasedB: record.deceasedB ?? '',
-    equalDivision,
-    deceasedC: record.deceasedC ?? '',
-    deceasedD: record.deceasedD ?? '',
-    workplace: record.workplace ?? '',
-    workPhone: record.workPhone ?? '',
-    homeAddress: record.homeAddress ?? '',
-  };
-};
-
-// 表头“证件”：进入安葬证设置视图——按墓位查 burial_cert 活动记录（倒序取最新一条）回填，无记录则空表单新建；
-// 表单字段/提交/取消/返回交互同下葬新增/修改视图（参照墓位销售方式），仅读写 burial_cert 本表不联动 20260927 修改
-const handleClickBuriedCertificate = async () => {
-  const idRoom = formRoomData.value.idRoom;
-  formCertData.value = { ...INITIAL_CERT_DATA, idRoom };
-  try {
-    const { list } = await getGravePlotBusinessByRoom<ListGravePlotBusinessCertResult>(idRoom, 'certificate');
-    if (list && list.length > 0) {
-      fillCertFormRecord(list[0], idRoom);
-    }
-  } catch (e) {
-    logError(e);
-  }
-  // 只读字段同步墓位信息：证件编号/持证人始终取当前墓位值，不随记录回填 20260928 新增
-  syncCertReadonlyFromRoom();
-  // 持证人电话/逝者关系/下葬日期/安葬者A从关联业务表带默认值（仅空字段预填）20260928 新增
-  await syncCertDefaultsFromRelated();
-  buriedEditMode.value = 'certificate';
-};
-
-// 安葬证设置提交成功后：重查记录回填并停留本视图（连续调整无需重新进入）；点“返回”才回下葬列表视图 20260927 新增
-const refreshCertStay = async () => {
-  const idRoom = formRoomData.value.idRoom;
-  formCertData.value = { ...INITIAL_CERT_DATA, idRoom };
-  try {
-    const { list } = await getGravePlotBusinessByRoom<ListGravePlotBusinessCertResult>(idRoom, 'certificate');
-    if (list && list.length > 0) {
-      fillCertFormRecord(list[0], idRoom);
-    }
-  } catch (e) {
-    logError(e);
-  }
-  // 只读字段同步墓位信息：证件编号/持证人始终取当前墓位值，不随记录回填 20260928 新增
-  syncCertReadonlyFromRoom();
-};
-
-// 只读字段同步墓位信息：编号取 room.serialNo（原 cardno）、持证人取 room.buyer，两个输入框只读不可改，
-// 有记录回填后也覆盖为当前墓位值（墓位购墓人/编号变更时安葬证设置跟随最新值）20260928 新增 20261003 cardno→serialNo
-const syncCertReadonlyFromRoom = () => {
-  formCertData.value.serialNo = String(formRoomData.value.serialNo ?? '').trim();
-  formCertData.value.certHolder = String(formRoomData.value.buyer ?? '').trim();
-};
-
-// 安葬证设置默认值从关联业务表带出（仅空字段预填，已保存记录的值优先）：
-// 持证人电话取 sale 表付款人电话（idRoom 条件）；逝者关系/下葬日期/安葬者A取销售开单联动的
-// 下葬记录（buried.idSale 与销售单匹配，倒序取最新）；查询失败不阻断进入表单 20260928 新增
-const syncCertDefaultsFromRelated = async () => {
-  const idRoom = formRoomData.value.idRoom;
-  try {
-    const saleRes = await getGravePlotBusinessByRoom(idRoom, 'sale');
-    const sale = saleRes.list?.[0];
-    if (sale && (formCertData.value.certHolderPhone ?? '').trim() === '') {
-      formCertData.value.certHolderPhone = String(sale.payerPhone ?? '').trim();
-    }
-    const buriedRes = await getGravePlotBusinessByRoom(idRoom, 'buried');
-    // 销售联动的下葬记录：优先与当前销售单 idSale 匹配，无销售单时取任一 idSale 有值的最新记录
-    const linked =
-      (buriedRes.list ?? []).find((item) => sale && item.idSale === sale.idBusiness) ??
-      (buriedRes.list ?? []).find((item) => item.idSale != null);
-    if (linked) {
-      if ((formCertData.value.deceasedRelation ?? '').trim() === '') {
-        formCertData.value.deceasedRelation = String(linked.deceasedRelation ?? '').trim();
-      }
-      if (!formCertData.value.burialDate) {
-        formCertData.value.burialDate = linked.burialDate ?? '';
-      }
-      if ((formCertData.value.deceasedA ?? '').trim() === '') {
-        formCertData.value.deceasedA = String(linked.deceased ?? '').trim();
-      }
-    }
-  } catch (e) {
-    logError(e);
-  }
-};
+// 表单数据、进入视图（查记录回填 + 关联业务默认值）、提交后停留刷新与保存逻辑
+// 拆至页面局部模块 useCertificateForm，本页仅保留模板绑定与关闭时的表单重置 20261019 拆分
+const { formCertData, openCertificateView, saveCertificate } = useCertificateForm({
+  formRoomData,
+  buriedEditMode,
+});
 
 // 取消（下葬形态）：新增/修改视图下退出并回填最新记录（回到含列表的下葬页）20260924 修改
 const onCancelBuried = () => {
@@ -2107,52 +1804,20 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 隐藏 iframe 打印会让打印预览覆盖系统页，改回新标签页方案：
-  // 打开空白新标签页（屏幕无任何内容）写入票据文档，加载完成后直接唤起打印预览，原系统页保持不变可随时切回 20260922 修改
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
+  // 打开空白新标签页写入票据文档并唤起打印预览（流程抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
+  if (!printHtmlInNewTab(buildReceiptHtml(data, config))) {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.printBlockedPrompt'));
-  }
-  const printDoc = printWindow.document;
-  printDoc.open();
-  printDoc.write(buildReceiptHtml(data, config));
-  printDoc.close();
-  // 等票据文档完全加载后再唤起打印，避免打印预览因页面加载未完成而一闪即关 20260922 修改
-  const triggerPrint = () => {
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 100);
-  };
-  if (printDoc.readyState === 'complete') {
-    triggerPrint();
-  } else {
-    printWindow.onload = triggerPrint;
   }
 };
 
-// 安葬证套打开窗公共流程：点击手势内同步开新标签页，写入文档加载完成后唤起打印预览
-// （原系统页不动）；套打A/B 复用，打印票据 printReceipt 保持原实现 20260928 新增
+// 安葬证套打开窗：点击手势内同步开新标签页写文档并唤起预览（套打A/B 复用），
+// 仅保留被浏览器拦截时的本页提示 20260928 新增 20261019 收敛至 utils/printWindow
 const openOverlayPrintWindow = (html: string) => {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
+  if (!printHtmlInNewTab(html)) {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.printBlockedPrompt'));
   }
-  const printDoc = printWindow.document;
-  printDoc.open();
-  printDoc.write(html);
-  printDoc.close();
-  const triggerPrint = () => {
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 100);
-  };
-  if (printDoc.readyState === 'complete') {
-    triggerPrint();
-  } else {
-    printWindow.onload = triggerPrint;
-  }
+  return undefined;
 };
 
 // 安葬证打印A（套打）：预印证书纸固定版式，按原 PB d_room_card_print 位置填三个字段——
@@ -2303,37 +1968,10 @@ const submitCore = async () => {
     return;
   }
 
-  // 安葬证设置视图：确认按钮保存安葬证设置记录（burial_cert 表，参照墓位销售方式：
-  // 持证人必填，新建/修改由 idBusiness(=idCert) 是否为 0 区分），成功后停留本视图刷新回填 20260927 新增
+  // 安葬证设置视图：确认按钮保存安葬证设置记录（burial_cert 表，校验与读写见 useCertificateForm），
+  // 成功后停留本视图刷新回填 20260927 新增 20261019 逻辑拆出
   if (formMode.value === 'buried' && buriedEditMode.value === 'certificate') {
-    const { idRoom, idBusiness, certHolder, certHolderPhone } = formCertData.value;
-    if (certHolder === undefined || certHolder.trim() === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.certHolderPlaceholder'));
-    }
-    // 等分落 burial_cert.equalDivision（smallint）：选中值转数值（默认一分，异常空串兑底转 null）20260928 修改
-    const equalDivisionRaw = formCertData.value.equalDivision;
-    const certPayload: CertSubmitData = {
-      ...formCertData.value,
-      equalDivision: equalDivisionRaw === '' ? null : Number(equalDivisionRaw),
-      certHolder: certHolder.trim(),
-      certHolderPhone: certHolderPhone.trim(),
-      type: 'certificate',
-    };
-    try {
-      if (idBusiness === 0) {
-        await insertGravePlotBusiness(certPayload);
-        MessagePlugin.success(translate('operate.createdSuccessPrompt'));
-      } else {
-        await updateGravePlotBusiness(certPayload);
-        MessagePlugin.success(translate('operate.modifySuccessPrompt'));
-      }
-      await refreshCertStay();
-    } catch (e) {
-      logError(e);
-      MessagePlugin.error(
-        idBusiness === 0 ? translate('operate.createdFailedPrompt') : translate('operate.modifyFailedPrompt'),
-      );
-    }
+    await saveCertificate();
     return;
   }
 

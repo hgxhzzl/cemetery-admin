@@ -12,7 +12,8 @@ const Api = {
 // 列表接口
 export function getRoomList(park: string, region: string) {
   return request.get<ListRoomResult>({
-    url: `${Api.queryBuried}/room?park=${park}&region=${region}`,
+    url: `${Api.queryBuried}/room`,
+    params: { park, region },
   });
 }
 // 新增接口

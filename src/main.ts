@@ -1,6 +1,6 @@
 /* eslint-disable simple-import-sort/imports */
 import { createApp } from 'vue';
-import TDesign from 'tdesign-vue-next';
+import { Icon } from 'tdesign-icons-vue-next';
 
 import App from './App.vue';
 import router from './router';
@@ -12,6 +12,11 @@ import '@/style/index.less';
 import './permission';
 
 const app = createApp(App);
+
+// TDesign 组件改为 unplugin-vue-components 按需自动导入（见 vite.config.ts），不再 app.use(TDesign)
+// 全量注册；仅显式注册 TIcon：模板中的 <t-icon> 及 MenuContent.jsx 的 <t-icon/> 动态图标走
+// resolveComponent 查找全局名，不经模板编译器 20261019 审查优化
+app.component('TIcon', Icon);
 
 // 一次性迁移：历史持久化中“多标签Tab页”为模板默认 false，与原项目配置（true）不一致，
 // 在任何 store 水合（hydrate）前修正残留值；此后用户在设置面板的开关操作将被正常尊重。
@@ -32,7 +37,6 @@ if (!localStorage.getItem(TABS_MIGRATION_KEY)) {
   localStorage.setItem(TABS_MIGRATION_KEY, '1');
 }
 
-app.use(TDesign);
 app.use(store);
 app.use(router);
 app.use(i18n);

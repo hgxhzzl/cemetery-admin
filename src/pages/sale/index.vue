@@ -402,6 +402,7 @@ import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import { printHtmlInNewTab } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml } from '@/utils/receipt';
 
@@ -434,7 +435,7 @@ type SaleSubmitData = Omit<SaleFormData, 'realPriceString' | 'createDate'> & {
 const isListShow = ref(false);
 const isDetailShow = ref(false);
 const isCreateShow = ref(false);
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   createModify: isCreateShow,
@@ -483,9 +484,7 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不再默认查询展示，需用户选择园区后手动查询 20260831 修改,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================
@@ -609,27 +608,10 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 隐藏 iframe 打印会让打印预览覆盖系统页，改回新标签页方案：
-  // 打开空白新标签页（屏幕无任何内容）写入票据文档，加载完成后直接唤起打印预览，原系统页保持不变可随时切回 20260922 修改
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
+  // 打开空白新标签页写入票据文档并唤起打印预览（流程已抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
+  if (!printHtmlInNewTab(buildReceiptHtml(data, config))) {
     return MessagePlugin.warning(translate('pages.sale.printBlockedPrompt'));
-  }
-  const printDoc = printWindow.document;
-  printDoc.open();
-  printDoc.write(buildReceiptHtml(data, config));
-  printDoc.close();
-  // 等票据文档完全加载后再唤起打印，避免打印预览因页面加载未完成而一闪即关 20260922 修改
-  const triggerPrint = () => {
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 100);
-  };
-  if (printDoc.readyState === 'complete') {
-    triggerPrint();
-  } else {
-    printWindow.onload = triggerPrint;
   }
 };
 

@@ -12,7 +12,8 @@ const Api = {
 // 卡片列表接口：按园区+区域查询墓位（与墓区下葬页共用同一套 room 数据）20260909 新增
 export function getRoomList(park: string, region: string) {
   return request.get<ListRoomResult>({
-    url: `${Api.queryContacts}/room?park=${park}&region=${region}`,
+    url: `${Api.queryContacts}/room`,
+    params: { park, region },
   });
 }
 // 新增墓位联系人记录接口 20260909 新增

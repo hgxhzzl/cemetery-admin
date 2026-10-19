@@ -31,6 +31,9 @@ device-agent/install.log
 .history
 .stylelintcache
 
+# unplugin-vue-components 构建期自动生成（TDesign 按需导入声明） 20261019
+src/components.d.ts
+
 .env.local
 .env.*.local
 

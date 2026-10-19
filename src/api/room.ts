@@ -11,15 +11,20 @@ const Api = {
 // 模板遗留的状态/树接口 getTypeList、getTreeList 全仓库零调用（枚举改由 statusType.* 词条 + 各页下拉数据源提供），20261003 清理删除
 
 // 列表接口
+// 口径：park/region 等文本自由参数一律走 axios params 对象序列化（自动 URL 编码），
+// 不再手工拼 query string（含 &/#/+ 等字符的园区/区域名会损坏参数）20261019 审查修正；
+// 各模块同型列表接口已一并改为此写法
 export function getRoomList(park: string, region: string) {
   return request.get<ListRoomResult>({
-    url: `${Api.queryRoom}/room?park=${park}&region=${region}`,
+    url: `${Api.queryRoom}/room`,
+    params: { park, region },
   });
 }
 
 export function getCanSaleList(park: string, region: string) {
   return request.get<ListRoomResult>({
-    url: `${Api.queryRoom}/canSale?park=${park}&region=${region}`,
+    url: `${Api.queryRoom}/canSale`,
+    params: { park, region },
   });
 }
 

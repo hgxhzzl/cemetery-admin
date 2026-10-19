@@ -519,6 +519,7 @@ import {
 import { t, translate } from '@/locales';
 import { formatDate } from '@/utils/date';
 import { logError } from '@/utils/logger';
+import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_ROOM_DATA, INITIAL_SALE_DATA } from './constants';
 
@@ -544,8 +545,7 @@ const truncateText = (value?: string | null) => {
   const text = String(value || '');
   return text.length > 7 ? `${text.slice(0, 7)}…` : text;
 };
-// 是否超过7字需要截断并显示悬停提示 20260913 新增
-const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
 
 type BuriedRoomRow = RoomModel & {
   reserve?: number;
@@ -567,7 +567,7 @@ const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formBuriedData = ref<BuriedFormData>({ ...INITIAL_SALE_DATA });
 
 // 视图互斥切换收敛于公共 usePageSwitch，模板引用名保持不变 20260914 抽取
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   create: isCreateShow,
@@ -617,9 +617,7 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不再默认查询展示，需用户选择园区后手动查询 20260907 修改,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================

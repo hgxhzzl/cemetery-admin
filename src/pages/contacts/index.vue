@@ -369,6 +369,7 @@ import {
 import { t, translate } from '@/locales';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_CONTACTS_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -399,7 +400,7 @@ const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formContactsData = ref<ContactsFormData>({ ...INITIAL_CONTACTS_DATA });
 
 // 视图互斥切换收敛于公共 usePageSwitch，模板引用名保持不变 20260914 抽取
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   create: isCreateShow,
@@ -416,8 +417,7 @@ const truncateText = (value?: string | null) => {
   const text = String(value || '');
   return text.length > 7 ? `${text.slice(0, 7)}…` : text;
 };
-// 是否超过7字需要截断并显示悬停提示，与下葬页一致 20260917 新增
-const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
 const contactsCardViewport = ref<HTMLElement | null>(null);
 
@@ -457,9 +457,7 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不默认查询展示，需用户选择园区后手动查询 20260909 新增,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================

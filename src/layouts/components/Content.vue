@@ -4,7 +4,9 @@
       <!-- 不使用 mode="out-in"：keep-alive 缓存的页面切走时是 deactivate 而非卸载，
          leave 钩子不会触发，out-in 会一直等待 afterLeave 导致后续页面全部空白 20260911 修改 -->
       <transition name="fade">
-        <keep-alive :include="aliveViews">
+        <!-- :max 限幅 LRU：页签可无上限打开且持久化恢复，keep-alive 实例（含各卡片页整量数据）
+             无限增长会拖长班次内存；超限后最早的页签被逐出缓存，切回时重建重拉数据，行为正确 20261019 审查修正 -->
+        <keep-alive :include="aliveViews" :max="15">
           <component :is="Component" :key="route.fullPath" />
         </keep-alive>
       </transition>

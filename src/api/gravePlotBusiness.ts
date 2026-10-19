@@ -25,7 +25,8 @@ export interface ListGravePlotBusinessRoomResult {
 // 查询墓位列表(带预定人)：本页独立接口，不复用 room/canSale 20260923 新增
 export function getGravePlotBusinessRoomList(park: string, region: string) {
   return request.get<ListGravePlotBusinessRoomResult>({
-    url: `${Api.queryGravePlotBusiness}/room-list?park=${park}&region=${region}`,
+    url: `${Api.queryGravePlotBusiness}/room-list`,
+    params: { park, region },
   });
 }
 

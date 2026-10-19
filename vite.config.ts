@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
+import { TDesignResolver } from 'unplugin-vue-components/resolvers';
+import Components from 'unplugin-vue-components/vite';
 import type { ConfigEnv, UserConfig } from 'vite';
 import { loadEnv } from 'vite';
 import svgLoader from 'vite-svg-loader';
@@ -47,7 +49,21 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       },
     },
 
-    plugins: [vue(), vueJsx(), svgLoader()],
+    plugins: [
+      vue(),
+      vueJsx(),
+      svgLoader(),
+      // TDesign 组件按需自动导入：模板中 t-* 标签编译期解析为具名 import，替代 main.ts 的
+      // app.use(TDesign) 全量注册（tdesign-vendor JS 由 1374KB 降为实际用量）；
+      // TDesignResolver 不自动引入组件样式，样式仍走 main.ts 全量 index.css 兜底，避免逐组件
+      // 样式遗漏弹窗/浮层边缘场景；dirs: [] 关闭本地组件自动扫描登记（项目均显式 import，行为零变化）；
+      // <t-icon>（含 JSX 动态用法）由 main.ts 显式全局注册 TIcon 覆盖 20261019 审查优化
+      Components({
+        resolvers: [TDesignResolver({ library: 'vue-next' })],
+        dirs: [],
+        dts: 'src/components.d.ts',
+      }),
+    ],
 
     server: {
       port: 3002,

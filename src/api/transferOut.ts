@@ -40,7 +40,8 @@ export interface TransferOutModel {
 // 按区域+园区查询墓位列表（与下葬页一致，区域必传由路由 meta 下发）20260916 新增
 export function getTransferOutRoomList(park: string, region: string) {
   return request.get<{ list: Array<RoomModel> }>({
-    url: `${Api.queryTransferOut}/room?park=${park}&region=${region}`,
+    url: `${Api.queryTransferOut}/room`,
+    params: { park, region },
   });
 }
 

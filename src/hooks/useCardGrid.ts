@@ -17,9 +17,15 @@ interface CardRowItem {
 }
 
 // 占位卡与非占位卡的判别联合：模板 v-if="card.placeholder"/v-else 下 vue-tsc 可收窄 row 非空
-// （占位卡 row 为 null，非占位卡 row 为行数据）
-type CardCellOf<T extends CardRowItem> =
+// （占位卡 row 为 null，非占位卡 row 为行数据）；导出供拆出的卡片列表子组件声明 props 类型 20261019 拆分
+export type CardCellOf<T extends CardRowItem> =
   { xNum: number; placeholder: false; row: T } | { xNum: number; placeholder: true; row: null };
+
+// 卡片行组：一排一组（含补位占位卡），cardRows 返回结构的公开类型 20261019 拆分
+export interface CardRowGroup<T extends CardRowItem> {
+  yNum: number;
+  cards: CardCellOf<T>[];
+}
 
 // 卡片行回调参数：模板直接传行数据；历史回调存在包一层 { row } 的写法，兼容两种形态 20260917 类型化
 export type CardRowArg<T> = T & { row?: T };

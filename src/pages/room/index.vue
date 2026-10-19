@@ -465,7 +465,15 @@ import { deleteRoom, getIdList, getRoomList, insertRoom, updateRoom } from '@/ap
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH, TYPE_ROOM_TYPES } from '@/constants';
 import type { CardRowArg } from '@/hooks';
-import { useCardGrid, useParkRoomFilter, usePermission, useRoomDetail, useSubmitGuard, useTabCacheName } from '@/hooks';
+import {
+  delayControlPageShow,
+  useCardGrid,
+  useParkRoomFilter,
+  usePermission,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
@@ -626,9 +634,8 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不再默认查询展示，需用户选择园区后手动查询 20260831 修改,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  // 初始视图延时口径收敛至公共 delayControlPageShow（本页 controlPageShow 仍为本地实现，保留额外状态重置）20261019 收敛
+  delayControlPageShow(controlPageShow, 'list');
 });
 
 // ==================== 列表：删除确认 ====================

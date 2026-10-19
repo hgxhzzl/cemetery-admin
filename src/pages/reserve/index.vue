@@ -443,6 +443,7 @@ import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
+import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_RESERVE_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -466,7 +467,7 @@ type ReserveFormData = typeof INITIAL_RESERVE_DATA;
 const isListShow = ref(false);
 const isDetailShow = ref(false);
 const isCreateShow = ref(false);
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   createReserve: isCreateShow,
@@ -480,8 +481,7 @@ const truncateText = (value?: string | null) => {
   const text = String(value || '');
   return text.length > 7 ? `${text.slice(0, 6)}....` : text;
 };
-// 是否超过7字需要截断并显示悬停提示 20261012 新增
-const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
 // 卡片外框状态色类名：与墓位业务页共用 utils/cardStatus 的同一套「已勾选态按优先级递补」判定，
 // 本页启用未销售态（withUnsold），优先级 未销售<已销售<已下葬<管理到期，全未命中时白底细灰框 20261012 新增
 const cardStatusClass = (row: RoomModel | null | undefined) => getCardStatusClass('reserve', row, { withUnsold: true });
@@ -550,9 +550,7 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不默认查询展示，需用户选择园区后手动查询
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================

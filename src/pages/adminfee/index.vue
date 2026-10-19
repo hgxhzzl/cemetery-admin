@@ -616,8 +616,10 @@ import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { logError } from '@/utils/logger';
+import { printHtmlInNewTab } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml } from '@/utils/receipt';
+import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_FEE_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -640,8 +642,7 @@ const truncateText = (value?: string | null) => {
   const text = String(value || '');
   return text.length > 7 ? `${text.slice(0, 7)}…` : text;
 };
-// 是否超过7字需要截断并显示悬停提示 20260917 新增
-const isOverflow = (value?: string | null) => String(value || '').length > 7;
+// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
 
 type FilterFormData = typeof FIND_DATA;
 type RoomFormData = typeof INITIAL_ROOM_DATA;
@@ -658,7 +659,7 @@ const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formFeeData = ref<FeeFormData>({ ...INITIAL_FEE_DATA });
 
 // 视图互斥切换收敛于公共 usePageSwitch，模板引用名保持不变 20260914 抽取
-const { controlPageShow } = usePageSwitch({
+const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
   list: isListShow,
   detail: isDetailShow,
   create: isCreateShow,
@@ -734,9 +735,7 @@ onMounted(() => {
   getRegionData();
   getParkData();
   // 列表不默认查询展示，需用户选择园区后手动查询 20260909 新增,
-  setTimeout(() => {
-    controlPageShow('list');
-  }, 380);
+  scheduleControlPageShow('list');
 });
 
 // ==================== 详情 ====================
@@ -1106,27 +1105,10 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 隐藏 iframe 打印会让打印预览覆盖系统页，改回新标签页方案：
-  // 打开空白新标签页（屏幕无任何内容）写入票据文档，加载完成后直接唤起打印预览，原系统页保持不变可随时切回 20260922 修改
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) {
+  // 打开空白新标签页写入票据文档并唤起打印预览（流程已抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
+  if (!printHtmlInNewTab(buildReceiptHtml(data, config, 'adminfee'))) {
     return MessagePlugin.warning(translate('pages.adminfee.printBlockedPrompt'));
-  }
-  const printDoc = printWindow.document;
-  printDoc.open();
-  printDoc.write(buildReceiptHtml(data, config, 'adminfee'));
-  printDoc.close();
-  // 等票据文档完全加载后再唤起打印，避免打印预览因页面加载未完成而一闪即关 20260922 修改
-  const triggerPrint = () => {
-    setTimeout(() => {
-      printWindow.focus();
-      printWindow.print();
-    }, 100);
-  };
-  if (printDoc.readyState === 'complete') {
-    triggerPrint();
-  } else {
-    printWindow.onload = triggerPrint;
   }
 };
 
