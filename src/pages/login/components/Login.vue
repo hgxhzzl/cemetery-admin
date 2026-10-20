@@ -39,7 +39,9 @@
     </div>
 
     <t-form-item class="btn-container">
-      <t-button block size="large" type="submit" :disabled="submitting"> {{ t('pages.login.signIn') }} </t-button>
+      <t-button block size="large" type="submit" :disabled="submitting" :loading="submitting">
+        {{ t('pages.login.signIn') }}
+      </t-button>
     </t-form-item>
   </t-form>
 </template>
@@ -86,10 +88,16 @@ const router = useRouter();
 // 快速双击会并发两次登录请求（审查清理 20261020 复用 useSubmitGuard）
 const { submitting, run: runSubmit } = useSubmitGuard();
 
+// 守卫只在请求在途期间持锁，而本机后端/Agent 几十毫秒即返回，锁窗口小于连点/连按回车间隔，
+// 第二次点击落在锁外仍会连发登录请求；在锁内补满最短持锁时长覆盖整个交互周期（20261020 反馈修复）
+const MIN_LOGIN_LOCK_MS = 800;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 const onSubmit = async (ctx: SubmitContext) => {
   if (ctx.validateResult !== true) {
     return;
   }
+  const startedAt = Date.now();
   await runSubmit(async () => {
     try {
       if (formData.value.checked) {
@@ -108,6 +116,12 @@ const onSubmit = async (ctx: SubmitContext) => {
     } catch (e: unknown) {
       logError(e);
       MessagePlugin.error((e as Error).message);
+    } finally {
+      // 成功路径已 router.push，组件即便随后卸载也不影响此处的定时收尾
+      const remain = MIN_LOGIN_LOCK_MS - (Date.now() - startedAt);
+      if (remain > 0) {
+        await sleep(remain);
+      }
     }
   });
 };
