@@ -3,32 +3,14 @@
 // ============================================================
 @import '../../style/business/index.less';
 
-// ==================== 卡片页公共结构（前缀 reserve） ====================
+// ==================== 页面级公共结构（前缀 reserve） ====================
+// 卡片区结构类（list-body/card-*/toolbar/status-frame）已迁入 RoomCardList 组件 scoped（以中性前缀 roomcard 实体化），
+// 本页不再产出 reserve-card-*/reserve-list-body/toolbar 死规则；仅保留外层面板与空态两枚本页仍在用的结构 20261020 P2 #6
 .cms-list-panel(reserve);
-.cms-list-body(reserve);
-.cms-list-toolbar(reserve);
 .cms-no-data(reserve);
-.cms-card-layout(reserve);
-.cms-card-basic(reserve);
-.cms-card-empty-dashed(reserve);
-// 卡片统一迭代样式套件：与墓区设置/销售/下葬页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260917 抽取
-.cms-card-hover-highlight(reserve);
-.cms-card-head-pill(reserve);
-.cms-card-meta-between(reserve);
-.cms-card-status-tags(reserve);
-.cms-card-actions-between(reserve);
 
-// 卡片外框状态色（未销售浅橙底/已销售绿/已下葬蓝/管理到期红）：与墓位业务页共用公共 mixin，
-// 判定同源 utils/cardStatus（本页 cardStatusClass 下发 reserve-card--{state}），色值引自 style/card-color.less 变量；
-// 调用需位于 cms-card-hover-highlight 之后，以保持状态色覆盖 hover 品牌色的声明顺序 20261012 新增
-.cms-card-status-frame(reserve);
-
-// 底部工具行右侧：图例 + 缩放按钮并排（同墓位业务页）20261012 新增
-.reserve-list-toolbar__right {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
+// 底部工具行右侧容器与缩放控件已由 RoomCardList 组件统一持有（roomcard-list-toolbar__right/__zoom），
+// 本页插槽仅经 toolbar-legend 注入图例，下方为图例及其子项的本页作用域样式 20261020 P2 S1a
 
 // 外框颜色图例（小矩形色块 + 12px 文字，同墓位业务页）20261012 新增
 .reserve-list-toolbar__legend {

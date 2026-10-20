@@ -67,6 +67,8 @@ export interface RequestOptions {
 export interface Result<T = any> {
   code: number;
   data: T;
+  // 后端统一提示文案（成功/软失败均可能携带），供业务失败时透出具体原因 20261020 P2 C2
+  message?: string;
 }
 
 export interface AxiosRequestConfigRetry extends AxiosRequestConfig {

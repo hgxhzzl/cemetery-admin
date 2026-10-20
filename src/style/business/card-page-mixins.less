@@ -27,6 +27,14 @@
     color: var(--td-text-color-secondary);
     font-size: var(--td-font-size-body-medium);
 
+    // 工具行右侧容器：颜色图例（可选，经插槽注入）与缩放控件并排，间隙 32px；
+    // 由 RoomCardList 组件统一持有（各页不再各自复制 __right/zoom 样式）20261020 P2 S1a
+    &__right {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
     &__zoom {
       display: inline-flex;
       align-items: center;
@@ -290,5 +298,72 @@
   .@{prefix}-card--reserved:hover {
     background-color: var(--cms-card-reserved-bg);
     border-color: var(--cms-card-reserved-border);
+  }
+}
+
+// 卡片状态胶囊：销售/下葬两枚两端分布，中性灰底 + 语义色文字，亮/暗主题自适应
+// 20261020 自 index.less 并入卡片子库（P2 #6：供 RoomCardList 组件单独 @import 而不携带 index.less 无关裸类）
+.cms-card-status-tags(@prefix) {
+  .@{prefix}-card__status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding-top: 3px;
+  }
+
+  .@{prefix}-card__tag {
+    display: inline-block;
+    .cms-card-pill();
+
+    // 已销售：中性灰底，文字绿色区分
+    &--sold {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-success-color);
+    }
+
+    // 未销售/未下葬/未迁出/未预定：中性灰
+    &--unsold,
+    &--incomplet,
+    &--notOut,
+    &--unreserved {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-text-color-secondary);
+    }
+
+    // 预定/核对：橙色
+    &--reserve,
+    &--examine {
+      background-color: var(--td-warning-color-light);
+      color: var(--td-warning-color);
+    }
+
+    // 已下葬/已预定：中性灰底，文字蓝色区分
+    &--buried,
+    &--reserved {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-brand-color);
+    }
+
+    // 已迁出：文字红色区分（终态），背色中性灰底与其余胶囊一致，迁出页特有 20260917 补充
+    &--out {
+      background-color: var(--td-bg-color-secondarycontainer);
+      color: var(--td-error-color);
+    }
+  }
+}
+
+// 卡片操作行两端对齐 + 链接字号覆盖（13px/20px，t-link 默认 14px/22px）
+// 20261020 自 index.less 并入卡片子库（P2 #6：供 RoomCardList 组件单独 @import）
+.cms-card-actions-between(@prefix, @gap: var(--td-comp-margin-l)) {
+  .@{prefix}-card__actions {
+    display: flex;
+    justify-content: space-between;
+    gap: @gap;
+
+    :deep(.t-link) {
+      font-size: 13px;
+      line-height: 20px;
+    }
   }
 }

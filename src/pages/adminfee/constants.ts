@@ -1,3 +1,5 @@
+import type { InjectionKey, Ref } from 'vue';
+
 export const FIND_DATA = {
   yNum: '',
   region: '',
@@ -48,3 +50,6 @@ export const INITIAL_FEE_DATA = {
   termYears: 0,
   remark: '',
 };
+
+// 管理费收款表单数据注入键：供 FeeFormView 子视图经 inject 共享页面 formFeeData（提交/校验/电话过滤仍留页面）20261020 P2 S2 拆分
+export const feeFormDataKey: InjectionKey<Ref<typeof INITIAL_FEE_DATA>> = Symbol('adminfeeFormFeeData');

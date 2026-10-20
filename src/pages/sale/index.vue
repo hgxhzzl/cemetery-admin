@@ -77,112 +77,23 @@
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260827 修改 -->
           <div v-if="hasQueried && !saleCardRows.length" class="sale-no-data">暂无数据</div>
 
-          <div v-if="hasQueried && saleCardRows.length" class="sale-list-body">
-            <div ref="saleCardViewport" class="table-container sale-card-layout">
-              <div v-if="saleCardRows.length" class="sale-card-rows" :style="{ zoom: saleZoom }">
-                <div v-for="rowGroup in saleCardRows" :key="rowGroup.yNum" class="sale-card-row">
-                  <div class="sale-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="sale-card"
-                      :class="{
-                        'sale-card--empty': card.placeholder,
-                        // 已销售卡片红色外框区分，取消原浅灰底约定，样式见 index.less 的 .sale-card--sold 20260923 修改
-                        'sale-card--sold':
-                          !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.sold',
-                        // 未销售卡片绿色外框区分，样式见 .sale-card--unsold 20260923 新增
-                        'sale-card--unsold':
-                          !card.placeholder && card.row.saleStatus === 'statusType.saleStatusEnum.unsold',
-                      }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
-                        <div class="sale-card__header">
-                          <div class="sale-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
-                        </div>
-                        <div class="sale-card__body">
-                          <div class="sale-card__empty-text">空位</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="sale-card__header">
-                          <!-- 卡片首行改为展示xyNumber编号字段，与墓区设置页一致 20260916 修改 -->
-                          <div class="sale-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓位类型值上移至首行右侧胶囊，去掉墓位类型标题 20260916 修改 -->
-                          <div class="sale-card__type">{{ $t(card.row.roomType) }}</div>
-                        </div>
-                        <div class="sale-card__body">
-                          <div class="sale-card__meta">
-                            <span class="sale-card__meta-label">{{ $t('pages.room.specs') }}</span>
-                            <span class="sale-card__meta-value">{{ card.row.specs }}</span>
-                          </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
-                          <div class="sale-card__meta">
-                            <span class="sale-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="sale-card__meta-value">{{ formatPrice(card.row.price) }}</span>
-                          </div>
-                          <!-- 预定/销售状态两枚胶囊两端分布：去掉下葬状态，预定状态样式与下葬状态一致，
-                               预定状态置于销售状态之前 20260917 修改 -->
-                          <div class="sale-card__status">
-                            <span
-                              class="sale-card__tag"
-                              :class="`sale-card__tag--${statusKey(card.row.reserveStatus)}`"
-                            >
-                              {{ $t(card.row.reserveStatus) }}
-                            </span>
-                            <span class="sale-card__tag" :class="`sale-card__tag--${statusKey(card.row.saleStatus)}`">
-                              {{ $t(card.row.saleStatus) }}
-                            </span>
-                          </div>
-                        </div>
-                        <div class="sale-card__actions">
-                          <t-link theme="primary" @click="handleClickDetail(card.row)">{{
-                            $t('operate.detail')
-                          }}</t-link>
-                          <!-- 未销售墓位才可开单，权限沿用新增权限 useCreate，标签按新建显示 20260907 修改 -->
-                          <t-link
-                            v-if="
-                              card.row.saleStatus === 'statusType.saleStatusEnum.unsold' && userInfo.useCreate === 1
-                            "
-                            theme="danger"
-                            @click="handleClickSale(card.row)"
-                          >
-                            {{ $t('operate.create') }}
-                          </t-link>
-                          <!-- 已销售墓位按修改权限显示“修改”，点击进入开单表单回填 20260907 新增 -->
-                          <t-link
-                            v-if="card.row.saleStatus === 'statusType.saleStatusEnum.sold' && userInfo.useModify === 1"
-                            theme="primary"
-                            @click="handleClickModify(card.row)"
-                          >
-                            {{ $t('operate.modify') }}
-                          </t-link>
-                          <!-- 已销售墓位按删除权限显示“删除”，点击弹出二次确认 20260907 新增 -->
-                          <t-link
-                            v-if="card.row.saleStatus === 'statusType.saleStatusEnum.sold' && userInfo.useDelete === 1"
-                            theme="danger"
-                            @click="handleClickDelete(card.row)"
-                          >
-                            {{ $t('operate.delete') }}
-                          </t-link>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 20260828 修改 -->
-          <div v-if="hasQueried && saleCardRows.length" class="sale-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <span class="sale-list-toolbar__zoom">
-              <zoom-in-icon class="sale-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="sale-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
-          </div>
+          <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1a 并入，与 buried/reserve/contacts 同族）：
+               信息行(规格/价格)与操作由 cardMetaFields/cardActions 配置承接，预定/销售状态胶囊经 statusFields 下发，
+               每卡状态外框经 cardClass 下发（前缀 roomcard，色值走全局 card-color 变量，S1a 统一到全站四态体系），
+               工具行右侧默认放大/缩小图标（本页无颜色图例）20261020 P2 S1a -->
+          <room-card-list
+            v-if="hasQueried && saleCardRows.length"
+            :rows="saleCardRows"
+            :zoom="saleZoom"
+            :total-text="listTotalText"
+            :meta-fields="cardMetaFields"
+            :status-fields="cardStatusFields"
+            :actions="cardActions"
+            :card-class="cardStatusClass"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @action="onCardAction"
+          />
 
           <!-- 删除销售二次确认弹窗，参照墓区预定页 20260907 新增 -->
           <t-dialog
@@ -377,7 +288,7 @@ export default {
 };
 </script>
 <script setup lang="ts">
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
@@ -386,6 +297,8 @@ import type { RoomModel } from '@/api/model/roomModel';
 import { getReceiptConfigForPrint } from '@/api/receiptConfig';
 import { getCanSaleList, getIdList } from '@/api/room';
 import { deleteSale, getSaleByRoom, insertSale, updateSale } from '@/api/sale';
+import RoomCardList from '@/components/room-card-list/index.vue';
+import type { RoomCardAction, RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
@@ -400,6 +313,8 @@ import {
 } from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
+import { extractServerError } from '@/utils/apiError';
+import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 import { printHtmlInNewTab } from '@/utils/printWindow';
@@ -416,12 +331,9 @@ import { FIND_DATA, INITIAL_ROOM_DATA, INITIAL_SALE_DATA } from './constants';
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活、查询数据丢失的问题 20260828 修复,
 useTabCacheName('Sale');
 
-// 销售模块权限对象按 idMenu(103102) 精确匹配，权限不足时兼容空对象避免运行时报错 20260827 修改,
-const userInfo = usePermission('103102');
+// 销售模块权限对象按稳定菜单 name('sale') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改,, 20261020 P2 C1 改按 name
+const userInfo = usePermission('sale');
 // 经办人字段不再展示，后端保存时仍自动写入当前登录用户 operator 20260916 修改,
-
-// 卡片状态标签配色：取状态枚举 key 末段(如 sold/buried)拼接胶囊标签修饰类 20260916 新增
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
 
 type FilterFormData = typeof FIND_DATA;
 type RoomFormData = typeof INITIAL_ROOM_DATA;
@@ -446,7 +358,6 @@ const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260831 新增,
 const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
-const saleCardViewport = ref<HTMLElement | null>(null);
 
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter 20260914 抽取
 const {
@@ -711,6 +622,62 @@ const handleClickDelete = (row: CardRowArg<RoomModel>) => {
   confirmVisible.value = true;
 };
 
+// ==================== 卡片列表（RoomCardList 子组件）差异配置 ====================
+// S1a 并入通用 RoomCardList：本页给出信息行/状态胶囊/操作/状态外框配置，
+// 点击详情/新建/修改/删除的处理逻辑一字未改，经 onCardAction 回本页分发 20261020 P2 S1a
+const SALE_UNSOLD = 'statusType.saleStatusEnum.unsold';
+const SALE_SOLD = 'statusType.saleStatusEnum.sold';
+// 信息行 规格/价格(千分位)
+const cardMetaFields: RoomCardMetaField[] = [
+  { labelKey: 'pages.room.specs', field: 'specs', format: 'text' },
+  { labelKey: 'pages.room.price', field: 'price', format: 'price' },
+];
+// 预定/销售两枚状态胶囊（预定置于销售之前，同原内联顺序）
+const cardStatusFields: (keyof RoomModel)[] = ['reserveStatus', 'saleStatus'];
+// 每卡状态外框：S1a 起改用全站共享四态体系（前缀 roomcard，色值走全局 card-color 变量，与 room/adminfee/transferOut 一致）
+const cardStatusClass = (row: RoomModel) => getCardStatusClass('roomcard', row, { withUnsold: true });
+// 操作 详情/新建(开单)/修改/删除：新建按“未销售+新建权限”，修改/删除按“已销售+对应权限”门控（口径同原内联卡片）
+const cardActions: RoomCardAction[] = [
+  { name: 'detail', labelKey: 'operate.detail', theme: 'primary' },
+  {
+    name: 'sale',
+    labelKey: 'operate.create',
+    theme: 'danger',
+    visible: (row) => row.saleStatus === SALE_UNSOLD && userInfo.useCreate === 1,
+  },
+  {
+    name: 'modify',
+    labelKey: 'operate.modify',
+    theme: 'primary',
+    visible: (row) => row.saleStatus === SALE_SOLD && userInfo.useModify === 1,
+  },
+  {
+    name: 'delete',
+    labelKey: 'operate.delete',
+    theme: 'danger',
+    visible: (row) => row.saleStatus === SALE_SOLD && userInfo.useDelete === 1,
+  },
+];
+// RoomCardList 上抛的操作名回本页分发到既有处理函数 20261020 P2 S1a
+const onCardAction = (name: string, row: RoomModel) => {
+  switch (name) {
+    case 'detail':
+      handleClickDetail(row);
+      break;
+    case 'sale':
+      handleClickSale(row);
+      break;
+    case 'modify':
+      handleClickModify(row);
+      break;
+    case 'delete':
+      handleClickDelete(row);
+      break;
+    default:
+      break;
+  }
+};
+
 // 确认删除：软删除销售记录并回置墓位销售状态为未销售，成功后刷新列表 20260907 新增
 const onConfirmDelete = async () => {
   if (!deleteSaleRow.value) {
@@ -774,7 +741,7 @@ const submitCore = async () => {
       saleSubmitted.value = true;
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.createdFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     // 修改销售：idSale 非0 走更新接口；提交成功不返回，留在表单页可继续调整或打印票据 20260922 修改
@@ -784,7 +751,7 @@ const submitCore = async () => {
       await getRoomData();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

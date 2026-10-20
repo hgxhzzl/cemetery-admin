@@ -1,0 +1,242 @@
+// ============================================================
+// 业务公共样式库：登记表单「容器 / 提交行 / 只读信息行 / 记录表竖格线」结构套件（纯 mixin，定义不产出任何 CSS）
+// 20261020 自 index.less 拆出（P2 结构梳理第 7 项，作为第 5 项表单视图抽子组件的前置子库）
+// 拆分动机：表单视图若拆为子组件，整库 @import 会把与本组件无关的裸类规则
+//   （.list-common-table/.detail-base/.des 等）一并复制成作用域内死规则；本子库只含表单结构 mixin，
+//   子组件单独 @import 即可，页面仍 @import index.less（其中转引本库），调用点与产出 CSS 完全不变。
+// 约定：本文件只放 mixin 定义，新增裸类规则请放回 index.less；改动此处即改动全站表单结构。
+// ============================================================
+
+// ============ 模块：form-page.less ============
+
+// 表单容器公共骨架：白底圆角水平居中 + 内容区固定 676px + 标题字号（标准/紧凑版共用）20260917 合并
+.cms-form-basic-frame() {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--td-bg-color-container);
+  border-radius: var(--td-radius-medium) var(--td-radius-medium) 0 0;
+
+  .form-basic-item {
+    width: 676px;
+
+    .form-basic-container-title {
+      font: var(--td-font-title-large);
+      font-weight: 400;
+      color: var(--td-text-color-primary);
+    }
+  }
+}
+
+// 标准版表单容器：上下留白充足，底部 80px 给提交行让位
+.cms-form-basic() {
+  .cms-form-basic-frame();
+
+  padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-xxl) 80px var(--td-comp-paddingLR-xxl);
+
+  @media (max-width: @screen-sm-max) {
+    padding: var(--td-comp-paddingTB-xl) var(--td-comp-paddingLR-xl) 80px var(--td-comp-paddingLR-xl);
+
+    .form-basic-container-title {
+      margin: 0 0 var(--td-comp-margin-xxxl) 0;
+    }
+  }
+
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-xxl) 0 var(--td-comp-margin-xl) 0;
+    }
+  }
+}
+
+// 紧凑版表单容器：压缩上下内边距，使开单表单尽量一屏展示；
+// 输入框行固定宽度规则已拆至 .cms-form-inputs-fixed（销售/预定/操作人员页调用）20260917 修改
+.cms-form-basic-compact() {
+  .cms-form-basic-frame();
+
+  padding: var(--td-comp-margin-l) var(--td-comp-paddingLR-xxl) var(--td-comp-margin-l) var(--td-comp-paddingLR-xxl);
+
+  @media (max-width: @screen-sm-max) {
+    padding: var(--td-comp-margin-m) var(--td-comp-paddingLR-xl) var(--td-comp-margin-m) var(--td-comp-paddingLR-xl);
+
+    .form-basic-container-title {
+      margin: 0 0 var(--td-comp-margin-l) 0;
+    }
+  }
+
+  .form-basic-item {
+    .form-basic-container-title {
+      margin: var(--td-comp-margin-m) 0 var(--td-comp-margin-m) 0;
+    }
+  }
+
+  // 清除表单项默认下边距，行间距仅由 t-row 的 gutter 控制
+  :deep(.t-form__item) {
+    margin-bottom: 0;
+  }
+}
+
+// 紧凑版配套：开单表单输入框行固定宽度（销售/预定/操作人员页专用，其余页字段宽度各异不强制）20260917 拆分
+.cms-form-inputs-fixed() {
+  // 身份证号等输入框独占一行时宽度与付款人等字段保持一致；备注在 t-row 之外不受限
+  :deep(.t-row .t-input) {
+    width: 322px !important;
+  }
+
+  // 备注单行输入框不被 flex 父容器压缩，保证右缘与联系人电话输入框对齐
+  :deep(.t-form__controls-content .t-input__wrap) {
+    flex-shrink: 0;
+  }
+}
+
+// 标题间隔扩展（合同类表单用）
+.cms-form-title-gap() {
+  .form-basic-item {
+    .form-title-gap {
+      margin: calc(var(--td-comp-margin-xxl) * 2) 0 var(--td-comp-margin-xl) 0;
+    }
+  }
+}
+
+// 标准版提交行
+.cms-form-submit() {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: var(--td-comp-paddingLR-xl);
+  padding-bottom: var(--td-comp-paddingLR-xl);
+  background-color: var(--td-bg-color-secondarycontainer);
+  border-bottom-left-radius: var(--td-radius-medium);
+  border-bottom-right-radius: var(--td-radius-medium);
+  border-top: 1px solid var(--td-component-stroke);
+
+  .form-submit-sub {
+    width: 676px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+}
+
+// 紧凑版提交行
+.cms-form-submit-compact() {
+  .cms-form-submit();
+
+  padding-top: var(--td-comp-margin-m);
+  padding-bottom: var(--td-comp-margin-m);
+}
+
+// 提交行左侧上传提示（合同类表单用）
+.cms-form-submit-upload() {
+  .form-submit-sub {
+    .form-submit-left {
+      .form-submit-upload-span {
+        font-size: 14px;
+        line-height: 22px;
+        color: var(--td-text-color-placeholder);
+        padding-top: 8px;
+        display: inline-block;
+      }
+    }
+  }
+}
+
+// ============ 模块：info-block.less ============
+
+// ============================================================
+// 业务公共样式库：只读信息行（两列布局）20260914 抽取
+// 表单版（紧凑）与详情版（宽松 + 状态圆点/文件链接）两种变体
+// 注：只读信息行文字颜色的裸类 .des 仍留在 index.less（跨页面直接复用的裸类，不随本迁移移动）
+// ============================================================
+
+// 信息行公共骨架：标签左值右，长值省略号截断
+.cms-info-item() {
+  display: flex;
+  color: var(--td-text-color-primary);
+
+  h1 {
+    width: 160px;
+    font: var(--td-font-body-medium);
+    color: var(--td-text-color-secondary);
+    font-weight: normal;
+    text-align: left;
+
+    @media (max-width: @screen-sm-max) {
+      width: 80px;
+    }
+
+    @media (min-width: @screen-md-min) and (max-width: @screen-md-max) {
+      width: 120px;
+    }
+  }
+
+  span {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    margin-left: var(--td-comp-margin-xxl);
+  }
+}
+
+// 表单版：登记表单中的墓位信息，行间距紧凑
+.cms-info-block() {
+  column-count: 2;
+
+  .info-item {
+    padding-top: var(--td-comp-margin-m);
+    .cms-info-item();
+  }
+}
+
+// 详情版：行间距宽松，并带状态圆点/文件链接样式
+.cms-info-block-detail() {
+  // 两列布局与信息行骨架复用表单版，仅行间距与状态圆点/文件链接为差异 20260917 合并
+  .cms-info-block();
+
+  .info-item {
+    padding-top: var(--td-comp-margin-xxl);
+
+    i {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: var(--td-radius-circle);
+      background: var(--td-success-color);
+    }
+
+    .inProgress {
+      color: var(--td-success-color);
+    }
+
+    .pdf {
+      color: var(--td-brand-color);
+
+      &:hover {
+        cursor: pointer;
+      }
+    }
+  }
+}
+
+// ============ 模块：table-vertical.less ============
+
+// ============================================================
+// 业务公共样式库：记录选择列表竖格线（buried/adminfee/contacts）20260914 抽取
+// TDesign bordered 仅提供表格外框，列之间的竖格线需自定义；最后一列不画右边框以免与外框重叠
+// ============================================================
+.cms-record-table-vertical() {
+  // 表格公共属性：外边框（宿主 t-table 根元素）内边距统一 16px 20260924 新增
+  padding-top: 16px;
+  padding-bottom: 16px;
+
+  :deep(th),
+  :deep(td) {
+    border-right: 1px solid var(--td-border-level-1-color);
+  }
+
+  :deep(th:last-child),
+  :deep(td:last-child) {
+    border-right: none;
+  }
+}

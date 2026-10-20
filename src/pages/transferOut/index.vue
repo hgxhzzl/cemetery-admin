@@ -97,142 +97,28 @@
             {{ $t('pages.transferOut.noData') }}
           </div>
 
-          <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-body">
-            <!-- 卡片区滚动位置实时记录，tab 切回时 onActivated 恢复，同墓位业务页 20260926 新增 -->
-            <div
-              ref="transferOutCardViewport"
-              class="table-container transferOut-card-layout"
-              @scroll.passive="onCardViewportScroll"
-            >
-              <div v-if="transferOutCardRows.length" class="transferOut-card-rows" :style="{ zoom: transferOutZoom }">
-                <div v-for="rowGroup in transferOutCardRows" :key="rowGroup.yNum" class="transferOut-card-row">
-                  <div class="transferOut-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="transferOut-card"
-                      :class="{
-                        'transferOut-card--empty': card.placeholder,
-                        // 未销售叠加浅橙底态（withUnsold）：与墓位业务页共用公共 cms-card-status-frame 的 --unsold 规则 20261003 新增
-                        [getCardStatusClass('transferOut', card.row, { withUnsold: true })]: !card.placeholder,
-                      }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 -->
-                        <div class="transferOut-card__header">
-                          <div class="transferOut-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
-                        </div>
-                        <div class="transferOut-card__body">
-                          <div class="transferOut-card__empty-text">{{ $t('pages.transferOut.emptySeat') }}</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="transferOut-card__header">
-                          <!-- 排号改取 xyNumber 字段(自定义坐标名)，缺失时回退 yNum/xNum 拼接 -->
-                          <div class="transferOut-card__serial">
-                            {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
-                          </div>
-                          <!-- 墓位类型标题去掉，值改为胶囊标签上移至卡片第一行右侧 -->
-                          <span class="transferOut-card__type">{{ $t(card.row.roomType).trim() }}</span>
-                        </div>
-                        <div class="transferOut-card__body">
-                          <!-- 购墓人/下葬者/联系人/管理期：标签在左灰色、值在右深色两端对齐（价格行已去掉）20261004 调整 -->
-                          <!-- 四行的内容显示形式对齐墓位业务页：超过7字显示前6字+4个半角点 + 悬停提示完整内容，无值统一显示“无”（原为 -- / 留空）20261004 调整 -->
-                          <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <span class="transferOut-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
-                          </div>
-                          <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.room.buriedPerson') }}</span>
-                            <!-- 下葬者超过7字截断为前6字+4个半角点，悬停提示完整内容 -->
-                            <t-tooltip v-if="isOverflow(card.row.deceased)" :content="String(card.row.deceased)">
-                              <span class="transferOut-card__meta-value">{{ truncateText(card.row.deceased) }}</span>
-                            </t-tooltip>
-                            <!-- 下葬者无值时同业务页显示“无”（原口径为留空不填占位符，本次按“同业务页”要求统一）20261004 调整 -->
-                            <span v-else class="transferOut-card__meta-value">{{
-                              card.row.deceased || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 联系人：room 表字段，存所有联系人 -->
-                          <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.room.contacts') }}</span>
-                            <!-- 联系人超过7字截断为前6字+4个半角点，悬停提示完整内容 -->
-                            <t-tooltip v-if="isOverflow(card.row.contacts)" :content="String(card.row.contacts)">
-                              <span class="transferOut-card__meta-value">{{ truncateText(card.row.contacts) }}</span>
-                            </t-tooltip>
-                            <span v-else class="transferOut-card__meta-value">{{
-                              card.row.contacts || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 管理期：取墓位管理费结束日期(room.endDate，后端在下葬/收款事务中维护)，
-                               形式、行位与收管理费/下葬/墓位业务三页卡片的管理期行完全一致（同一公共词条 pages.adminfee.period），无值显示“无” 20261004 新增 -->
-                          <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
-                            <span class="transferOut-card__meta-value">{{
-                              formatDate(card.row.endDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 价格行不在卡片内展示（迁出业务不关注墓位价格，详情/表单页仍保留价格行），行位留给底部备注 20261004 调整 -->
-                          <!-- 销售/迁出状态两枚胶囊不再展示（本页“新建/修改/删除”入口本就按 intoStatus + transferOutStatus 行数据判定，不依赖胶囊），行位改为备注信息 20261004 调整 -->
-                          <!-- 备注（room.remark）作为卡片底部最后一行，形式同墓位业务页：超过7字截断 + 悬停提示完整内容，无值显示“无”；
-                               业务页该行的标题是“修改备注”入口链接，本页无备注表单故保持与其他行一致的普通标签 20261004 新增 -->
-                          <div class="transferOut-card__meta">
-                            <span class="transferOut-card__meta-label">{{ $t('pages.room.remark') }}</span>
-                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
-                              <span class="transferOut-card__meta-value">{{ truncateText(card.row.remark) }}</span>
-                            </t-tooltip>
-                            <span v-else class="transferOut-card__meta-value">{{
-                              card.row.remark || $t('common.none')
-                            }}</span>
-                          </div>
-                        </div>
-                        <div class="transferOut-card__actions">
-                          <t-link theme="primary" @click="handleClickDetail(card.row)">{{
-                            $t('operate.detail')
-                          }}</t-link>
-                          <!-- 仅“已下葬且未迁出”墓位显示新建迁出（未下葬/已迁出不显示），并按新建权限门控 20260916 新增 -->
-                          <t-link
-                            v-if="
-                              card.row.intoStatus !== INTO_INCOMPLET &&
-                              card.row.transferOutStatus !== TRANSFER_OUT_OUT &&
-                              userInfo.useCreate === 1
-                            "
-                            theme="danger"
-                            @click="handleClickCreate(card.row)"
-                          >
-                            {{ $t('operate.create') }}
-                          </t-link>
-                          <!-- 已迁出（存在迁出记录）按修改权限显示“修改”，点击弹窗选择要修改的记录 20260916 新增 -->
-                          <t-link
-                            v-if="card.row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useModify === 1"
-                            theme="primary"
-                            @click="handleClickModify(card.row)"
-                          >
-                            {{ $t('operate.modify') }}
-                          </t-link>
-                          <!-- 已迁出按删除权限显示“删除”，点击弹窗选择要删除的记录 20260916 新增 -->
-                          <t-link
-                            v-if="card.row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useDelete === 1"
-                            theme="danger"
-                            @click="handleClickDelete(card.row)"
-                          >
-                            {{ $t('operate.delete') }}
-                          </t-link>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
-          <div v-if="hasQueried && transferOutCardRows.length" class="transferOut-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <div class="transferOut-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售；
-                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261011 修改, -->
+          <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1a 并入，与 buried/reserve/contacts 同构）：
+               信息行由 cardMetaFields 配置承接（购墓人/下葬者(截断)/联系人(截断)/管理期(date)/备注(截断)），截断口径 dots（前6字+....）
+               同本页原实现；每卡状态外框经 cardClass 下发（前缀 roomcard）；无状态胶囊（本页胶囊行已改备注行）；
+               工具行右侧颜色图例经 toolbar-legend 插槽注入（缩放控件由组件统一持有），滚动位置经 @scroll/restoreScroll 保持 20261020 P2 S1a -->
+          <room-card-list
+            v-if="hasQueried && transferOutCardRows.length"
+            ref="transferOutRoomCardRef"
+            :rows="transferOutCardRows"
+            :zoom="transferOutZoom"
+            :total-text="listTotalText"
+            :meta-fields="cardMetaFields"
+            :actions="cardActions"
+            :card-class="cardStatusClass"
+            truncate-mode="dots"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @action="onCardAction"
+            @scroll="transferOutCardScrollTop = $event"
+          >
+            <!-- 工具行右侧：仅需注入外框颜色图例（未销售橙/已预定黄/已销售绿/已下葬蓝/管理到期浅红，同墓位业务页）；
+                 放大/缩小卡片控件已交 RoomCardList 组件统一持有 20261020 P2 S1a -->
+            <template #toolbar-legend>
               <div class="transferOut-list-toolbar__legend">
                 <span v-if="isCardStateEnabled('unsold')" class="transferOut-legend-item">
                   <i class="transferOut-legend-item__swatch transferOut-legend-item__swatch--unsold" />
@@ -255,12 +141,8 @@
                   {{ $t('pages.gravePlotBusiness.legendExpired') }}
                 </span>
               </div>
-              <span class="transferOut-list-toolbar__zoom">
-                <zoom-in-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomIn" />
-                <zoom-out-icon class="transferOut-list-toolbar__zoom-icon" @click="handleZoomOut" />
-              </span>
-            </div>
-          </div>
+            </template>
+          </room-card-list>
         </div>
       </div>
     </div>
@@ -306,35 +188,9 @@
             <!-- 表单内容 -->
 
             <t-row class="info-block des" :gutter="[62, 5]">
-              <t-col :span="6">
-                <span>{{ $t('pages.room.park') }} : {{ formRoomData.park }}</span>
-              </t-col>
-              <!-- 去掉排号/序号，原排号位置改为显示编号xyNumber -->
-              <t-col :span="6">
-                <span>{{ $t('pages.room.xyNumber') }} : {{ formRoomData.xyNumber }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.roomType') }} : {{ t(formRoomData.roomType) }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.specs') }} : {{ formRoomData.specs }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.price') }} : {{ formatPrice(formRoomData.price) }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.saleStatus') }} : {{ t(formRoomData.saleStatus) }}</span>
-              </t-col>
-              <!-- 迁出状态：存量墓位该字段为 NULL，展示时兑底为“未迁出” 20260916 新增 -->
-              <t-col :span="6">
-                <span
-                  >{{ $t('pages.room.transferOutStatus') }} : {{ t(formRoomData.transferOutStatus || NOT_OUT) }}</span
-                >
-              </t-col>
-              <!-- 下葬状态独占整行：强制新建页表单首项（迁出日期）另起一行排在其正下方 -->
-              <t-col :span="12">
-                <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
-              </t-col>
+              <!-- 只读墓位信息行已拆至子组件 TransferOutRoomInfoBlock（20261020 P2 S2 巨石拆分批二）：纯展示，数据经 props 传入 formRoomData；
+                   price 经 formatPrice、迁出状态 NULL 兑底 NOT_OUT、文字色 .des span 就近由子组件 scoped 保证 -->
+              <transfer-out-room-info-block :room-data="formRoomData" />
 
               <!-- 修改/删除模式：墓位信息下方以列表展示全部迁出记录；修改用单选列回填表单，删除用操作列逐行删除 20260916 新增 -->
               <t-col v-if="isModifyMode || isDeleteMode" :span="12">
@@ -364,89 +220,9 @@
                 </t-form-item>
               </t-col>
 
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item
-                  :required-mark="true"
-                  :label="$t('pages.transferOut.transferOutDate')"
-                  name="transferOutDate"
-                >
-                  <t-date-picker
-                    v-model="formTransferOutData.transferOutDate"
-                    :style="{ width: '322px' }"
-                    theme="primary"
-                    mode="date"
-                    separator="/"
-                    :placeholder="$t('pages.transferOut.transferOutDatePlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :required-mark="true" :label="$t('pages.transferOut.destination')" name="destination">
-                  <t-input
-                    v-model="formTransferOutData.destination"
-                    :maxcharacter="100"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.transferOut.destinationPlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.transferOut.reason')" name="reason">
-                  <t-input
-                    v-model="formTransferOutData.reason"
-                    :maxcharacter="100"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.transferOut.reasonPlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.transferOut.contacts')" name="contacts">
-                  <!-- 联系人输入框右侧“选择”按钮：打开联系人选择页，选中后回填联系人/电话/身份证号（功能与样式同墓位业务页下葬）20261005 新增 -->
-                  <div style="display: flex; gap: 8px; align-items: center">
-                    <t-input
-                      v-model="formTransferOutData.contacts"
-                      :maxcharacter="20"
-                      show-limit-number
-                      :style="{ width: '240px' }"
-                      :placeholder="$t('pages.transferOut.contactsPlaceholder')"
-                    />
-                    <t-button
-                      theme="default"
-                      variant="outline"
-                      style="margin-left: auto"
-                      @click="handleOpenContactsSelect()"
-                    >
-                      {{ $t('pages.transferOut.select') }}
-                    </t-button>
-                  </div>
-                </t-form-item>
-              </t-col>
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.transferOut.contactsphone')" name="contactsphone">
-                  <t-input
-                    v-model="formTransferOutData.contactsphone"
-                    :maxcharacter="11"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.transferOut.contactsphonePlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
-              <!-- 联系人身份证号：在联系人电话右侧同行，非必填，最长 18 位（同墓位业务页/下葬页）20261005 新增 -->
-              <t-col v-if="!isDeleteMode" :span="6">
-                <t-form-item :label="$t('pages.transferOut.contactsIDCard')" name="contactsIDCard">
-                  <t-input
-                    v-model="formTransferOutData.contactsIDCard"
-                    :maxcharacter="18"
-                    show-limit-number
-                    :style="{ width: '322px' }"
-                    :placeholder="$t('pages.transferOut.contactsIDCardPlaceholder')"
-                  />
-                </t-form-item>
-              </t-col>
+              <!-- 可编辑字段块（迁出日期/迁往何处/原因/联系人/电话/身份证号）已拆至子组件 TransferOutFormView（20261020 P2 S2 巨石拆分批一）：
+                   字段列经 inject 共享本页 formTransferOutData（provide/inject），原各列统一 v-if="!isDeleteMode" 上提至挂载标签；联系人「选择」经事件回本页 handleOpenContactsSelect -->
+              <transfer-out-form-view v-if="!isDeleteMode" @open-contacts="handleOpenContactsSelect" />
             </t-row>
           </div>
         </div>
@@ -469,72 +245,15 @@
     <!-- 迁出登记结束 -->
     <!-- 联系人选择页：联系人字段“选择”按钮进入，样式/交互同墓位业务页下葬，墓位信息 + 活动联系人表格，
          操作列逐行“选择”回填联系人/电话/身份证号并返回迁出登记表单 20261005 新增 -->
-    <div v-if="isContactsSelectShow">
-      <t-form class="base-form" :data="formTransferOutData" label-align="top" :label-width="100">
-        <div class="form-basic-container">
-          <div class="form-basic-item">
-            <div class="form-basic-container-title">
-              {{ $t('pages.transferOut.selectContactTitle') }}
-              <t-button
-                class="cms-back-btn"
-                style="float: right"
-                theme="default"
-                variant="text"
-                @click="handleCloseContactsSelect()"
-              >
-                {{ $t('operate.backDetail') }}
-                <rollback-icon size="16px" />
-              </t-button>
-            </div>
-
-            <t-row class="info-block des" :gutter="[62, 5]">
-              <t-col :span="6">
-                <span>{{ $t('pages.room.park') }} : {{ formRoomData.park }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.xyNumber') }} : {{ formRoomData.xyNumber }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.roomType') }} : {{ t(formRoomData.roomType) }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.specs') }} : {{ formRoomData.specs }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.price') }} : {{ formatPrice(formRoomData.price) }}</span>
-              </t-col>
-              <t-col :span="6">
-                <span>{{ $t('pages.room.saleStatus') }} : {{ t(formRoomData.saleStatus) }}</span>
-              </t-col>
-              <t-col :span="12">
-                <span>{{ $t('pages.room.intoStatus') }} : {{ t(formRoomData.intoStatus) }}</span>
-              </t-col>
-
-              <!-- 该墓位活动联系人列表，操作列逐行“选择”按钮，点击回填迁出登记表单并返回 20261005 新增 -->
-              <t-col :span="12">
-                <t-form-item name="idContacts">
-                  <t-table
-                    class="transferOut-record-table"
-                    :data="contactsRecords"
-                    :columns="contactsColumns"
-                    row-key="idContacts"
-                    :bordered="true"
-                    size="small"
-                    :max-height="240"
-                  >
-                    <template #op="{ row }">
-                      <t-link theme="primary" @click="onSelectContact(row)">
-                        {{ $t('pages.transferOut.select') }}
-                      </t-link>
-                    </template>
-                  </t-table>
-                </t-form-item>
-              </t-col>
-            </t-row>
-          </div>
-        </div>
-      </t-form>
-    </div>
+    <transfer-out-contacts-select-view
+      v-if="isContactsSelectShow"
+      :room="formRoomData"
+      :records="contactsRecords"
+      :columns="contactsColumns"
+      :form-data="formTransferOutData"
+      @select="onSelectContact"
+      @back="handleCloseContactsSelect"
+    />
     <!-- 联系人选择页结束 20261005 新增 -->
     <!-- 删除迁出二次确认弹窗，参照下葬页 20260916 新增 -->
     <t-dialog
@@ -553,10 +272,10 @@ export default {
 </script>
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
+import { computed, nextTick, onActivated, onMounted, provide, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { getContactsList } from '@/api/contacts';
@@ -571,6 +290,8 @@ import {
   insertTransferOut,
   updateTransferOut,
 } from '@/api/transferOut';
+import RoomCardList from '@/components/room-card-list/index.vue';
+import type { RoomCardAction, RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
@@ -583,15 +304,17 @@ import {
   useSubmitGuard,
   useTabCacheName,
 } from '@/hooks';
-import { t, translate } from '@/locales';
+import { translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
-import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
-import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
-import { FIND_DATA, INITIAL_FORM_DATA, INITIAL_ROOM_DATA } from './constants';
+import TransferOutContactsSelectView from './components/TransferOutContactsSelectView.vue';
+import TransferOutFormView from './components/TransferOutFormView.vue';
+import TransferOutRoomInfoBlock from './components/TransferOutRoomInfoBlock.vue';
+import { FIND_DATA, INITIAL_FORM_DATA, INITIAL_ROOM_DATA, transferOutFormDataKey } from './constants';
 
 // ============================================================
 // 墓位迁出基础页，参照下葬页卡片网格：通用定义 → 列表（筛选/查询/卡片）→ 详情 → 迁出登记（新建/修改）20260916 重构
@@ -601,23 +324,16 @@ import { FIND_DATA, INITIAL_FORM_DATA, INITIAL_ROOM_DATA } from './constants';
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活的问题
 useTabCacheName('TransferOut');
 
-// 迁出模块权限对象按 idMenu(103106) 精确匹配，权限不足时兼容空对象避免运行时报错
-const userInfo = usePermission('103106');
+// 迁出模块权限对象按稳定菜单 name('transferOut') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20261020 P2 C1 改按 name
+const userInfo = usePermission('transferOut');
 
 // 下葬状态：未下葬用于区分卡片是否显示“新建迁出”（未下葬墓位无迁出业务，不显示新建）20260916 新增
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
 // 迁出状态：已迁出。已迁出的墓位显示“修改/删除”，未迁出且已下葬的显示“新建” 20260916 新增
 const TRANSFER_OUT_OUT = 'statusType.transferOutStatusEnum.out';
-// 未迁出枚举 key：存量墓位 transferOutStatus 字段为 NULL，卡片/表单展示时以此兑底 20260916 新增
-const NOT_OUT = 'statusType.transferOutStatusEnum.notOut';
+// 未迁出兑底枚举 NOT_OUT 已下沉至 ./constants（供拆出的信息行子组件共享），本页不再本地声明 20261020 P2 S2 拆分
 // 卡片状态胶囊行已改为备注行，配色函数 statusKey 随之移除（销售/迁出状态仍随行数据返回，仅不再展示）20261004 调整
-// 卡片长文本截断：超过7字显示前6字+4个半角点，悬停 tooltip 展示完整内容（与墓位业务页同形式；
-// 本页只服务购墓人/下葬者/联系人/备注四行（管理期行为日期值不需截断），故共用一个函数而不按字段拆多个同体函数）20261004 调整
-const truncateText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
-};
-// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
+// 卡片长文本截断（超过7字前6字+....+tooltip）与溢出判定已随卡片区迁入通用 RoomCardList（truncate-mode="dots"），本页不再本地实现 20261020 P2 S1a
 
 type TransferOutRoomRow = RoomModel & {
   reserve?: number;
@@ -637,6 +353,8 @@ const isContactsSelectShow = ref(false);
 
 const formRoomData = ref<RoomFormData>({ ...INITIAL_ROOM_DATA });
 const formTransferOutData = ref<TransferOutFormData>({ ...INITIAL_FORM_DATA });
+// 向拆出的 TransferOutFormView 子视图提供表单数据 Ref（提交/回填仍读本页同一份），v-model 编辑即写回 20261020 P2 S2 拆分
+provide(transferOutFormDataKey, formTransferOutData);
 
 // 视图互斥切换收敛于公共 usePageSwitch，模板引用名保持不变
 const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
@@ -651,15 +369,13 @@ const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260916 新增,
 const menuRegion = (useRoute().meta.region as string) || '';
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
-const transferOutCardViewport = ref<HTMLElement | null>(null);
+// 卡片区已迁入通用 RoomCardList，滚动容器在子组件内部，经组件 expose 的 restoreScroll 恢复（tab 往返保持滚动行）20261020 P2 S1a
+const transferOutRoomCardRef = ref<{ restoreScroll: (top: number) => void } | null>(null);
 
 // ==================== 卡片区滚动位置保持（tab 切换往返） ====================
 // 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
-// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行，同墓位业务页 20260926 新增
+// 切回 tab 会回到顶部；卡片区滚动位置经子组件 @scroll 实时上抛记录，onActivated（tab 切回）时经 restoreScroll 恢复 20260926 新增 20261020 S1a 迁子组件
 const transferOutCardScrollTop = ref(0);
-const onCardViewportScroll = (e: Event) => {
-  transferOutCardScrollTop.value = (e.target as HTMLElement).scrollTop;
-};
 
 onActivated(() => {
   // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
@@ -667,9 +383,7 @@ onActivated(() => {
     return;
   }
   nextTick(() => {
-    if (transferOutCardViewport.value) {
-      transferOutCardViewport.value.scrollTop = transferOutCardScrollTop.value;
-    }
+    transferOutRoomCardRef.value?.restoreScroll(transferOutCardScrollTop.value);
   });
 });
 
@@ -956,6 +670,62 @@ const handleClickDelete = async (row: CardRowArg<TransferOutRoomRow>) => {
   }
 };
 
+// ==================== 卡片列表（RoomCardList 子组件）差异配置 ====================
+// S1a 并入通用 RoomCardList：本页给出信息行/操作/状态外框配置（无状态胶囊），
+// 点击详情/新建/修改/删除的处理逻辑一字未改，经 onCardAction 回本页分发 20261020 P2 S1a
+// 信息行 购墓人/下葬者(截断)/联系人(截断)/管理期(date)/备注(截断)，截断口径 dots 同原实现
+const cardMetaFields: RoomCardMetaField[] = [
+  { labelKey: 'pages.room.buyer', field: 'buyer', format: 'text' },
+  { labelKey: 'pages.room.buriedPerson', field: 'deceased', format: 'truncate' },
+  { labelKey: 'pages.room.contacts', field: 'contacts', format: 'truncate' },
+  { labelKey: 'pages.adminfee.period', field: 'endDate', format: 'date' },
+  { labelKey: 'pages.room.remark', field: 'remark', format: 'truncate' },
+];
+// 每卡状态外框：前缀改中性 roomcard 以匹配 RoomCardList scoped 内实体化的外框类（色值仍走全局 card-color 变量，视觉不变）
+const cardStatusClass = (row: RoomModel) => getCardStatusClass('roomcard', row, { withUnsold: true });
+// 操作 详情/新建(迁出)/修改/删除：新建按“已下葬且未迁出+新建权限”，修改/删除按“已迁出+对应权限”门控（口径同原内联卡片）
+const cardActions: RoomCardAction[] = [
+  { name: 'detail', labelKey: 'operate.detail', theme: 'primary' },
+  {
+    name: 'create',
+    labelKey: 'operate.create',
+    theme: 'danger',
+    visible: (row) =>
+      row.intoStatus !== INTO_INCOMPLET && row.transferOutStatus !== TRANSFER_OUT_OUT && userInfo.useCreate === 1,
+  },
+  {
+    name: 'modify',
+    labelKey: 'operate.modify',
+    theme: 'primary',
+    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useModify === 1,
+  },
+  {
+    name: 'delete',
+    labelKey: 'operate.delete',
+    theme: 'danger',
+    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useDelete === 1,
+  },
+];
+// RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 S1a
+const onCardAction = (name: string, row: RoomModel) => {
+  switch (name) {
+    case 'detail':
+      handleClickDetail(row);
+      break;
+    case 'create':
+      handleClickCreate(row);
+      break;
+    case 'modify':
+      handleClickModify(row);
+      break;
+    case 'delete':
+      handleClickDelete(row);
+      break;
+    default:
+      break;
+  }
+};
+
 // 删除页操作列“删除”：记录待删除目标并打开二次确认 20260916 新增,
 const onSelectRecord = (record: TransferOutModel) => {
   deleteTarget.value = { idTransfer: record.idTransfer, idRoom: record.idRoom };
@@ -1001,7 +771,7 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.createdFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     try {
@@ -1011,7 +781,7 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

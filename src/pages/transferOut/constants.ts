@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import type { InjectionKey, Ref } from 'vue';
 
 export const FIND_DATA = {
   yNum: '',
@@ -42,3 +43,9 @@ export const INITIAL_FORM_DATA = {
   // 联系人身份证号：库列 contactsIDCard，非必填最长 18 位，联系人选择按钮回填/手动录入 20261005 新增,
   contactsIDCard: '',
 };
+
+// 迁出状态兜底：存量墓位 transferOutStatus 为 NULL（空），展示时取“未迁出”词条键 20261020 从页面下沉供拆出子组件共享
+export const NOT_OUT = 'statusType.transferOutStatusEnum.notOut';
+
+// 迁出登记表单数据注入键：供 TransferOutFormView 子视图经 inject 共享页面 formTransferOutData（提交/回填仍留页面）20261020 P2 S2 拆分
+export const transferOutFormDataKey: InjectionKey<Ref<typeof INITIAL_FORM_DATA>> = Symbol('transferOutFormData');

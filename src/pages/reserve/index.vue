@@ -88,146 +88,28 @@
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 -->
           <div v-if="hasQueried && !reserveCardRows.length" class="reserve-no-data">暂无数据</div>
 
-          <div v-if="hasQueried && reserveCardRows.length" class="reserve-list-body">
-            <div
-              ref="reserveCardViewport"
-              class="table-container reserve-card-layout"
-              @scroll.passive="onCardViewportScroll"
-            >
-              <div v-if="reserveCardRows.length" class="reserve-card-rows" :style="{ zoom: reserveZoom }">
-                <div v-for="rowGroup in reserveCardRows" :key="rowGroup.yNum" class="reserve-card-row">
-                  <div class="reserve-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="reserve-card"
-                      :class="{
-                        'reserve-card--empty': card.placeholder,
-                        [cardStatusClass(card.row)]: !card.placeholder,
-                      }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 -->
-                        <div class="reserve-card__header">
-                          <div class="reserve-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
-                        </div>
-                        <div class="reserve-card__body">
-                          <div class="reserve-card__empty-text">空位</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="reserve-card__header">
-                          <!-- 首行编号取 xyNumber，缺失时回退“排/号”拼接；墓位类型为右侧胶囊，口径同墓位迁出页卡片 20261012 调整 -->
-                          <div class="reserve-card__serial">
-                            {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
-                          </div>
-                          <span class="reserve-card__type">{{ $t(card.row.roomType).trim() }}</span>
-                        </div>
-                        <div class="reserve-card__body">
-                          <!-- 卡片内容参照墓位迁出页布局，行为：购墓人/预定人/预定期/管理期/备注（去掉原规格/价格/状态胶囊行），
-                               长文本超 7 字截断 + 悬停提示、无值统一显示“无”；按钮区维持本页原有预定/修改/删除口径不变 20261012 调整,
-                               管理期行于 20261012 去掉后应需求同日恢复（取 room.endDate，行位、标签、写法同墓区业务页卡片管理期行）,
-                               预定人行：下葬者 改名并改取 reserve.liaison（后端 /canSale LEFT JOIN 活动预定记录）20261012 调整,
-                               手机号行于 20261012 去掉（卡片不展示预定人电话；后端 /canSale 仍回传 reserveLiaisonPhone 作为多余列，不影响其它展示） -->
-                          <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <span class="reserve-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
-                          </div>
-                          <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.reserve.reserver') }}</span>
-                            <t-tooltip
-                              v-if="isOverflow(card.row.reserveLiaison)"
-                              :content="String(card.row.reserveLiaison)"
-                            >
-                              <span class="reserve-card__meta-value">{{ truncateText(card.row.reserveLiaison) }}</span>
-                            </t-tooltip>
-                            <span v-else class="reserve-card__meta-value">{{
-                              card.row.reserveLiaison || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 预定期（room.reservationExpireDate，活动预定记录的限期副本）：位置、标签、写法均同墓区业务页卡片对应行，
-                               无活动预定/未填限期时 formatDate 回空串、默认展示“无” 20261012 新增 -->
-                          <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">
-                              {{ $t('pages.gravePlotBusiness.reservationPeriod') }}
-                            </span>
-                            <span class="reserve-card__meta-value">{{
-                              formatDate(card.row.reservationExpireDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- 管理期（room.endDate，后端在下葬/收款事务中维护）：行位、标签、写法均同墓区业务页卡片管理期行，
-                               无值时 formatDate 回空串、默认展示“无” 20261012 恢复 -->
-                          <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
-                            <span class="reserve-card__meta-value">{{
-                              formatDate(card.row.endDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                          <div class="reserve-card__meta">
-                            <span class="reserve-card__meta-label">{{ $t('pages.room.remark') }}</span>
-                            <t-tooltip v-if="isOverflow(card.row.remark)" :content="String(card.row.remark)">
-                              <span class="reserve-card__meta-value">{{ truncateText(card.row.remark) }}</span>
-                            </t-tooltip>
-                            <span v-else class="reserve-card__meta-value">{{
-                              card.row.remark || $t('common.none')
-                            }}</span>
-                          </div>
-                        </div>
-                        <div class="reserve-card__actions">
-                          <t-link theme="primary" @click="handleClickDetail(card.row)">{{
-                            $t('operate.detail')
-                          }}</t-link>
-                          <!-- 未销售墓位才可预定，权限沿用新增权限 useCreate，标签按新增权限显示为新建 20260907 修改,
-                               已预定墓位不再出新建：预定只置 reserveStatus、销售状态保持未销售，不加这层判断会
-                               与「修改/删除」并存，重复登记会把原预定覆盖掉 20261011 修改 -->
-                          <t-link
-                            v-if="
-                              card.row.saleStatus === 'statusType.saleStatusEnum.unsold' &&
-                              card.row.reserveStatus !== 'statusType.reserveStatusEnum.reserved' &&
-                              userInfo.useCreate === 1
-                            "
-                            theme="danger"
-                            @click="handleClickReserve(card.row)"
-                          >
-                            {{ $t('operate.create') }}
-                          </t-link>
-                          <!-- 已预定墓位按修改权限显示“修改”，点击进入预定登记表单回填 20260907 新增 -->
-                          <t-link
-                            v-if="
-                              card.row.reserveStatus === 'statusType.reserveStatusEnum.reserved' &&
-                              userInfo.useModify === 1
-                            "
-                            theme="primary"
-                            @click="handleClickModify(card.row)"
-                          >
-                            {{ $t('operate.modify') }}
-                          </t-link>
-                          <!-- 已预定墓位按删除权限显示“删除”，点击弹出二次确认 20260907 新增 -->
-                          <t-link
-                            v-if="
-                              card.row.reserveStatus === 'statusType.reserveStatusEnum.reserved' &&
-                              userInfo.useDelete === 1
-                            "
-                            theme="danger"
-                            @click="handleClickDelete(card.row)"
-                          >
-                            {{ $t('operate.delete') }}
-                          </t-link>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页）+ 放大/缩小卡片列表 20261012 新增图例 -->
-          <div v-if="hasQueried && reserveCardRows.length" class="reserve-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <div class="reserve-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/已销售绿/已下葬蓝/管理到期浅红，与墓位业务页同源；
-                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261012 新增 -->
+          <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件：信息行/操作由 cardMetaFields/cardActions 配置承接，
+               状态外框类经 cardClass 下发（前缀 roomcard，色值走全局 card-color 变量），长文本截断口径 dots（前6字+....）
+               同本页原实现；工具行右侧颜色图例经 toolbar-legend 插槽注入（缩放控件由组件统一持有），滚动位置经 @scroll/restoreScroll 保持 20261020 P2 #6 -->
+          <room-card-list
+            v-if="hasQueried && reserveCardRows.length"
+            ref="reserveRoomCardRef"
+            :rows="reserveCardRows"
+            :zoom="reserveZoom"
+            :total-text="listTotalText"
+            :meta-fields="cardMetaFields"
+            :actions="cardActions"
+            :card-class="cardStatusClass"
+            truncate-mode="dots"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @action="onCardAction"
+            @scroll="reserveCardScrollTop = $event"
+          >
+            <!-- 工具行右侧：仅需注入外框颜色图例（未销售橙/已销售绿/已下葬蓝/管理到期浅红，同墓位业务页）；
+                 放大/缩小卡片控件已交 RoomCardList 组件统一持有；图例与卡片着色同源：
+                 卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261020 P2 S1a -->
+            <template #toolbar-legend>
               <div class="reserve-list-toolbar__legend">
                 <span v-if="isCardStateEnabled('unsold')" class="reserve-legend-item">
                   <i class="reserve-legend-item__swatch reserve-legend-item__swatch--unsold" />
@@ -250,12 +132,8 @@
                   {{ $t('pages.reserve.legendExpired') }}
                 </span>
               </div>
-              <span class="reserve-list-toolbar__zoom">
-                <zoom-in-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomIn" />
-                <zoom-out-icon class="reserve-list-toolbar__zoom-icon" @click="handleZoomOut" />
-              </span>
-            </div>
-          </div>
+            </template>
+          </room-card-list>
 
           <!-- 删除预定二次确认弹窗，参照墓区设置页 20260907 新增 -->
           <t-dialog
@@ -417,7 +295,7 @@ export default {
 </script>
 <script setup lang="ts">
 import dayjs from 'dayjs';
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
@@ -425,6 +303,8 @@ import { useRoute } from 'vue-router';
 import type { RoomModel } from '@/api/model/roomModel';
 import { deleteReserve, getReserveByRoom, insertReserve, updateReserve } from '@/api/reserve';
 import { getCanSaleList, getIdList } from '@/api/room';
+import RoomCardList from '@/components/room-card-list/index.vue';
+import type { RoomCardAction, RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
@@ -438,12 +318,12 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
-import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_RESERVE_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -455,8 +335,8 @@ import { FIND_DATA, INITIAL_RESERVE_DATA, INITIAL_ROOM_DATA } from './constants'
 // 向tab记录登记组件真实name，保证切tab时页面状态保活
 useTabCacheName('Reserve');
 
-// 预定模块权限对象按 idMenu(103104) 精确匹配，权限不足时兼容空对象避免运行时报错
-const userInfo = usePermission('103104');
+// 预定模块权限对象按稳定菜单 name('reserve') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20261020 P2 C1 改按 name
+const userInfo = usePermission('reserve');
 // 经办人字段不再展示，后端保存时仍自动写入当前登录用户 operator 20260917 修改
 
 type FilterFormData = typeof FIND_DATA;
@@ -476,17 +356,15 @@ const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
 // ==================== 列表：状态与筛选下拉数据 ====================
 // 区域由墓区预定下区域三级菜单经路由meta下发，挂载时读取一次
 const menuRegion = (useRoute().meta.region as string) || '';
-// 卡片长文本截断：超过7字显示前6字+4个半角点，悬停 tooltip 展示完整内容（口径同墓位迁出页卡片）20261012 新增
-const truncateText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 6)}....` : text;
-};
-// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
+// 卡片长文本截断/悬停提示逻辑已内聚进 RoomCardList 子组件（truncate-mode=dots 承接本页原「前6字+....」口径），不再本页重复定义 20261020 P2 #6
 // 卡片外框状态色类名：与墓位业务页共用 utils/cardStatus 的同一套「已勾选态按优先级递补」判定，
-// 本页启用未销售态（withUnsold），优先级 未销售<已销售<已下葬<管理到期，全未命中时白底细灰框 20261012 新增
-const cardStatusClass = (row: RoomModel | null | undefined) => getCardStatusClass('reserve', row, { withUnsold: true });
+// 本页启用未销售态（withUnsold），优先级 未销售<已销售<已下葬<管理到期，全未命中时白底细灰框；
+// 前缀改中性 roomcard 以匹配 RoomCardList scoped 内实体化的外框类（色值仍走全局 card-color 变量，视觉不变）20261012 新增, 20261020 P2 #6
+const cardStatusClass = (row: RoomModel | null | undefined) =>
+  getCardStatusClass('roomcard', row, { withUnsold: true });
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
-const reserveCardViewport = ref<HTMLElement | null>(null);
+// 卡片区滚动容器 ref 已迁入 RoomCardList（组件内持有 viewport 并 expose restoreScroll），本页仅保留组件实例引用 20261020 P2 #6
+const reserveRoomCardRef = ref<{ restoreScroll: (top: number) => void } | null>(null);
 
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter 20260914 抽取
 const {
@@ -527,19 +405,15 @@ const reserveCardRows = computed(() =>
 // 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
 // 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行（口径同墓位业务页）20261017 新增
 const reserveCardScrollTop = ref(0);
-const onCardViewportScroll = (e: Event) => {
-  reserveCardScrollTop.value = (e.target as HTMLElement).scrollTop;
-};
 
 onActivated(() => {
-  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
+  // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理。
+  // 滚动位置由 RoomCardList 的 @scroll 上抛（见模板），恢复经组件 expose 的 restoreScroll 调用其内部 viewport 20261020 P2 #6
   if (!isListShow.value || !reserveCardRows.value.length) {
     return;
   }
   nextTick(() => {
-    if (reserveCardViewport.value) {
-      reserveCardViewport.value.scrollTop = reserveCardScrollTop.value;
-    }
+    reserveRoomCardRef.value?.restoreScroll(reserveCardScrollTop.value);
   });
 });
 
@@ -716,6 +590,61 @@ const handleClickDelete = (row: CardRowArg<RoomModel>) => {
   confirmVisible.value = true;
 };
 
+// ==================== 卡片列表（RoomCardList 子组件）差异配置 ====================
+// 卡片区展示/截断/状态外框逻辑已内聚进 RoomCardList，本页按预定业务给出配置：
+// 信息行 购墓人/预定人(截断)/预定期(date)/管理期(date)/备注(截断)，无状态胶囊（状态经 cardClass 外框色 + 工具行图例表达），
+// 操作 详情/新建(预定)/修改/删除（新建按“未销售+未预定+新建权限”，修改/删除按“已预定+对应权限”门控，口径与原内联卡片一致）20261020 P2 #6
+const SALE_UNSOLD = 'statusType.saleStatusEnum.unsold';
+const RESERVE_RESERVED = 'statusType.reserveStatusEnum.reserved';
+const cardMetaFields: RoomCardMetaField[] = [
+  { labelKey: 'pages.room.buyer', field: 'buyer', format: 'text' },
+  { labelKey: 'pages.reserve.reserver', field: 'reserveLiaison', format: 'truncate' },
+  { labelKey: 'pages.gravePlotBusiness.reservationPeriod', field: 'reservationExpireDate', format: 'date' },
+  { labelKey: 'pages.adminfee.period', field: 'endDate', format: 'date' },
+  { labelKey: 'pages.room.remark', field: 'remark', format: 'truncate' },
+];
+const cardActions: RoomCardAction[] = [
+  { name: 'detail', labelKey: 'operate.detail', theme: 'primary' },
+  {
+    name: 'reserve',
+    labelKey: 'operate.create',
+    theme: 'danger',
+    visible: (row) =>
+      row.saleStatus === SALE_UNSOLD && row.reserveStatus !== RESERVE_RESERVED && userInfo.useCreate === 1,
+  },
+  {
+    name: 'modify',
+    labelKey: 'operate.modify',
+    theme: 'primary',
+    visible: (row) => row.reserveStatus === RESERVE_RESERVED && userInfo.useModify === 1,
+  },
+  {
+    name: 'delete',
+    labelKey: 'operate.delete',
+    theme: 'danger',
+    visible: (row) => row.reserveStatus === RESERVE_RESERVED && userInfo.useDelete === 1,
+  },
+];
+// RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 #6
+const onCardAction = (name: string, row: RoomModel) => {
+  switch (name) {
+    case 'detail':
+      handleClickDetail(row);
+      break;
+    case 'reserve':
+      handleClickReserve(row);
+      break;
+    case 'modify':
+      handleClickModify(row);
+      break;
+    case 'delete':
+      handleClickDelete(row);
+      break;
+    default:
+      break;
+  }
+};
+
 // 确认删除：软删除预定记录并回置墓位状态，成功后刷新列表 20260907 新增
 const onConfirmDelete = async () => {
   if (!deleteReserveRow.value) {
@@ -794,7 +723,7 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

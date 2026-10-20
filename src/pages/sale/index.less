@@ -4,41 +4,13 @@
 @import '../../style/business/index.less';
 
 // ==================== 卡片页公共结构（前缀 sale） ====================
+// S1a 卡片区结构/每卡状态外框配色已迁入通用 RoomCardList（前缀 roomcard、色值走全局 card-color 变量），
+// 卡片结构/胶囊/外框 mixin 已随模板迁移移除，本页仅保留仍在 sale 页 scoped 下的列表面板与“暂无数据”两类 20261020 P2 S1a
 .cms-list-panel(sale);
-.cms-list-body(sale);
-.cms-list-toolbar(sale);
 .cms-no-data(sale);
-.cms-card-layout(sale);
-.cms-card-basic(sale);
-.cms-card-empty-dashed(sale);
-// 卡片统一迭代样式套件：与墓区设置页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260916 抽取
-.cms-card-hover-highlight(sale);
-.cms-card-head-pill(sale);
-.cms-card-meta-between(sale);
-.cms-card-status-tags(sale);
-.cms-card-actions-between(sale);
 
 .sale-page-content {
   .cms-page-content();
-}
-// 已销售卡片：外框标红区分（同“新建”链接字体色 --td-error-color），取消原浅灰底约定；
-// hover 保持红色不随公共 hover 变主题色，已销售标识优先于交互凸显 20260923 修改
-.sale-card--sold {
-  border-color: var(--td-error-color);
-
-  &:hover {
-    border-color: var(--td-error-color);
-  }
-}
-
-// 未销售卡片：外框绿色区分（同“详情”链接字体色 --td-brand-color）；与已销售红框、空位灰底共同构成状态区分；
-// hover 保持绿色不随公共 hover 变主题色，未销售标识优先于交互凸显 20260923 新增
-.sale-card--unsold {
-  border-color: var(--td-brand-color);
-
-  &:hover {
-    border-color: var(--td-brand-color);
-  }
 }
 
 .operation-container {

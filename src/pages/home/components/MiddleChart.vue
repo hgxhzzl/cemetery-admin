@@ -14,7 +14,7 @@ import { LineChart } from 'echarts/charts';
 import { GridComponent, LegendComponent, TooltipComponent } from 'echarts/components';
 import * as echarts from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { computed, nextTick, onActivated, onDeactivated, onMounted, watch } from 'vue';
+import { computed, nextTick, onActivated, onBeforeUnmount, onDeactivated, onMounted, watch } from 'vue';
 
 import type { MonthlySaleModel } from '@/api/dashboard';
 import type { TChartColor } from '@/config/color';
@@ -122,6 +122,13 @@ onDeactivated(() => {
   stopObserver();
   // store 相关的 watch 不在此处停止：keep-alive 下组件不卸载，watch 需持续响应模式切换，
   // 否则离开首页后切换主题，回首页时图表颜色不会刷新（文字色与背景脱节）20260915 修复
+});
+
+// 组件真正卸载（超出 keep-alive 缓存上限 / 关闭首页标签）时释放 echarts 实例与 ResizeObserver；
+// onDeactivated 只在切页触发、不覆盖此场景，否则 echarts 内部注册表与观察器随反复挂载累积泄漏 20261020 审查优化
+onBeforeUnmount(() => {
+  stopObserver();
+  monitorChart?.dispose();
 });
 
 watch(

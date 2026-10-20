@@ -374,12 +374,13 @@ import Trend from '@/components/trend/index.vue';
 import { TYPE_CONTRACT_STATUS, TYPE_CONTRACT_TYPES } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 合同模块权限对象按 idMenu(101102) 精确匹配，权限不足时兼容空对象避免运行时报错 20260827 修改
-const userInfo = usePermission('101102');
+// 合同模块权限对象按稳定菜单 name('contract') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改, 20261020 P2 C1 改按 name
+const userInfo = usePermission('contract');
 const translate = (key: string) => String(i18n.global.t(key));
 
 // 列表代码开始
@@ -773,7 +774,8 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.success(translate('operate.createdFailedPrompt'));
+      // 原误用 MessagePlugin.success 弹失败词条（绿色），修正为 error 并优先回显后端拒绝原因 20261020 P2 C2
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     try {
@@ -783,7 +785,8 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.success(translate('operate.modifyFailedPrompt'));
+      // 原误用 MessagePlugin.success 弹失败词条（绿色），修正为 error 并优先回显后端拒绝原因 20261020 P2 C2
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

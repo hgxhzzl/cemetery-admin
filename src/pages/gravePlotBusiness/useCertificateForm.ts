@@ -3,7 +3,7 @@
 // 交互参照墓位销售方式（新建/修改由 idBusiness=idCert 是否为 0 区分），只读写 burial_cert 本表不联动其它业务表 20260927 新增
 // ============================================================
 import { MessagePlugin } from 'tdesign-vue-next';
-import type { Ref } from 'vue';
+import type { InjectionKey, Ref } from 'vue';
 import { ref } from 'vue';
 
 import type {
@@ -23,6 +23,10 @@ export type BuriedEditMode = 'list' | 'add' | 'modify' | 'certificate';
 
 // 安葬证设置表单数据（burial_cert 表字段）：idBusiness 承载主键 idCert，0 为新建 20260927 新增
 export type CertFormData = typeof INITIAL_CERT_DATA;
+
+// 安葬证设置表单数据注入键：供拆出的证书表单子视图（CertificateFormView）经 inject 共享页面 formCertData，
+// 保持页面持有状态的单向数据流（子视图仅渲染/编辑，提交/返回仍留页面与 useCertificateForm）20261020 P2 S2 拆分
+export const certificateFormDataKey: InjectionKey<Ref<CertFormData>> = Symbol('gravePlotBusinessFormCertData');
 
 // 提交数据排除创建/修改日期（后端审计自动写入），type=certificate 后端据此落 burial_cert 表；
 // 等分转为 smallint 数值（未选中转 null）20260927 新增 20260928 修改

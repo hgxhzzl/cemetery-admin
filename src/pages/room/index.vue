@@ -98,95 +98,27 @@
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260828 修改 -->
           <div v-if="hasQueried && !roomCardRows.length" class="room-no-data">暂无数据</div>
 
-          <div v-if="hasQueried && roomCardRows.length" class="room-list-body">
-            <!-- 卡片区滚动位置实时记录，tab 切回时 onActivated 恢复，同墓位业务页 20260926 新增 -->
-            <div ref="roomCardViewport" class="table-container room-card-layout" @scroll.passive="onCardViewportScroll">
-              <div class="room-card-rows" :style="{ zoom: roomZoom }">
-                <div v-for="rowGroup in roomCardRows" :key="rowGroup.yNum" class="room-card-row">
-                  <div class="room-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="room-card"
-                      :class="{
-                        'room-card--empty': card.placeholder,
-                        // 未销售叠加浅橙底态（withUnsold）：四页统一使用公共 cms-card-status-frame 的四态外框色+同色浅底 20261003 新增
-                        [getCardStatusClass('room', card.row, { withUnsold: true })]: !card.placeholder,
-                      }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 20260828 修改 -->
-                        <div class="room-card__header">
-                          <!-- 序号去掉多余空格，与正常卡xyNumber格式一致 20260831 修改 -->
-                          <div class="room-card__serial">{{ rowGroup.yNum }}排{{ card.xNum }}号</div>
-                        </div>
-                        <div class="room-card__body">
-                          <div class="room-card__empty-text">空位</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="room-card__header">
-                          <!-- 卡片首行改为展示xyNumber编号字段 20260831 修改 -->
-                          <div class="room-card__serial">{{ card.row.xyNumber }}</div>
-                          <!-- 墓位类型值上移至首行右侧，去掉墓位类型标题 20260916 修改 -->
-                          <div class="room-card__type">{{ $t(card.row.roomType) }}</div>
-                        </div>
-                        <div class="room-card__body">
-                          <!-- 墓型（room.roomType）：正文新增一行带标签展示，值同首行右侧胶囊文案，便于识别 20261012 新增 -->
-                          <div class="room-card__meta">
-                            <span class="room-card__meta-label">{{ $t('pages.room.roomType') }}</span>
-                            <span class="room-card__meta-value">{{ $t(card.row.roomType) }}</span>
-                          </div>
-                          <!-- 规格/价格信息行：标签在左、值在右两端对齐 20260916 修改 -->
-                          <div class="room-card__meta">
-                            <span class="room-card__meta-label">{{ $t('pages.room.specs') }}</span>
-                            <span class="room-card__meta-value">{{ card.row.specs }}</span>
-                          </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
-                          <div class="room-card__meta">
-                            <span class="room-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="room-card__meta-value">{{ formatPrice(card.row.price) }}</span>
-                          </div>
-                          <!-- 购墓人（room.buyer）/管理期（room.endDate，后端在下葬/收款事务中维护）：
-                               替代原销售/下葬状态两枚胶囊行，标签与写法同墓位业务/迁出页卡片，无值统一显示“无” 20261012 调整 -->
-                          <div class="room-card__meta">
-                            <span class="room-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <span class="room-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
-                          </div>
-                          <div class="room-card__meta">
-                            <span class="room-card__meta-label">{{ $t('pages.adminfee.period') }}</span>
-                            <span class="room-card__meta-value">{{
-                              formatDate(card.row.endDate) || $t('common.none')
-                            }}</span>
-                          </div>
-                        </div>
-                        <div class="room-card__actions">
-                          <t-link theme="primary" @click="handleClickDetail(card.row)">{{
-                            $t('operate.detail')
-                          }}</t-link>
-                          <!-- 仅"未预定/未销售/未下葬"的墓位显示删除，否则不显示 20260916 修改 -->
-                          <t-link v-if="isRoomDeletable(card.row)" theme="danger" @click="handleClickDelete(card.row)">
-                            {{ $t('operate.delete') }}
-                          </t-link>
-                          <!-- 已迁出的墓位不可修改（迁出为终态）20260921 新增 -->
-                          <t-link v-if="isRoomModifiable(card.row)" theme="danger" @click="handleClickModify(card.row)">
-                            {{ $t('operate.modify') }}
-                          </t-link>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 列表底部工具行：左侧记录数，右侧外框颜色图例（同墓位业务页图例样式）+ 放大/缩小卡片列表 20260926 修改 -->
-          <div v-if="hasQueried && roomCardRows.length" class="room-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <div class="room-list-toolbar__right">
-              <!-- 卡片外框颜色说明：未销售橙/绿已销售/蓝已下葬/浅红管理到期，未销售说明位于已销售左侧（同墓位业务页）20260926 新增 20261003 补未销售；
-                   图例与卡片着色同源：卡片颜色页未勾选的态不参与判定、卡面也不会出现该色，故图例不显示 20261011 修改, -->
+          <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1b 并入，与 buried/reserve/transferOut/contacts 同构）：
+               信息行由 cardMetaFields 配置承接（墓型(i18n)/规格/价格(price)/购墓人/管理期(date)）；每卡状态外框经 cardClass 下发
+               （前缀 roomcard）；无状态胶囊行；工具行右侧颜色图例经 toolbar-legend 插槽注入（缩放控件由组件统一持有），
+               滚动位置经 @scroll/restoreScroll 保持 20261020 P2 S1b -->
+          <room-card-list
+            v-if="hasQueried && roomCardRows.length"
+            ref="roomRoomCardRef"
+            :rows="roomCardRows"
+            :zoom="roomZoom"
+            :total-text="listTotalText"
+            :meta-fields="cardMetaFields"
+            :actions="cardActions"
+            :card-class="cardStatusClass"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @action="onCardAction"
+            @scroll="roomCardScrollTop = $event"
+          >
+            <!-- 工具行右侧：仅需注入外框颜色图例（未销售橙/已预定黄/已销售绿/已下葬蓝/管理到期浅红，同墓位业务页）；
+                 放大/缩小卡片控件已交 RoomCardList 组件统一持有 20261020 P2 S1b -->
+            <template #toolbar-legend>
               <div class="room-list-toolbar__legend">
                 <span v-if="isCardStateEnabled('unsold')" class="room-legend-item">
                   <i class="room-legend-item__swatch room-legend-item__swatch--unsold" />
@@ -209,12 +141,8 @@
                   {{ $t('pages.gravePlotBusiness.legendExpired') }}
                 </span>
               </div>
-              <span class="room-list-toolbar__zoom">
-                <zoom-in-icon class="room-list-toolbar__zoom-icon" @click="handleZoomIn" />
-                <zoom-out-icon class="room-list-toolbar__zoom-icon" @click="handleZoomOut" />
-              </span>
-            </div>
-          </div>
+            </template>
+          </room-card-list>
 
           <t-dialog
             v-model:visible="confirmVisible"
@@ -455,13 +383,15 @@ export default {
 };
 </script>
 <script setup lang="ts">
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onActivated, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 
 import type { RoomModel } from '@/api/model/roomModel';
 import { deleteRoom, getIdList, getRoomList, insertRoom, updateRoom } from '@/api/room';
+import RoomCardList from '@/components/room-card-list/index.vue';
+import type { RoomCardAction, RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH, TYPE_ROOM_TYPES } from '@/constants';
 import type { CardRowArg } from '@/hooks';
@@ -477,8 +407,6 @@ import {
 import { t, translate } from '@/locales';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
-import { formatDate } from '@/utils/date';
-import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
 
 import { FIND_DATA, INITIAL_DATA } from './constants';
@@ -600,14 +528,9 @@ const roomCardRows = computed(() =>
   formfindData.value.sortOrder === 'asc' ? rawRoomCardRows.value : rawRoomCardRows.value.slice().reverse(),
 );
 
-// ==================== 卡片区滚动位置保持（tab 切换往返） ====================
-// 页面 keep-alive 保活仅保留数据：失活时组件 DOM 从文档移除，内部滚动容器 scrollTop 随之归零，
-// 切回 tab 会回到顶部；改为滚动时实时记录位置，onActivated（tab 切回）时恢复到原滚动行，同墓位业务页 20260926 新增
-const roomCardViewport = ref<HTMLElement | null>(null);
+// 卡片区已迁入通用 RoomCardList，滚动容器在子组件内部，经组件 expose 的 restoreScroll 恢复（tab 往返保持滚动行）20261020 P2 S1b
+const roomRoomCardRef = ref<{ restoreScroll: (top: number) => void } | null>(null);
 const roomCardScrollTop = ref(0);
-const onCardViewportScroll = (e: Event) => {
-  roomCardScrollTop.value = (e.target as HTMLElement).scrollTop;
-};
 
 onActivated(() => {
   // 列表视图且有卡片数据时才恢复；详情/登记视图无卡片区不处理
@@ -615,9 +538,7 @@ onActivated(() => {
     return;
   }
   nextTick(() => {
-    if (roomCardViewport.value) {
-      roomCardViewport.value.scrollTop = roomCardScrollTop.value;
-    }
+    roomRoomCardRef.value?.restoreScroll(roomCardScrollTop.value);
   });
 });
 
@@ -749,6 +670,40 @@ const handleClickModify = async (row: CardRowArg<RoomModel>) => {
 const handleClickCreate = async () => {
   onCreateMounted();
   controlPageShow('createCreate');
+};
+
+// ==================== RoomCardList 卡片配置（S1b 迁入通用组件，与 transferOut/buried 同构）====================
+// 信息行：墓型(i18n，值同首行右侧胶囊文案)/规格/价格(千分位)/购墓人/管理期(date)，无状态胶囊行（口径同原内联卡片）
+const cardMetaFields: RoomCardMetaField[] = [
+  { labelKey: 'pages.room.roomType', field: 'roomType', format: 'i18n' },
+  { labelKey: 'pages.room.specs', field: 'specs', format: 'text' },
+  { labelKey: 'pages.room.price', field: 'price', format: 'price' },
+  { labelKey: 'pages.room.buyer', field: 'buyer', format: 'text' },
+  { labelKey: 'pages.adminfee.period', field: 'endDate', format: 'date' },
+];
+// 每卡状态外框：前缀改中性 roomcard 以匹配 RoomCardList scoped 内实体化的外框类（色值仍走全局 card-color 变量，视觉不变）
+const cardStatusClass = (row: RoomModel) => getCardStatusClass('roomcard', row, { withUnsold: true });
+// 操作 详情/删除/修改：删除按“未预定/未销售/未下葬/未迁出”门控，修改按“未迁出”门控（口径同原内联卡片）
+const cardActions: RoomCardAction[] = [
+  { name: 'detail', labelKey: 'operate.detail', theme: 'primary' },
+  { name: 'delete', labelKey: 'operate.delete', theme: 'danger', visible: (row) => isRoomDeletable(row) },
+  { name: 'modify', labelKey: 'operate.modify', theme: 'danger', visible: (row) => isRoomModifiable(row) },
+];
+// RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 S1b
+const onCardAction = (name: string, row: RoomModel) => {
+  switch (name) {
+    case 'detail':
+      handleClickDetail(row);
+      break;
+    case 'delete':
+      handleClickDelete(row);
+      break;
+    case 'modify':
+      handleClickModify(row);
+      break;
+    default:
+      break;
+  }
 };
 
 const getRoomID = async (id: number) => {

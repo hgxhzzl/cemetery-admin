@@ -3,22 +3,11 @@
 // ============================================================
 @import '../../style/business/index.less';
 
-// ==================== 卡片页公共结构（前缀 buried） ====================
+// ==================== 列表容器骨架（前缀 buried） ====================
+// 卡片区/工具行/卡片本体样式已随 RoomCardList 子组件内聚（中性前缀 roomcard、组件自带 scoped），
+// 本页仅保留面板容器高度约束与无数据提示两条仍在用的规则 20261020 P2 #6
 .cms-list-panel(buried);
-.cms-list-body(buried);
-.cms-list-toolbar(buried);
 .cms-no-data(buried);
-.cms-card-layout(buried);
-.cms-card-basic(buried);
-// 空位卡：虚线边框 + 灰底
-.cms-card-empty-dashed(buried);
-// 卡片统一迭代样式套件：与墓区设置/销售页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260916 抽取
-.cms-card-hover-highlight(buried);
-.cms-card-head-pill(buried);
-.cms-card-meta-between(buried);
-.cms-card-status-tags(buried);
-// 四个操作链接两端对齐，间隙调小
-.cms-card-actions-between(buried, 2px);
 
 .buried-page-content {
   .cms-page-content();
@@ -30,11 +19,8 @@
   justify-content: flex-end;
 }
 
-// 英文操作链接较长（Detail/Create/Modify/Delete 约166px）超过150px卡片内容区，
-// flex自动最小尺寸会把卡片撑宽，与只有2个链接的卡片宽度不一致；英文态统一加宽至200px保证同排等宽 20260915 修改
-.en_US .buried-card-layout .buried-card {
-  flex-basis: 200px;
-}
+// 英文态卡片宽度统一由 RoomCardList 组件 scoped 持有（.en_US .roomcard-card{flex-basis:200px}），
+// 本页不再需页专属规则（原 .en_US .buried-card 因卡片区已迁组件而不再命中子卡片）20261020 P2 S1a
 
 // ==================== 新建/核对/完成：下葬登记表单（紧凑版：与销售页开单表单一致） ====================
 .form-basic-container {

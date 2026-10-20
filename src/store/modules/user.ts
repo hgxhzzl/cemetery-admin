@@ -94,13 +94,17 @@ export const useUserStore = defineStore('user', {
     },
     async getUserInfo() {
       // 模板遗留的 mock 取用户信息（本地返回，不发请求）；原 main_token 分支随登录兜底删除一并移除 20261019 审查修正
-      const localUserInfo = async () => ({
+      // 幂等短路：该 action 由路由守卫每次导航 await，但只是把 userName/roles 原样搬进 userInfo 并整体换一个新对象，
+      // 会让依赖 userInfo 的 Header/SideNav 每次切页无谓重渲染。roles 的实际变更均由 login/syncMenuPermissions/
+      // updatePermissionField 就地写入、刷新后由 persist 还原，均不依赖本方法重取；故仅在 userInfo 未初始化
+      // （name 为空）时补一次即可，退出后 name 复位为空、下次登录重新初始化 20261020 P2 结构梳理
+      if (this.userInfo.name) {
+        return;
+      }
+      this.userInfo = {
         name: this.userName || 'td_dev',
         roles: this.userInfo.roles,
-      });
-      const res = await localUserInfo();
-
-      this.userInfo = res;
+      };
     },
     syncMenuPermissions(menuPermissions: UserPermission[]) {
       const roleItems = Array.isArray(this.userInfo.roles) ? this.userInfo.roles : [];

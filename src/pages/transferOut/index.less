@@ -3,34 +3,14 @@
 // ============================================================
 @import '../../style/business/index.less';
 
-// ==================== 卡片页公共结构（前缀 transferOut） ====================
+// ==================== 列表容器骨架（前缀 transferOut） ====================
+// 卡片区结构类（list-body/card-*/toolbar/status-frame）已随 RoomCardList 子组件内聚（中性前缀 roomcard、组件自带 scoped），
+// 本页不再产出 transferOut-card-*/list-toolbar 死规则；仅保留外层面板与空态两枚本页仍在用的结构 20261020 P2 S1a
 .cms-list-panel(transferOut);
-.cms-list-body(transferOut);
-.cms-list-toolbar(transferOut);
 .cms-no-data(transferOut);
-.cms-card-layout(transferOut);
-.cms-card-basic(transferOut);
-// 空位卡：虚线边框 + 灰底
-.cms-card-empty-dashed(transferOut);
-// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定/联系页共用（hover 凸显/首行胶囊/两端对齐/操作两端对齐）20260917 抽取
-.cms-card-hover-highlight(transferOut);
-.cms-card-head-pill(transferOut);
-.cms-card-meta-between(transferOut);
-// 卡内销售/迁出状态胶囊行已改备注信息行，cms-card-status-tags 不再调用（同墓位业务页）20261004 调整
-// 四个操作链接两端对齐，间隙调小
-.cms-card-actions-between(transferOut, 2px);
 
-// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红）：四页共用公共 mixin；
-// 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，未销售卡与墓位业务页同色 20260926 新增 20261003 抽取
-.cms-card-status-frame(transferOut);
-
-// 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
-.transferOut-list-toolbar__right {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
+// 底部工具行右侧容器与缩放控件已由 RoomCardList 组件统一持有（roomcard-list-toolbar__right/__zoom），
+// 本页插槽仅注入图例，下方为图例及其子项的本页作用域样式（slot 内容携带本页 scoped 属性，可命中）
 // 外框颜色图例（同墓位业务页图例样式：小矩形色块 + 12px 文字）20260926 新增
 .transferOut-list-toolbar__legend {
   display: inline-flex;
@@ -111,11 +91,8 @@
   width: 120px;
 }
 
-// 英文操作链接较长（Detail/Create/Modify/Delete 约166px）超过150px卡片内容区，
-// flex自动最小尺寸会把卡片撑宽，与只有2个链接的卡片宽度不一致；英文态统一加宽至200px保证同排等宽 20260916 修改
-.en_US .transferOut-card-layout .transferOut-card {
-  flex-basis: 200px;
-}
+// 英文态卡片宽度统一由 RoomCardList 组件 scoped 持有（.en_US .roomcard-card{flex-basis:200px}），
+// 本页不再需页专属规则 20261020 P2 S1a
 
 // ==================== 迁出登记表单（紧凑版：与销售页开单表单一致，新建/修改共用） ====================
 .form-basic-container {

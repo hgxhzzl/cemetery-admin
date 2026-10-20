@@ -3,22 +3,11 @@
 // ============================================================
 @import '../../style/business/index.less';
 
-// ==================== 卡片页公共结构（前缀 contacts） ====================
+// ==================== 列表容器骨架（前缀 contacts） ====================
+// 卡片区/工具行/卡片本体样式已随 RoomCardList 子组件内聚（中性前缀 roomcard、组件自带 scoped），
+// 本页仅保留面板容器高度约束与无数据提示两条仍在用的规则 20261020 P2 #6
 .cms-list-panel(contacts);
-.cms-list-body(contacts);
-.cms-list-toolbar(contacts);
 .cms-no-data(contacts);
-.cms-card-layout(contacts);
-// 卡片宽度改为公共默认 146px，与其余卡片页一致 20260917 修改
-.cms-card-basic(contacts);
-.cms-card-empty-dashed(contacts);
-// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定页共用（hover 凸显/首行胶囊/两端对齐/状态胶囊/操作两端对齐） 20260917 抽取
-.cms-card-hover-highlight(contacts);
-.cms-card-head-pill(contacts);
-.cms-card-meta-between(contacts);
-.cms-card-status-tags(contacts);
-// 四个操作链接两端对齐，间隙调小（与下葬页一致）
-.cms-card-actions-between(contacts, 2px);
 
 .contacts-page-content {
   .cms-page-content();

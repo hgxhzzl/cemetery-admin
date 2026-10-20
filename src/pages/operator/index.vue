@@ -465,12 +465,13 @@ import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import type { UserPermissionField } from '@/types/interface';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 操作人员模块权限对象按 idMenu(102104) 精确匹配，权限不足时兼容空对象避免运行时报错 20260916 修复：原 102103 是园区设置菜单，操作人员应为 102104
-const userInfo = usePermission('102104');
+// 操作人员模块权限对象按稳定菜单 name('operator') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260916 修复：原误用 102103（园区设置），20261020 P2 C1 改按 name 根治 id 漂移
+const userInfo = usePermission('operator');
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
 const translate = (key: string) => String(i18n.global.t(key));
@@ -881,7 +882,7 @@ const submitCore = async () => {
           ClickCreateClose();
         } catch (e) {
           logError(e);
-          MessagePlugin.error(translate('operate.createdFailedPrompt'));
+          MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
         }
       } else {
         try {
@@ -891,7 +892,7 @@ const submitCore = async () => {
           ClickCreateClose();
         } catch (e) {
           logError(e);
-          MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+          MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
         }
       }
     } else {

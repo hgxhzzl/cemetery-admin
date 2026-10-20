@@ -355,12 +355,13 @@ import { TYPE_ENTERPRISE_TYPES, TYPE_USE_STATUS } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
 import { i18n, t } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 账户模块权限对象按 idMenu(101101) 精确匹配，权限不足时兼容空对象避免运行时报错 20260827 修改
-const userInfo = usePermission('101101');
+// 账户模块权限对象按稳定菜单 name('account') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改, 20261020 P2 C1 改按 name
+const userInfo = usePermission('account');
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
 const translate = (key: string) => String(i18n.global.t(key));
@@ -731,7 +732,7 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.createdFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     try {
@@ -741,7 +742,7 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

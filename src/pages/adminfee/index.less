@@ -3,35 +3,14 @@
 // ============================================================
 @import '../../style/business/index.less';
 
-// ==================== 卡片页公共结构（前缀 adminfee） ====================
+// ==================== 列表容器骨架（前缀 adminfee） ====================
+// 卡片区结构类（list-body/card-*/toolbar/status-frame）已随 RoomCardList 子组件内聚（中性前缀 roomcard、组件自带 scoped），
+// 本页不再产出 adminfee-card-*/list-toolbar 死规则；仅保留外层面板与空态两枚本页仍在用的结构 20261020 P2 S1b
 .cms-list-panel(adminfee);
-.cms-list-body(adminfee);
-.cms-list-toolbar(adminfee);
 .cms-no-data(adminfee);
-.cms-card-layout(adminfee);
-// 卡片宽度改为公共默认 146px，与其余卡片页一致 20260917 修改
-.cms-card-basic(adminfee);
-.cms-card-empty-dashed(adminfee);
-// 卡片统一迭代样式套件：与墓区设置/销售/下葬/预定页共用（hover 凸显/首行胶囊/两端对齐/操作两端对齐） 20260917 修改
-.cms-card-hover-highlight(adminfee);
-.cms-card-head-pill(adminfee);
-.cms-card-meta-between(adminfee);
-// 卡内销售/下葬状态胶囊行已改备注信息行，cms-card-status-tags 不再调用（同墓位业务页）20261004 调整
-// 四个操作链接两端对齐，间隙调小（与下葬页一致） 20260917 修改
-.cms-card-actions-between(adminfee, 2px);
 
-// 卡片外框状态色（未销售浅橙底+橙框/已销售绿/已下葬蓝/管理到期红，各含同色浅底）：四页共用公共 mixin；
-// 到期原为“新建”链接字体色（--td-error-color）提醒续费，已并入统一三态规则；
-// 本页卡片类名由 getCardStatusClass 下发并显式开启 withUnsold，四页与墓位业务页完全同色 20260926 修改 20261003 抽取
-.cms-card-status-frame(adminfee);
-
-// 底部工具行右侧：图例 + 缩放按钮并排 20260926 新增
-.adminfee-list-toolbar__right {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-}
-
+// 底部工具行右侧容器与缩放控件已由 RoomCardList 组件统一持有（roomcard-list-toolbar__right/__zoom），
+// 本页插槽仅注入图例，下方为图例及其子项的本页作用域样式（slot 内容携带本页 scoped 属性，可命中）
 // 外框颜色图例（同墓位业务页图例样式：小矩形色块 + 12px 文字）20260926 新增
 .adminfee-list-toolbar__legend {
   display: inline-flex;
@@ -74,11 +53,8 @@
   }
 }
 
-// 英文操作链接较长（Detail/Create/Modify/Delete 约166px）超过150px卡片内容区，
-// flex自动最小尺寸会把卡片撑宽，与只有2个链接的卡片宽度不一致；英文态统一加宽至200px保证同排等宽 20260917 修改
-.en_US .adminfee-card-layout .adminfee-card {
-  flex-basis: 200px;
-}
+// 英文态卡片加宽至 200px 保证同排等宽，已上移至 RoomCardList 组件统一持有（.en_US .roomcard-card-layout .roomcard-card），
+// 本页局部规则不再命中子卡片，故删除 20261020 P2 S1b
 
 .adminfee-page-content {
   .cms-page-content();

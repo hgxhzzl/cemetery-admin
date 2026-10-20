@@ -63,131 +63,20 @@
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260909 新增 -->
           <div v-if="hasQueried && !contactsCardRows.length" class="contacts-no-data">暂无数据</div>
 
-          <div v-if="hasQueried && contactsCardRows.length" class="contacts-list-body">
-            <div ref="contactsCardViewport" class="table-container contacts-card-layout">
-              <div v-if="contactsCardRows.length" class="contacts-card-rows" :style="{ zoom: contactsZoom }">
-                <div v-for="rowGroup in contactsCardRows" :key="rowGroup.yNum" class="contacts-card-row">
-                  <div class="contacts-card-grid">
-                    <div
-                      v-for="card in rowGroup.cards"
-                      :key="`${rowGroup.yNum}-${card.xNum}`"
-                      class="contacts-card"
-                      :class="{ 'contacts-card--empty': card.placeholder }"
-                    >
-                      <template v-if="card.placeholder">
-                        <!-- 空位卡序号与正常卡同样顶部对齐 20260909 新增 -->
-                        <div class="contacts-card__header">
-                          <div class="contacts-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
-                        </div>
-                        <div class="contacts-card__body">
-                          <div class="contacts-card__empty-text">空位</div>
-                        </div>
-                      </template>
-                      <template v-else>
-                        <div class="contacts-card__header">
-                          <!-- 卡片首行改为展示xyNumber编号字段，与墓区设置/销售/预定页一致；缺失时回退 yNum/xNum 拼接，与下葬页一致 20260917 修改 -->
-                          <div class="contacts-card__serial">
-                            {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
-                          </div>
-                          <!-- 墓位类型值上移至首行右侧胶囊，去掉标题 20260917 修改 -->
-                          <div class="contacts-card__type">{{ $t(card.row.roomType) }}</div>
-                        </div>
-                        <div class="contacts-card__body">
-                          <!-- 购墓人/下葬者/联系人/价格：标签在左灰色、值在右深色两端对齐，与墓区下葬页卡片信息内容一致 20260917 修改 -->
-                          <div class="contacts-card__meta">
-                            <span class="contacts-card__meta-label">{{ $t('pages.room.buyer') }}</span>
-                            <!-- 购墓人无值时默认显示“无”，与下葬页一致 20260917 修改 -->
-                            <span class="contacts-card__meta-value">{{ card.row.buyer || $t('common.none') }}</span>
-                          </div>
-                          <div class="contacts-card__meta">
-                            <span class="contacts-card__meta-label">{{ $t('pages.room.buriedPerson') }}</span>
-                            <!-- 下葬者超过7字截断为前7字+省略号，悬停提示完整内容，与下葬页一致 20260917 修改 -->
-                            <t-tooltip v-if="isOverflow(card.row.deceased)" :content="String(card.row.deceased)">
-                              <span class="contacts-card__meta-value">{{ truncateText(card.row.deceased) }}</span>
-                            </t-tooltip>
-                            <!-- 下葬者无值时默认显示“无”，与下葬页一致 20260917 修改 -->
-                            <span v-else class="contacts-card__meta-value">
-                              {{ card.row.deceased || $t('common.none') }}
-                            </span>
-                          </div>
-                          <!-- 联系人：room 表字段，存所有联系人，与下葬页一致 20260917 修改 -->
-                          <div class="contacts-card__meta">
-                            <span class="contacts-card__meta-label">{{ $t('pages.room.contacts') }}</span>
-                            <!-- 联系人超过7字截断为前7字+省略号，悬停提示完整内容，与下葬页一致 20260917 修改 -->
-                            <t-tooltip v-if="isOverflow(card.row.contacts)" :content="String(card.row.contacts)">
-                              <span class="contacts-card__meta-value">{{ truncateText(card.row.contacts) }}</span>
-                            </t-tooltip>
-                            <!-- 联系人无值时默认显示“无”，与下葬页一致 20260917 修改 -->
-                            <span v-else class="contacts-card__meta-value">{{
-                              card.row.contacts || $t('common.none')
-                            }}</span>
-                          </div>
-                          <!-- priceString 列已删，卡片价格改由数值 price 千分位格式化 20260910 修改 -->
-                          <div class="contacts-card__meta">
-                            <span class="contacts-card__meta-label">{{ $t('pages.room.price') }}</span>
-                            <span class="contacts-card__meta-value">{{ formatPrice(card.row.price) }}</span>
-                          </div>
-                          <!-- 销售/下葬状态改为两枚胶囊标签两端分布，去掉标题 20260917 修改 -->
-                          <div class="contacts-card__status">
-                            <span
-                              class="contacts-card__tag"
-                              :class="`contacts-card__tag--${statusKey(card.row.saleStatus)}`"
-                            >
-                              {{ $t(card.row.saleStatus) }}
-                            </span>
-                            <span
-                              class="contacts-card__tag"
-                              :class="`contacts-card__tag--${statusKey(card.row.intoStatus)}`"
-                            >
-                              {{ $t(card.row.intoStatus) }}
-                            </span>
-                          </div>
-                        </div>
-                        <div class="contacts-card__actions">
-                          <t-link theme="primary" @click="handleClickDetail(card.row)">{{
-                            $t('operate.detail')
-                          }}</t-link>
-                          <!-- 墓位联系人于墓位售出后登记，故仅“已销售”墓位显示新建，并按新建权限门控；支持一穴多个联系人 20260909 新增 -->
-                          <t-link
-                            v-if="card.row.saleStatus === SALE_SOLD && userInfo.useCreate === 1"
-                            theme="danger"
-                            @click="handleClickCreate(card.row)"
-                          >
-                            {{ $t('operate.create') }}
-                          </t-link>
-                          <!-- 已销售按修改权限显示“修改”，点击进入修改页选择要修改的联系人记录 20260909 新增 -->
-                          <t-link
-                            v-if="card.row.saleStatus === SALE_SOLD && userInfo.useModify === 1"
-                            theme="primary"
-                            @click="handleClickModify(card.row)"
-                          >
-                            {{ $t('operate.modify') }}
-                          </t-link>
-                          <!-- 已销售按删除权限显示“删除”，点击进入删除页逐行删除联系人记录 20260909 新增 -->
-                          <t-link
-                            v-if="card.row.saleStatus === SALE_SOLD && userInfo.useDelete === 1"
-                            theme="danger"
-                            @click="handleClickDelete(card.row)"
-                          >
-                            {{ $t('operate.delete') }}
-                          </t-link>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 列表底部工具行：左侧记录数，右侧放大/缩小卡片列表 20260909 新增 -->
-          <div v-if="hasQueried && contactsCardRows.length" class="contacts-list-toolbar">
-            <span>{{ listTotalText }}</span>
-            <span class="contacts-list-toolbar__zoom">
-              <zoom-in-icon class="contacts-list-toolbar__zoom-icon" @click="handleZoomIn" />
-              <zoom-out-icon class="contacts-list-toolbar__zoom-icon" @click="handleZoomOut" />
-            </span>
-          </div>
+          <!-- 卡片区 + 底部工具行拆为通用子组件 RoomCardList（中性前缀、props 驱动），
+               网格数据/缩放/记录数仍由本页 useCardGrid 提供，操作经 action 事件回本页分发 20261020 P2 #6 -->
+          <room-card-list
+            v-if="hasQueried && contactsCardRows.length"
+            :rows="contactsCardRows"
+            :zoom="contactsZoom"
+            :total-text="listTotalText"
+            :meta-fields="cardMetaFields"
+            :status-fields="cardStatusFields"
+            :actions="cardActions"
+            @zoom-in="handleZoomIn"
+            @zoom-out="handleZoomOut"
+            @action="onCardAction"
+          />
         </div>
       </div>
     </div>
@@ -343,8 +232,7 @@ export default {
 };
 </script>
 <script setup lang="ts">
-import type { AxiosError } from 'axios';
-import { RollbackIcon, ZoomInIcon, ZoomOutIcon } from 'tdesign-icons-vue-next';
+import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
@@ -354,6 +242,8 @@ import { deleteContacts, getContactsList, getRoomList, insertContacts, updateCon
 import type { ContactsModel } from '@/api/model/contactsModel';
 import type { RoomModel } from '@/api/model/roomModel';
 import { getIdList } from '@/api/room';
+import RoomCardList from '@/components/room-card-list/index.vue';
+import type { RoomCardAction, RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
@@ -367,9 +257,8 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
-import { formatPrice } from '@/utils/format';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
-import { isCardTextOverflow as isOverflow } from '@/utils/text';
 
 import { FIND_DATA, INITIAL_CONTACTS_DATA, INITIAL_ROOM_DATA } from './constants';
 
@@ -381,8 +270,8 @@ import { FIND_DATA, INITIAL_CONTACTS_DATA, INITIAL_ROOM_DATA } from './constants
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活的问题 20260909 新增,
 useTabCacheName('Contacts');
 
-// 墓位联系人权限对象按 idMenu(103105) 精确匹配，权限不足时兼容空对象避免运行时报错 20260909 新增
-const userInfo = usePermission('103105');
+// 墓位联系人权限对象按稳定菜单 name('contacts') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260909 新增, 20261020 P2 C1 改按 name
+const userInfo = usePermission('contacts');
 
 // 销售状态：已销售。墓位联系人于墓位售出后登记，仅“已销售”墓位显示新建/修改/删除 20260909 新增
 const SALE_SOLD = 'statusType.saleStatusEnum.sold';
@@ -410,16 +299,8 @@ const { controlPageShow, scheduleControlPageShow } = usePageSwitch({
 // 区域由墓区业务下区域三级菜单经路由meta下发，挂载时读取一次；
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260909 新增,
 const menuRegion = (useRoute().meta.region as string) || '';
-// 状态胶囊修饰类：提取枚举 key 最后一段（如 sold/buried），与墓区设置/销售/预定页一致 20260917 新增
-const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
-// 卡片长文本截断：下葬者/联系人超过7字显示前7字+省略号，悬停 tooltip 展示完整内容，与下葬页一致 20260917 新增
-const truncateText = (value?: string | null) => {
-  const text = String(value || '');
-  return text.length > 7 ? `${text.slice(0, 7)}…` : text;
-};
-// isOverflow 收敛至 utils/text（isCardTextOverflow 别名引入），20261019 审查去重
+// 卡片信息行截断/状态修饰类逻辑已内聚进 RoomCardList 子组件，不再于本页重复定义 20261020 P2 #6
 const formfindData = ref<FilterFormData>({ ...FIND_DATA, region: menuRegion });
-const contactsCardViewport = ref<HTMLElement | null>(null);
 
 // 区域/园区下拉、园区联动、排号去重、查询二次过滤收敛于公共 useParkRoomFilter 20260914 抽取
 const {
@@ -652,6 +533,58 @@ const handleClickDelete = async (row: CardRowArg<RoomModel>) => {
   }
 };
 
+// ==================== 卡片列表（RoomCardList 子组件）差异配置 ====================
+// 卡片区展示/截断/状态修饰逻辑已内聚进 RoomCardList，本页只按墓位联系人业务给出配置：
+// 信息行 购墓人/下葬者(截断)/联系人(截断)/价格(千分位)，状态胶囊 销售状态+下葬状态，
+// 操作 详情/新建/修改/删除（后三者按“已销售 + 对应权限”门控，口径与原内联卡片完全一致）20261020 P2 #6
+const cardMetaFields: RoomCardMetaField[] = [
+  { labelKey: 'pages.room.buyer', field: 'buyer', format: 'text' },
+  { labelKey: 'pages.room.buriedPerson', field: 'deceased', format: 'truncate' },
+  { labelKey: 'pages.room.contacts', field: 'contacts', format: 'truncate' },
+  { labelKey: 'pages.room.price', field: 'price', format: 'price' },
+];
+const cardStatusFields: (keyof RoomModel)[] = ['saleStatus', 'intoStatus'];
+const cardActions: RoomCardAction[] = [
+  { name: 'detail', labelKey: 'operate.detail', theme: 'primary' },
+  {
+    name: 'create',
+    labelKey: 'operate.create',
+    theme: 'danger',
+    visible: (row) => row.saleStatus === SALE_SOLD && userInfo.useCreate === 1,
+  },
+  {
+    name: 'modify',
+    labelKey: 'operate.modify',
+    theme: 'primary',
+    visible: (row) => row.saleStatus === SALE_SOLD && userInfo.useModify === 1,
+  },
+  {
+    name: 'delete',
+    labelKey: 'operate.delete',
+    theme: 'danger',
+    visible: (row) => row.saleStatus === SALE_SOLD && userInfo.useDelete === 1,
+  },
+];
+// RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 #6
+const onCardAction = (name: string, row: RoomModel) => {
+  switch (name) {
+    case 'detail':
+      handleClickDetail(row);
+      break;
+    case 'create':
+      handleClickCreate(row);
+      break;
+    case 'modify':
+      handleClickModify(row);
+      break;
+    case 'delete':
+      handleClickDelete(row);
+      break;
+    default:
+      break;
+  }
+};
+
 // 删除页操作列“删除”：记录待删除目标并打开二次确认 20260909 新增,
 const onSelectRecord = (record: ContactsModel) => {
   deleteTarget.value = { idContacts: record.idContacts, idRoom: record.idRoom, contacts: record.contacts };
@@ -694,9 +627,8 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      // 后端拒绝时展示具体原因(如重名提示),否则回退到通用失败词条 20260913 修改
-      const errMsg = (e as AxiosError<{ error?: string }>)?.response?.data?.error;
-      MessagePlugin.error(errMsg || translate('operate.createdFailedPrompt'));
+      // 后端拒绝时展示具体原因(如重名提示),否则回退到通用失败词条 20260913 修改, 20261020 P2 C2 改用公共 extractServerError
+      MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
     }
   } else {
     try {
@@ -706,9 +638,8 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      // 后端拒绝时展示具体原因(如重名提示),否则回退到通用失败词条 20260913 修改
-      const errMsg = (e as AxiosError<{ error?: string }>)?.response?.data?.error;
-      MessagePlugin.error(errMsg || translate('operate.modifyFailedPrompt'));
+      // 后端拒绝时展示具体原因(如重名提示),否则回退到通用失败词条 20260913 修改, 20261020 P2 C2 改用公共 extractServerError
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

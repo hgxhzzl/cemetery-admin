@@ -1,3 +1,8 @@
+import type { InjectionKey, Ref } from 'vue';
+
+// 业务登记表单形态：销售/联系人（业务登记）/预定/下葬/备注 20261020 P2 S2 拆分导出供子视图 props 复用
+export type BusinessFormMode = 'sale' | 'business' | 'reserve' | 'buried' | 'remark';
+
 export const FIND_DATA = {
   yNum: '',
   region: '',
@@ -56,6 +61,31 @@ export const INITIAL_BUSINESS_DATA = {
   // 业务创建日期：修改回填用，票据编号取 yyyymm 前缀 20260922 新增,
   createDate: '',
 };
+
+// 业务登记表单数据注入键：供拆出的下葬字段子视图（BuriedFormView）经 inject 共享页面 formBusinessData，
+// 保持页面持有状态的单向数据流（子视图仅渲染/编辑字段，提交/校验/联系人选择仍留页面）20261020 P2 S2 拆分
+export const businessFormDataKey: InjectionKey<Ref<typeof INITIAL_BUSINESS_DATA>> = Symbol(
+  'gravePlotBusinessFormBusinessData',
+);
+
+// 联系人（业务登记）表单数据：contacts 表三字段 + 主键/墓位，供拆出的联系人子视图共享 20261020 P2 S2 拆分
+export interface ContactsFormData {
+  idContacts: number;
+  idRoom: number;
+  contacts: string;
+  contactsPhone: string;
+  contactsIDCard: string;
+}
+// 联系人表单数据注入键：供 ContactsFormView 子视图经 inject 共享页面 formContactsData（提交/校验/电话过滤仍留页面）20261020 P2 S2 拆分
+export const contactsFormDataKey: InjectionKey<Ref<ContactsFormData>> = Symbol('gravePlotBusinessFormContactsData');
+
+// 墓位备注表单数据：单字段备注（room.remark），供拆出的备注子视图共享 20261020 P2 S2 拆分
+export interface RemarkFormData {
+  idRoom: number;
+  remark: string;
+}
+// 备注表单数据注入键：供 RemarkFormView 子视图经 inject 共享页面 formRemarkData（保存/返回仍留页面）20261020 P2 S2 拆分
+export const remarkFormDataKey: InjectionKey<Ref<RemarkFormData>> = Symbol('gravePlotBusinessFormRemarkData');
 
 export interface SelectModel {
   value: string;
