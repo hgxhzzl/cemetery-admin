@@ -108,10 +108,20 @@ export function normalizeCardColors(
   const result = {} as CardColorConfig;
   CARD_COLOR_STATES.forEach((state) => {
     const item = raw?.[state] ?? {};
-    const color = isHexColor(item.color) ? item.color.toUpperCase() : DEFAULT_CARD_COLORS[state].color;
-    // border 由 color 派生：库里存的 border 仅在用户没改过 color 时才等于派生值，
-    // 以库值优先保留手工微调空间，缺失/非法时现算 20261011 新增,
-    const border = isHexColor(item.border) ? item.border.toUpperCase() : darkenColor(color);
+    // 先取成 const 局部再做类型守卫：TS 只对稳定的 const 引用做“别名条件”窄化，
+    // 直接写 hasColor ? item.color.toUpperCase() 会报 possibly undefined
+    const rawColor = item.color;
+    const hasColor = isHexColor(rawColor);
+    const color = hasColor ? rawColor.toUpperCase() : DEFAULT_CARD_COLORS[state].color;
+    // border 取值优先级：合法库值 > 该态底色缺失（含无配置行）时取与 card-color.less :root 同值的兜底边框 >
+    // 只配了 color 时由 color 现算派生值（用户只调一个颜色的正常路径） 20261011 新增 20261019 修正,
+    // 原写法对“整条未配”也走派生，会让无 card_color 行的租户得到比 :root 更淡的外框，
+    // 与本文件兜底常量“接口异常/无配置时按此渲染”的声明不符（由 tests/cardTheme.spec.ts 暴露）
+    const border = isHexColor(item.border)
+      ? item.border.toUpperCase()
+      : hasColor
+        ? darkenColor(color)
+        : DEFAULT_CARD_COLORS[state].border;
     result[state] = {
       color,
       border,
