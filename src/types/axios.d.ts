@@ -40,14 +40,6 @@ export interface RequestOptions {
    */
   isReturnNativeResponse?: boolean;
   /**
-   * 是否忽略请求取消令牌
-   *
-   * 如果启用，则重复请求时不进行处理
-   *
-   * 如果禁用，则重复请求时会取消当前请求
-   */
-  ignoreCancelToken?: boolean;
-  /**
    * 自动对请求添加时间戳参数
    */
   joinTime?: boolean;
@@ -68,22 +60,6 @@ export interface RequestOptions {
      *
      * 单位: 毫秒
      */
-    delay: number;
-  };
-  /**
-   * 接口级节流
-   *
-   * 单位: 毫秒
-   */
-  throttle?: {
-    delay: number;
-  };
-  /**
-   * 接口级防抖
-   *
-   * 单位: 毫秒
-   */
-  debounce?: {
     delay: number;
   };
 }

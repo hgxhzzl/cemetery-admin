@@ -1,26 +1,26 @@
-import type {
-  AxiosError,
-  AxiosInstance,
-  AxiosRequestConfig,
-  AxiosRequestHeaders,
-  AxiosResponse,
-  InternalAxiosRequestConfig,
-} from 'axios';
+import type { AxiosError, AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import cloneDeep from 'lodash/cloneDeep';
-import debounce from 'lodash/debounce';
 import isFunction from 'lodash/isFunction';
-import throttle from 'lodash/throttle';
-import { stringify } from 'qs';
 
-import { ContentTypeEnum } from '@/constants';
 import type { AxiosRequestConfigRetry, RequestOptions, Result } from '@/types/axios';
 
-import { AxiosCanceler } from './AxiosCancel';
 import type { CreateAxiosOptions } from './AxiosTransform';
 
 /**
  * Axios 模块
+ *
+ * 模板自带的四组能力在本项目没有任何调用方，已整体删除（20261019 审查瘦身）：
+ * 1) form-urlencoded 与 params 序列化（supportFormData / supportParamsStringify，依赖 qs）：全局
+ *    Content-Type 恒为 JSON，无人设过 x-www-form-urlencoded，且 supportParamsStringify 的调用本来就是注释；
+ *    qs 会连带把 side-channel / get-intrinsic / function-bind 内省表打进首屏预加载的 chunk
+ * 2) 重复请求取消器 AxiosCancel：默认 requestOptions.ignoreCancelToken = true，使 addPending 永不执行，
+ *    整个取消器只在空表上 removePending，属空转抽象
+ * 3) 接口级节流/防抖（throttle / debounce + pendingResolvers 队列）：无任何请求配置过这两项，且并发多请求时
+ *    resolver 与 config 的配对并不可靠
+ * 4) put / patch / delete / upload 与 getAxios / setHeader / configAxios：后端只暴露 GET/POST，
+ *    全项目实际只调用 request.get（63 处）与 request.post（34 处）
+ * 需要恢复时优先用 axios 原生能力（adapter / paramsSerializer / CancelToken），不要再引回 qs
  */
 export class VAxios {
   /**
@@ -35,34 +35,10 @@ export class VAxios {
    */
   private readonly options: CreateAxiosOptions;
 
-  /**
-   * 节流/防抖包装后的请求函数
-   * @private
-   */
-  private throttledRequest: ((config: AxiosRequestConfigRetry, options?: RequestOptions) => void) | null = null;
-
-  /**
-   * 待resolve的请求回调队列
-   * @private
-   */
-  private pendingResolvers: {
-    resolve: (value: any) => void;
-  }[] = [];
-
   constructor(options: CreateAxiosOptions) {
     this.options = options;
     this.instance = axios.create(options);
     this.setupInterceptors();
-    this.setupThrottleDebounce();
-  }
-
-  /**
-   * 创建Axios实例
-   * @param config
-   * @private
-   */
-  private createAxios(config: CreateAxiosOptions): void {
-    this.instance = axios.create(config);
   }
 
   /**
@@ -75,31 +51,6 @@ export class VAxios {
   }
 
   /**
-   * 获取Axios实例
-   */
-  getAxios(): AxiosInstance {
-    return this.instance;
-  }
-
-  /**
-   * 配置Axios
-   * @param config
-   */
-  configAxios(config: CreateAxiosOptions) {
-    if (!this.instance) return;
-    this.createAxios(config);
-  }
-
-  /**
-   * 设置公共头部信息
-   * @param headers
-   */
-  setHeader(headers: Record<string, string>): void {
-    if (!this.instance) return;
-    Object.assign(this.instance.defaults.headers, headers);
-  }
-
-  /**
    * 设置拦截器
    * @private
    */
@@ -109,16 +60,9 @@ export class VAxios {
 
     const { requestInterceptors, requestInterceptorsCatch, responseInterceptors, responseInterceptorsCatch } =
       transform;
-    const axiosCanceler = new AxiosCanceler();
 
     // 请求拦截器
     this.instance.interceptors.request.use((config: InternalAxiosRequestConfig) => {
-      // 如果忽略取消令牌，则不会取消重复的请求
-      // @ts-expect-error 请求参数通过嵌套赋值
-      const { ignoreCancelToken } = config.requestOptions;
-      const ignoreCancel = ignoreCancelToken ?? this.options.requestOptions?.ignoreCancelToken;
-      if (!ignoreCancel) axiosCanceler.addPending(config);
-
       if (requestInterceptors && isFunction(requestInterceptors)) {
         config = requestInterceptors(config, this.options) as InternalAxiosRequestConfig;
       }
@@ -133,7 +77,6 @@ export class VAxios {
 
     // 响应结果处理
     this.instance.interceptors.response.use((res: AxiosResponse) => {
-      if (res) axiosCanceler.removePending(res.config);
       if (responseInterceptors && isFunction(responseInterceptors)) {
         res = responseInterceptors(res);
       }
@@ -146,46 +89,6 @@ export class VAxios {
     }
   }
 
-  /**
-   * 支持 FormData 请求格式
-   * @param config
-   */
-  supportFormData(config: AxiosRequestConfig) {
-    const headers = config.headers || (this.options.headers as AxiosRequestHeaders);
-    const contentType = headers?.['Content-Type'] || headers?.['content-type'];
-
-    if (
-      contentType !== ContentTypeEnum.FormURLEncoded ||
-      !Reflect.has(config, 'data') ||
-      config.method?.toUpperCase() === 'GET'
-    ) {
-      return config;
-    }
-
-    return {
-      ...config,
-      data: stringify(config.data, { arrayFormat: 'brackets' }),
-    };
-  }
-
-  /**
-   * 支持 params 序列化
-   * @param config
-   */
-  supportParamsStringify(config: AxiosRequestConfig) {
-    const headers = config.headers || this.options.headers;
-    const contentType = headers?.['Content-Type'] || headers?.['content-type'];
-
-    if (contentType === ContentTypeEnum.FormURLEncoded || !Reflect.has(config, 'params')) {
-      return config;
-    }
-
-    return {
-      ...config,
-      paramsSerializer: (params: any) => stringify(params, { arrayFormat: 'brackets' }),
-    };
-  }
-
   get<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
     return this.request({ ...config, method: 'GET' }, options);
   }
@@ -194,81 +97,12 @@ export class VAxios {
     return this.request({ ...config, method: 'POST' }, options);
   }
 
-  put<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
-    return this.request({ ...config, method: 'PUT' }, options);
-  }
-
-  delete<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
-    return this.request({ ...config, method: 'DELETE' }, options);
-  }
-
-  patch<T = any>(config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
-    return this.request({ ...config, method: 'PATCH' }, options);
-  }
-
-  /**
-   * 上传文件封装
-   * @param key 文件所属的key
-   * @param file 文件
-   * @param config 请求配置
-   * @param options
-   */
-  upload<T = any>(key: string, file: File, config: AxiosRequestConfig, options?: RequestOptions): Promise<T> {
-    const params: FormData = config.params ?? new FormData();
-    params.append(key, file);
-
-    return this.request(
-      {
-        ...config,
-        method: 'POST',
-        headers: {
-          'Content-Type': ContentTypeEnum.FormData,
-        },
-        params,
-      },
-      options,
-    );
-  }
-
-  /**
-   * 初始化节流/防抖
-   * @private
-   */
-  private setupThrottleDebounce() {
-    const { requestOptions } = this.options;
-
-    if (requestOptions?.throttle?.delay) {
-      this.throttledRequest = throttle((config: AxiosRequestConfigRetry, options?: RequestOptions) => {
-        const resolver = this.pendingResolvers.shift();
-        resolver?.resolve(this.synthesisRequest(config, options));
-      }, requestOptions.throttle.delay);
-    } else if (requestOptions?.debounce?.delay) {
-      this.throttledRequest = debounce((config: AxiosRequestConfigRetry, options?: RequestOptions) => {
-        const resolver = this.pendingResolvers.shift();
-        resolver?.resolve(this.synthesisRequest(config, options));
-      }, requestOptions.debounce.delay);
-    }
-  }
-
   /**
    * 请求封装
    * @param config
    * @param options
    */
   request<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
-    const { requestOptions } = this.options;
-
-    if (requestOptions?.throttle !== undefined && requestOptions?.debounce !== undefined) {
-      throw new Error('throttle and debounce cannot be set at the same time');
-    }
-
-    if (this.throttledRequest) {
-      return new Promise<T>((resolve) => {
-        this.pendingResolvers.push({ resolve });
-        this.throttledRequest!(config, options);
-      });
-    }
-
     return this.synthesisRequest(config, options);
   }
 
@@ -277,6 +111,8 @@ export class VAxios {
    * @private
    */
   private async synthesisRequest<T = any>(config: AxiosRequestConfigRetry, options?: RequestOptions): Promise<T> {
+    // cloneDeep 有意保留：beforeRequestHook 会就地改写 url/params，formatRequestDate 会改写 data，
+    // 不克隆会污染调用方传入的表单对象（各页表单均为响应式 ref.value）
     let conf: CreateAxiosOptions = cloneDeep(config);
     const transform = this.getTransform();
 
@@ -289,10 +125,6 @@ export class VAxios {
       conf = beforeRequestHook(conf, opt);
     }
     conf.requestOptions = opt;
-
-    conf = this.supportFormData(conf);
-    // 支持params数组参数格式化，因axios默认的toFormData即为brackets方式，无需配置paramsSerializer为qs，有需要可解除注释，参数参考qs文档
-    // conf = this.supportParamsStringify(conf);
 
     return new Promise((resolve, reject) => {
       this.instance
@@ -313,9 +145,6 @@ export class VAxios {
           if (requestCatchHook && isFunction(requestCatchHook)) {
             reject(requestCatchHook(e, opt));
             return;
-          }
-          if (axios.isAxiosError(e)) {
-            // 在这里重写Axios的错误信息
           }
           reject(e);
         });

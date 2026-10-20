@@ -1,0 +1,47 @@
+# 本仓库自有门禁（20261019 新增）
+# 背景：模板自带的 pull-request.yml 调用 TDesign 官方 reusable workflow，跑的是模板用例，
+# 不会校验本项目的构建产物与业务单测；此前 npm test 是 echo 占位，等于前端零门禁 ——
+# 与 cemetery-api 那次"RBAC 静默回归三天后才被发现"是同一类风险，故补这一段可自证的检查。
+name: CMS CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+  # 打 tag 发布前手动跑一次，确认三节全绿再发
+  workflow_dispatch:
+
+concurrency:
+  group: cms-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint / Unit / TypeBuild
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # __APP_VERSION__ 由 vite.config.ts 里 git describe 计算，浅克隆取不到 tag 会回落成 commit hash
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          # package.json engines: node >= 22.12.0
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+
+      - name: ESLint（--max-warnings 0）
+        run: npm run lint
+
+      - name: 纯函数单测（vitest，node 环境）
+        run: npm run test
+
+      - name: 类型检查 + 生产构建（vue-tsc --noEmit && vite build --mode release）
+        run: npm run build
+
+      # 存量告警未清零，先观察不阻断；清零后删掉 continue-on-error 即为硬门禁
+      - name: Stylelint（观察项）
+        run: npm run stylelint
+        continue-on-error: true
