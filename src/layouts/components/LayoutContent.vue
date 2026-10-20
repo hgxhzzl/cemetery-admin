@@ -35,22 +35,19 @@
             <t-icon v-else name="home" />
             <template #dropdown>
               <t-dropdown-menu>
-                <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
+                <t-dropdown-item @click="() => handleRefresh(routeItem)">
                   <t-icon name="refresh" />
                   {{ t('layout.tagTabs.refresh') }}
                 </t-dropdown-item>
-                <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path, index)">
+                <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path)">
                   <t-icon name="arrow-left" />
                   {{ t('layout.tagTabs.closeLeft') }}
                 </t-dropdown-item>
-                <t-dropdown-item
-                  v-if="index < tabRouters.length - 1"
-                  @click="() => handleCloseBehind(routeItem.path, index)"
-                >
+                <t-dropdown-item v-if="index < tabRouters.length - 1" @click="() => handleCloseBehind(routeItem.path)">
                   <t-icon name="arrow-right" />
                   {{ t('layout.tagTabs.closeRight') }}
                 </t-dropdown-item>
-                <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path, index)">
+                <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path)">
                   <t-icon name="close-circle" />
                   {{ t('layout.tagTabs.closeOther') }}
                 </t-dropdown-item>
@@ -95,6 +92,11 @@ const activeTabPath = ref<string | null>('');
 
 const { locale } = useLocale();
 
+// 模板 v-for 遍历的是过滤后可见列表（tabRouters computed），而 store 各 action 的 routeIdx
+// 作用于未过滤的 tabRouterList；一旦存在 isAlive=false 且非 home 的页签（后端下发 keepAlive=0
+// 或刷新窗口期），直接用过滤下标会错位操作到其他页签；统一按 path 反查真实下标（审查修复 20261020）
+const realTabIndex = (path: string) => tabsRouterStore.tabRouters.findIndex((i) => i.path === path);
+
 const handleChangeCurrentTab = (path: string) => {
   const { tabRouters } = tabsRouterStore;
   const foundRoute = tabRouters.find((i) => i.path === path);
@@ -102,39 +104,50 @@ const handleChangeCurrentTab = (path: string) => {
 };
 
 const handleRemove = (options: TTabRemoveOptions) => {
+  const path = options.value as string;
+  const realIdx = realTabIndex(path);
+  if (realIdx === -1) return;
   const { tabRouters } = tabsRouterStore;
-  const nextRouter = tabRouters[options.index + 1] || tabRouters[options.index - 1];
+  const nextRouter = tabRouters[realIdx + 1] || tabRouters[realIdx - 1];
 
-  tabsRouterStore.subtractCurrentTabRouter({ path: options.value as string, routeIdx: options.index });
-  if ((options.value as string) === route.path) router.push({ path: nextRouter.path, query: nextRouter.query });
+  tabsRouterStore.subtractCurrentTabRouter({ path, routeIdx: realIdx });
+  if (path === route.path && nextRouter) router.push({ path: nextRouter.path, query: nextRouter.query });
 };
 
 const renderTitle = (title?: LocalizedTitle) => {
   if (!title) return '';
   return title[locale.value as keyof LocalizedTitle] || '';
 };
-const handleRefresh = (route: TRouterInfo, routeIdx: number) => {
-  tabsRouterStore.toggleTabRouterAlive(routeIdx);
+const handleRefresh = (route: TRouterInfo) => {
+  const realIdx = realTabIndex(route.path);
+  if (realIdx === -1) return;
+  tabsRouterStore.toggleTabRouterAlive(realIdx);
   nextTick(() => {
-    tabsRouterStore.toggleTabRouterAlive(routeIdx);
+    tabsRouterStore.toggleTabRouterAlive(realIdx);
     router.replace({ path: route.path, query: route.query });
   });
   activeTabPath.value = null;
 };
-const handleCloseAhead = (path: string, routeIdx: number) => {
-  tabsRouterStore.subtractTabRouterAhead({ path, routeIdx });
+const handleCloseAhead = (path: string) => {
+  const realIdx = realTabIndex(path);
+  if (realIdx === -1) return;
+  tabsRouterStore.subtractTabRouterAhead({ path, routeIdx: realIdx });
 
-  handleOperationEffect('ahead', routeIdx);
+  handleOperationEffect('ahead', realIdx);
 };
-const handleCloseBehind = (path: string, routeIdx: number) => {
-  tabsRouterStore.subtractTabRouterBehind({ path, routeIdx });
+const handleCloseBehind = (path: string) => {
+  const realIdx = realTabIndex(path);
+  if (realIdx === -1) return;
+  tabsRouterStore.subtractTabRouterBehind({ path, routeIdx: realIdx });
 
-  handleOperationEffect('behind', routeIdx);
+  handleOperationEffect('behind', realIdx);
 };
-const handleCloseOther = (path: string, routeIdx: number) => {
-  tabsRouterStore.subtractTabRouterOther({ path, routeIdx });
+const handleCloseOther = (path: string) => {
+  const realIdx = realTabIndex(path);
+  if (realIdx === -1) return;
+  tabsRouterStore.subtractTabRouterOther({ path, routeIdx: realIdx });
 
-  handleOperationEffect('other', routeIdx);
+  handleOperationEffect('other', realIdx);
 };
 
 // 处理非当前路由操作的副作用
@@ -164,10 +177,15 @@ const handleTabMenuClick = (visible: boolean, ctx: PopupVisibleChangeContext, pa
 
 const handleDragend = (options: { currentIndex: number; targetIndex: number }) => {
   const { tabRouters } = tabsRouterStore;
+  // 拖拽回调的 currentIndex/targetIndex 是可见页签（过滤后列表）的下标：先映射回 path，
+  // 再按 path 在未过滤数组中定位后交换，避免隐藏页签存在时拖拽错位（审查修复 20261020）
+  const visiblePaths = tabRouters.filter((r) => r.isAlive || r.isHome).map((r) => r.path);
+  const fromPath = visiblePaths[options.currentIndex];
+  const toPath = visiblePaths[options.targetIndex];
+  const i = tabRouters.findIndex((r) => r.path === fromPath);
+  const j = tabRouters.findIndex((r) => r.path === toPath);
+  if (i === -1 || j === -1) return;
 
-  [tabRouters[options.currentIndex], tabRouters[options.targetIndex]] = [
-    tabRouters[options.targetIndex],
-    tabRouters[options.currentIndex],
-  ];
+  [tabRouters[i], tabRouters[j]] = [tabRouters[j], tabRouters[i]];
 };
 </script>

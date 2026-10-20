@@ -89,7 +89,9 @@ export const useUserStore = defineStore('user', {
           roles: roleItems,
         };
       } else {
-        throw res;
+        // api/login.ts 已在 code !== 0 时 reject，本分支实际不可达；保留该分支但改抛 Error 实例，
+        // 避免非 Error 对象进守卫 catch 后 (error as Error).message 为 undefined 弹空 toast（审查修复 20261020）
+        throw new Error(res?.message || '登录失败');
       }
     },
     async getUserInfo() {
@@ -102,7 +104,8 @@ export const useUserStore = defineStore('user', {
         return;
       }
       this.userInfo = {
-        name: this.userName || 'td_dev',
+        // 去掉模板遗留的 'td_dev' 默认名：登录后 userName 必非空，残留假名会误导 UI；若仍为空则由幂等短落下次再补（审查清理 20261020）
+        name: this.userName,
         roles: this.userInfo.roles,
       };
     },

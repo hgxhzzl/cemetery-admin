@@ -75,7 +75,7 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260827 修改 -->
-          <div v-if="hasQueried && !saleCardRows.length" class="sale-no-data">暂无数据</div>
+          <div v-if="hasQueried && !saleCardRows.length" class="sale-no-data">{{ t('common.noData') }}</div>
 
           <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1a 并入，与 buried/reserve/contacts 同族）：
                信息行(规格/价格)与操作由 cardMetaFields/cardActions 配置承接，预定/销售状态胶囊经 statusFields 下发，
@@ -317,7 +317,7 @@ import { extractServerError } from '@/utils/apiError';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
-import { printHtmlInNewTab } from '@/utils/printWindow';
+import { openPrintTab, writeAndPrint } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml } from '@/utils/receipt';
 
@@ -494,6 +494,12 @@ const printReceipt = async () => {
   if (realPriceString === undefined || realPriceString === '') {
     return MessagePlugin.warning(translate('pages.sale.realPricPlaceholder'));
   }
+  // 收据配制查询为异步，开窗必须在 await 之前的点击手势内同步完成，否则会被浏览器拦截
+  // （printHtmlInNewTab 拆为 openPrintTab + writeAndPrint，审查修复 20261020）
+  const printWindow = openPrintTab();
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.sale.printBlockedPrompt'));
+  }
   const data: ReceiptData = {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
@@ -519,11 +525,9 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 打开空白新标签页写入票据文档并唤起打印预览（流程已抽至 utils/printWindow，
-  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
-  if (!printHtmlInNewTab(buildReceiptHtml(data, config))) {
-    return MessagePlugin.warning(translate('pages.sale.printBlockedPrompt'));
-  }
+  // 把票据文档写入已打开的空白新标签页并唤起打印预览（流程已抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛 20261020 改拆分调用
+  writeAndPrint(printWindow, buildReceiptHtml(data, config));
 };
 
 // 成交价失焦时格式化为千分位 20260828 梳理,

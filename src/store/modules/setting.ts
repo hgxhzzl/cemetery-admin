@@ -2,22 +2,46 @@ import keys from 'lodash/keys';
 import { defineStore } from 'pinia';
 import { Color } from 'tvision-color';
 
-import type { TColorSeries } from '@/config/color';
+import type { TChartColor, TColorSeries } from '@/config/color';
 import { DARK_CHART_COLORS, LIGHT_CHART_COLORS } from '@/config/color';
 import STYLE_CONFIG from '@/config/style';
 import { store } from '@/store';
 import type { ModeType } from '@/types/interface';
 import { generateColorMap, insertThemeStylesheet } from '@/utils/color';
 
-const state: Record<string, any> = {
+// 显式声明字段类型，替代原 Record<string, any>（唯一系统性类型失真的收敛，审查清理 20261020）
+export interface SettingState {
+  showFooter: boolean;
+  isSidebarCompact: boolean;
+  showBreadcrumb: boolean;
+  menuAutoCollapsed: boolean;
+  mode: ModeType | 'auto';
+  layout: string;
+  splitMenu: boolean;
+  sideMode: ModeType;
+  isFooterAside: boolean;
+  isSidebarFixed: boolean;
+  isHeaderFixed: boolean;
+  isUseTabsRouter: boolean;
+  showHeader: boolean;
+  brandTheme: string;
+  showSettingPanel: boolean;
+  colorList: TColorSeries;
+  chartColors: TChartColor;
+}
+
+const state: SettingState = {
   ...STYLE_CONFIG,
+  // STYLE_CONFIG 未 as const，字符串字段被拓宽为 string，此处按接口目标类型收回
+  mode: STYLE_CONFIG.mode as ModeType | 'auto',
+  sideMode: STYLE_CONFIG.sideMode as ModeType,
   showSettingPanel: false,
   colorList: {} as TColorSeries,
   chartColors: LIGHT_CHART_COLORS,
 };
 
-export type TState = typeof state;
-export type TStateKey = keyof typeof state;
+export type TState = SettingState;
+export type TStateKey = keyof SettingState;
 
 export const useSettingStore = defineStore('setting', {
   state: () => state,
@@ -84,18 +108,22 @@ export const useSettingStore = defineStore('setting', {
       document.documentElement.setAttribute('theme-color', brandTheme);
     },
     updateConfig(payload: Partial<TState>) {
+      // keyof 联合类型下无法表达按同键读写的相关性（报 never 赋值错误），
+      // 改走 Record 视图回写，键集仍由 TStateKey 约束
+      const mutableState = this as unknown as Record<TStateKey, unknown>;
       for (const key in payload) {
-        if (payload[key as TStateKey] !== undefined) {
-          this[key as TStateKey] = payload[key as TStateKey];
+        const value = payload[key as TStateKey];
+        if (value !== undefined) {
+          mutableState[key as TStateKey] = value;
         }
         if (key === 'mode') {
-          this.changeMode(payload[key] as ModeType);
+          this.changeMode(value as ModeType | 'auto');
         }
         if (key === 'sideMode') {
-          this.changeSideMode(payload[key] as ModeType);
+          this.changeSideMode(value as ModeType);
         }
         if (key === 'brandTheme') {
-          this.changeBrandTheme(payload[key]);
+          this.changeBrandTheme(value as string);
         }
       }
     },

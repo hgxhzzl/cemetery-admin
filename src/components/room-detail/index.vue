@@ -184,7 +184,7 @@ import type { RoomModel } from '@/api/model/roomModel';
 import type { ReserveModel } from '@/api/reserve';
 import type { SaleModel } from '@/api/sale';
 import type { TransferOutModel } from '@/api/transferOut';
-import { i18n } from '@/locales';
+import { translate } from '@/locales';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 
@@ -209,8 +209,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
-
-const translate = (key: string) => String((i18n.global as any).t(key));
 
 // 下葬/收款/联系人三张详情列表统一固定总宽（即各表列宽总和）；
 // t-table 默认宽 100% 会被卡片宽度拉伸，固定宽度后三表渲染宽度完全一致，窄容器下退回 100% 避免溢出 20260912 修改

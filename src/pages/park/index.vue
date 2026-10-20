@@ -56,7 +56,7 @@ import { onMounted, ref } from 'vue';
 import type { ListParkModel, SelectModel } from '@/api/model/parkModel';
 import { getParkList, getRegionList, insertPark } from '@/api/park';
 import { useSubmitGuard } from '@/hooks';
-import { i18n } from '@/locales';
+import { translate } from '@/locales';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA, INITIAL_PARKJSON } from './constants';
@@ -80,8 +80,6 @@ interface TagDragSortContext {
 }
 
 type TagInputValue = Array<string | number>;
-
-const translate = (key: string) => String(i18n.global.t(key));
 
 const park = ref<string[]>([]);
 const dataRegionList = ref<SelectModel[]>([]);

@@ -39,7 +39,7 @@
     </div>
 
     <t-form-item class="btn-container">
-      <t-button block size="large" type="submit"> {{ t('pages.login.signIn') }} </t-button>
+      <t-button block size="large" type="submit" :disabled="submitting"> {{ t('pages.login.signIn') }} </t-button>
     </t-form-item>
   </t-form>
 </template>
@@ -49,6 +49,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
+import { useSubmitGuard } from '@/hooks';
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import { getDeviceInfo } from '@/utils/device';
@@ -81,8 +82,15 @@ const showPsw = ref(false);
 
 const router = useRouter();
 
+// 复用各业务页同款提交守卫：getDeviceInfo/login 两个 await 在途期间按钮仍可点击，
+// 快速双击会并发两次登录请求（审查清理 20261020 复用 useSubmitGuard）
+const { submitting, run: runSubmit } = useSubmitGuard();
+
 const onSubmit = async (ctx: SubmitContext) => {
-  if (ctx.validateResult === true) {
+  if (ctx.validateResult !== true) {
+    return;
+  }
+  await runSubmit(async () => {
     try {
       if (formData.value.checked) {
         localStorage.setItem(REMEMBER_ACCOUNT_KEY, formData.value.account);
@@ -101,7 +109,7 @@ const onSubmit = async (ctx: SubmitContext) => {
       logError(e);
       MessagePlugin.error((e as Error).message);
     }
-  }
+  });
 };
 </script>
 <style lang="less" scoped>

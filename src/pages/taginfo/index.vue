@@ -118,15 +118,21 @@ onMounted(async () => {
 const fetchData = async () => {
   try {
     const { list } = await getSetList();
-    dutiesNumber = list[0].dutiesNumber;
-    teamNumber = list[0].teamNumber;
-    // 逝者关系上限：旧库无该列时兜底 5，避免 max=undefined 导致输入被意外限制 20261003 新增
-    deceasedRelationNumber = list[0].deceasedRelationNumber ?? 5;
-    regionNumber = list[0].regionNumber;
-    tagMax.value.dutiesNumber = dutiesNumber;
-    tagMax.value.teamNumber = teamNumber;
-    tagMax.value.deceasedRelationNumber = deceasedRelationNumber;
-    tagMax.value.regionNumber = regionNumber;
+    // 空数组守卫：无配置行时不再解构报错被 catch 吞成上限卡 0 且用户以为保存成功，保留当前默认值（审查修复 20261020）
+    const setRow = list?.[0];
+    if (!setRow) {
+      logError(new Error('taginfo 配置表无数据行'));
+    } else {
+      dutiesNumber = setRow.dutiesNumber;
+      teamNumber = setRow.teamNumber;
+      // 逝者关系上限：旧库无该列时默认取 5，避免 max=undefined 导致输入被意外限制 20261003 新增
+      deceasedRelationNumber = setRow.deceasedRelationNumber ?? 5;
+      regionNumber = setRow.regionNumber;
+      tagMax.value.dutiesNumber = dutiesNumber;
+      tagMax.value.teamNumber = teamNumber;
+      tagMax.value.deceasedRelationNumber = deceasedRelationNumber;
+      tagMax.value.regionNumber = regionNumber;
+    }
   } catch (e) {
     logError(e);
   }

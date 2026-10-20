@@ -2,7 +2,7 @@ import isObject from 'lodash/isObject';
 import type { RouteRecordRaw } from 'vue-router';
 import { createRouter, createWebHistory } from 'vue-router';
 
-const env = import.meta.env.MODE || 'development';
+// 原 env === 'site' 分支为模板演示站遗留死配置（仓库无该 mode），连同 env 变量一并清理 20261020
 
 // 固定业务路由模块
 const fixedModules = import.meta.glob('./modules/**/*.ts', { eager: true });
@@ -51,7 +51,7 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 const router = createRouter({
-  history: createWebHistory(env === 'site' ? '/starter/vue-next/' : import.meta.env.VITE_BASE_URL),
+  history: createWebHistory(import.meta.env.VITE_BASE_URL),
   routes: allRoutes,
   scrollBehavior() {
     return {

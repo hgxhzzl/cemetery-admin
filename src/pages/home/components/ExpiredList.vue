@@ -110,14 +110,15 @@ const {
   secondTableRef,
 );
 
-// regions 随 summary 每次激活刷新下发（新数组引用）：首次就绪与每次切回首页均从第一页重载并滚动归零 20260926 新增
+// regions 随 summary 每次激活刷新下发（新数组引用）：切回首页时从第一页重载并滚动归零。
+// 去掉 immediate：首挂时 regions 还是 undefined 空跑一次无意义，且 summary 返回后会立即再触发
+// 一次同条件重载，首轮列表请求翻倍（审查修复 20261020） 20260926 新增
 watch(
   () => props.regions,
   () => {
     if (props.regions?.[0]?.label) firstOnSubmit();
     if (props.regions?.[1]?.label) secondOnSubmit();
   },
-  { immediate: true },
 );
 
 // 卡片标题：区域名称 + 管理到期记录（如「九泉山管理到期记录」），无区域时回退默认标题 20260925 新增

@@ -63,7 +63,7 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260907 修改 -->
-          <div v-if="hasQueried && !buriedCardRows.length" class="buried-no-data">暂无数据</div>
+          <div v-if="hasQueried && !buriedCardRows.length" class="buried-no-data">{{ t('common.noData') }}</div>
 
           <!-- 卡片区 + 底部工具行拆为通用子组件 RoomCardList（中性前缀、props 驱动），
                网格数据/缩放/记录数仍由本页 useCardGrid 提供，操作经 action 事件回本页分发 20261020 P2 #6 -->
@@ -643,6 +643,10 @@ const fillBuriedForm = (record: BuriedModel) => {
 const getRoomID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：墓位记录被他人删除后 list[0] 为 undefined，回填表单会在渲染期解构报错（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formRoomData.value = dataQuery;
   } catch (e) {

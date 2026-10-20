@@ -4,7 +4,8 @@
     "appName": "墓园管理系统",
     "mgmtSuffix": "管理系统",
     "copyright": "墓园管理系统",
-    "none": "无"
+    "none": "无",
+    "noData": "暂无数据"
   },
   "components": {
     "isSetup": {},

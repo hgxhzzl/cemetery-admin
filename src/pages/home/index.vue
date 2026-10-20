@@ -42,13 +42,25 @@ defineOptions({
 });
 
 const summary = ref<DashboardSummaryModel | null>(null);
+// 在飞标记与新鲜度时间戳：首页是最常切回的页签，原 onActivated 无条件重拉使 dashboard
+// serverless 调用量翻倍；60s TTL 内复用上次结果，失败不计入 TTL 下次切回仍会重试（审查修复 20261020）
+const SUMMARY_TTL_MS = 60_000;
+let summaryInFlight = false;
+let lastSummaryAt = 0;
 
 // 当前页激活时刷新：keep-alive 缓存下首次进入与每次切回该 tab 均触发 20260915 修改
 onActivated(async () => {
+  if (summaryInFlight || (summary.value && Date.now() - lastSummaryAt < SUMMARY_TTL_MS)) {
+    return;
+  }
+  summaryInFlight = true;
   try {
     summary.value = await getDashboardSummary();
+    lastSummaryAt = Date.now();
   } catch (e) {
     logError(e);
+  } finally {
+    summaryInFlight = false;
   }
 });
 </script>

@@ -142,15 +142,13 @@ const transform: AxiosTransform = {
   // 响应错误处理
   responseInterceptorsCatch: (error: any, instance: AxiosInstance) => {
     const { config } = error;
-    if (!config || !config.requestOptions.retry) return Promise.reject(error);
-
     // 会话失效全局处理：后端 token 过期返回 401（纯文本），此前各页 catch 静默吞掉，
     // 用户停留在失效会话里；统一提示并跳登录页（afterEach 进 /login 会 logout + 恢复路由 +
     // 清配色缓存，此处不重复清理）；登录接口自身 401 由 api/login.ts 本地处理，排除在外 20261019 新增
     const status = error.response?.status as number | undefined;
     if (status === 401) {
       const userStore = useUserStore();
-      const isLoginApi = String(config.url).includes('/login');
+      const isLoginApi = String(config?.url).includes('/login');
       if (userStore.token && !isLoginApi && !sessionExpiredHandling) {
         sessionExpiredHandling = true;
         MessagePlugin.warning('登录已失效，请重新登录');
@@ -171,7 +169,7 @@ const transform: AxiosTransform = {
     // 本地处理，排除在外；不进重试 20261019 新增
     if (status === 403) {
       const forbiddenMsg = String(error.response?.data?.error || '');
-      const isLoginApi403 = String(config.url).includes('/login');
+      const isLoginApi403 = String(config?.url).includes('/login');
       if (
         forbiddenMsg &&
         !isLoginApi403 &&
@@ -183,6 +181,10 @@ const transform: AxiosTransform = {
       }
       return Promise.reject(error);
     }
+
+    // 401/403 判定必须排在重试短路之前：原写法 requestOptions.retry 缺失时直接 reject，
+    // 会连带静默丢失 401 跳登录与 403 文案透出（顺序耦合审查修复 20261020）
+    if (!config || !config.requestOptions?.retry) return Promise.reject(error);
 
     // 4xx 为确定性业务/权限错误，重试无意义（原默认重试对 403/404 也空转 3 次），仅网络错误/超时/5xx 走退避重试 20261019 新增
     if (status && status < 500) return Promise.reject(error);

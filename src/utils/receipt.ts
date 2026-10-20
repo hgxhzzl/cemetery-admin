@@ -133,7 +133,8 @@ export const buildReceiptBody = (
     <h1 class="receipt__title">${titleText}</h1>
     <div class="receipt__meta">
       <span>日期：${printDateText}</span>
-      <span>No：${serialText}</span>
+      <!-- 编号与金额回落文本同为可编辑来源，统一转义（原漏转义两处，审查修复 20261020） -->
+      <span>No：${escapeHtml(serialText)}</span>
     </div>
     <table class="receipt__table">
       <!-- 七列网格全部定宽同 PB 竖线：表头 140px、区域名 227px、区 57px、园区 82px、排 60px、排号+座号 85px、号 51px；
@@ -154,7 +155,7 @@ export const buildReceiptBody = (
       <tr>
         <th>交款金额</th>
         <td class="receipt__value" colspan="3"><span class="receipt__amount-caption">人民币（大写）</span>${formatChineseCurrency(realPrice)}</td>
-        <td class="receipt__value" colspan="2">（小写）${amountText}</td>
+        <td class="receipt__value" colspan="2">（小写）${escapeHtml(amountText)}</td>
         <td class="receipt__value receipt__amount-unit">元</td>
       </tr>
       ${positionRow}${adminfeeDateRow}

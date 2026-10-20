@@ -4,7 +4,8 @@
     "appName": "Cemetery Management System",
     "mgmtSuffix": " Management System",
     "copyright": "Cemetery Management System",
-    "none": "None"
+    "none": "None",
+    "noData": "No Data"
   },
   "components": {
     "isSetup": {},

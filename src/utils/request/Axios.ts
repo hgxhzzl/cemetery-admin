@@ -128,7 +128,9 @@ export class VAxios {
 
     return new Promise((resolve, reject) => {
       this.instance
-        .request<any, AxiosResponse<Result>>(!config.retryCount ? conf : config)
+        // 固定用 conf：原 `!config.retryCount ? conf : config` 为死三元——调用方从不传 retryCount
+        // （重试由 responseInterceptorsCatch 直接调 instance.request 完成），仅保留改写后的配置（审查清理 20261020）
+        .request<any, AxiosResponse<Result>>(conf)
         .then((res: AxiosResponse<Result>) => {
           if (transformRequestHook && isFunction(transformRequestHook)) {
             try {

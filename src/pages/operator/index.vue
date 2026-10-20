@@ -462,7 +462,7 @@ import {
 } from '@/api/operator';
 import { TYPE_USE_STATUS } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
-import { i18n, t } from '@/locales';
+import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import type { UserPermissionField } from '@/types/interface';
 import { extractServerError } from '@/utils/apiError';
@@ -474,7 +474,6 @@ import { INITIAL_DATA } from './constants';
 const userInfo = usePermission('operator');
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
-const translate = (key: string) => String(i18n.global.t(key));
 
 // list begin
 const isListShow = ref(false);
@@ -683,6 +682,10 @@ const splitRegion = (value?: string) =>
 const getOperatorID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：记录被他人删除后 list[0] 为 undefined，解构报错会被 catch 吞成静默失败（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formData.value = {
       ...dataQuery,
@@ -870,6 +873,10 @@ const submitCore = async () => {
 
   try {
     const { list } = await getHavePhone(formData.value.idOperator, formData.value.phone);
+    // 空数组守卫：原写法 list[0] 解构报错会被外层 catch 吞成点击无反应；无法确认时保守按电话已被占用阻断提交（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return MessagePlugin.warning(translate('pages.operator.havePhonePlaceholder'));
+    }
     const { havePhone } = list[0];
     if (havePhone === 0) {
       // 直接提交对象,不能JSON.stringify双重编码,否则后端body解析成字符串导致500 20260827 联调修复,

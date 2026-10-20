@@ -1,8 +1,6 @@
 import isObject from 'lodash/isObject';
 import isString from 'lodash/isString';
 
-const DATE_TIME_FORMAT = 'YYYY-MM-DD HH:mm:ss';
-
 export function joinTimestamp<T extends boolean>(_join: boolean, _restful: T): T extends true ? string : object;
 
 export function joinTimestamp(join: boolean, restful = false): string | object {
@@ -23,9 +21,7 @@ export function formatRequestDate(params: Recordable) {
   }
 
   for (const key in params) {
-    if (params[key] && params[key]._isAMomentObject) {
-      params[key] = params[key].format(DATE_TIME_FORMAT);
-    }
+    // 原 _isAMomentObject 分支为死代码：项目全程 dayjs，无 moment 对象流入（审查清理 20261020）
     if (isString(key)) {
       const value = params[key];
       if (value) {

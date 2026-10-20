@@ -392,7 +392,9 @@ function dynamicImport(dynamicViewsModules: Record<string, () => Promise<Recorda
 export function transformObjectToRoute<T = RouteItem>(routeList: RouteItem[]): T[] {
   const normalizedRoutes = normalizeMenuRoutes(routeList);
 
-  normalizedRoutes.forEach(async (route) => {
+  // 同步 for...of 替代 forEach(async)：async 回调里的 throw 落在被 forEach 丢弃的 Promise 中，
+  // 不会冒泡到 permission.ts 的 catch，component 为空的坏菜单会被静默注册成空白页（审查修复 20261020）
+  for (const route of normalizedRoutes) {
     const component = route.component as string;
 
     if (component) {
@@ -414,7 +416,7 @@ export function transformObjectToRoute<T = RouteItem>(routeList: RouteItem[]): T
     // 动态从包内引入单个Icon,如果没有网络环境可以使用这种方式 但是会导致产物存在多个chunk
     // if (route.meta.icon)
     // route.meta.icon = await getMenuIcon(route.meta.icon);
-  });
+  }
 
   return [PAGE_NOT_FOUND_ROUTE, ...normalizedRoutes] as unknown as T[];
 }

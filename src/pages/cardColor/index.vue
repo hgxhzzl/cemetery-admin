@@ -66,7 +66,7 @@ import { onMounted, ref } from 'vue';
 import { getCardColor, saveCardColor } from '@/api/cardColor';
 import type { CardColorConfig, CardColorState } from '@/api/model/cardColorModel';
 import { useSubmitGuard } from '@/hooks';
-import { i18n } from '@/locales';
+import { translate } from '@/locales';
 import { CARD_COLOR_STATES, darkenColor, isHexColor, normalizeCardColors, reloadCardColors } from '@/utils/cardTheme';
 import { logError } from '@/utils/logger';
 
@@ -81,8 +81,6 @@ interface CardColorRow {
   border: string;
   isEnabled: boolean;
 }
-
-const translate = (key: string) => String(i18n.global.t(key));
 
 const isFormShow = ref(false);
 const formRows = ref<CardColorRow[]>([]);

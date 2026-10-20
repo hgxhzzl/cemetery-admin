@@ -373,7 +373,7 @@ import type { ContractModel, SelectModel } from '@/api/model/contractModel';
 import Trend from '@/components/trend/index.vue';
 import { TYPE_CONTRACT_STATUS, TYPE_CONTRACT_TYPES } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
-import { i18n, t } from '@/locales';
+import { t, translate } from '@/locales';
 import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
@@ -381,7 +381,6 @@ import { INITIAL_DATA } from './constants';
 
 // 合同模块权限对象按稳定菜单 name('contract') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改, 20261020 P2 C1 改按 name
 const userInfo = usePermission('contract');
-const translate = (key: string) => String(i18n.global.t(key));
 
 // 列表代码开始
 const isListShow = ref(false);
@@ -581,6 +580,10 @@ const handleClickModify = async (row: { row: ContractModel }) => {
 const getContractID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：合同记录被他人删除后 list[0] 为 undefined，回填表单会在渲染期解构报错（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formData.value = dataQuery;
   } catch (e) {

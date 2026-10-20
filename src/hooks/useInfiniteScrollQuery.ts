@@ -1,3 +1,4 @@
+import { MessagePlugin } from 'tdesign-vue-next';
 import type { Ref } from 'vue';
 import { computed, ref } from 'vue';
 
@@ -35,10 +36,17 @@ export const useInfiniteScrollQuery = <T>(
   const data = ref<T[]>([]) as Ref<T[]>;
   // 是否还有更多数据：已加载条数 < 总数时继续滚动加载
   const hasMore = computed(() => data.value.length < pagination.value.total);
+  // 加载中收到的重新查询请求：fetchPage 闭包读最新筛选条件，本次拉取结束后补发一次
+  // reset，不再静默丢弃用户的“查询”点击（审查修复 20261020）
+  let pendingReset = false;
 
   // 数据加载：reset=true 时从第一页重新加载，否则追加下一页；滚动到底自动触发
+  // 并发由 loading 标记串行化（慢的旧响应返回前新请求不会起飞），无需额外序号守卫
   const fetchData = async (reset = false) => {
     if (loading.value) {
+      if (reset) {
+        pendingReset = true;
+      }
       return;
     }
     loading.value = true;
@@ -59,8 +67,14 @@ export const useInfiniteScrollQuery = <T>(
       };
     } catch (e) {
       logError(e);
+      // 列表加载失败对用户可见，不再与“确实没有数据”混淆（审查修复 20261020）
+      MessagePlugin.error('数据加载失败，请重试');
     } finally {
       loading.value = false;
+      if (pendingReset) {
+        pendingReset = false;
+        fetchData(true);
+      }
     }
   };
 

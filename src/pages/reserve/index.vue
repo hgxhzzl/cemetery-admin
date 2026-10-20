@@ -86,7 +86,7 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 -->
-          <div v-if="hasQueried && !reserveCardRows.length" class="reserve-no-data">暂无数据</div>
+          <div v-if="hasQueried && !reserveCardRows.length" class="reserve-no-data">{{ t('common.noData') }}</div>
 
           <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件：信息行/操作由 cardMetaFields/cardActions 配置承接，
                状态外框类经 cardClass 下发（前缀 roomcard，色值走全局 card-color 变量），长文本截断口径 dots（前6字+....）

@@ -96,7 +96,7 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260828 修改 -->
-          <div v-if="hasQueried && !roomCardRows.length" class="room-no-data">暂无数据</div>
+          <div v-if="hasQueried && !roomCardRows.length" class="room-no-data">{{ t('common.noData') }}</div>
 
           <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1b 并入，与 buried/reserve/transferOut/contacts 同构）：
                信息行由 cardMetaFields 配置承接（墓型(i18n)/规格/价格(price)/购墓人/管理期(date)）；每卡状态外框经 cardClass 下发

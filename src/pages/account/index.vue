@@ -353,7 +353,7 @@ import {
 import type { AccountModel, AccountPowerModel } from '@/api/model/accountModel';
 import { TYPE_ENTERPRISE_TYPES, TYPE_USE_STATUS } from '@/constants';
 import { usePermission, useSubmitGuard } from '@/hooks';
-import { i18n, t } from '@/locales';
+import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
@@ -364,7 +364,6 @@ import { INITIAL_DATA } from './constants';
 const userInfo = usePermission('account');
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
-const translate = (key: string) => String(i18n.global.t(key));
 
 // 列表开始
 const isListShow = ref(false);
@@ -576,6 +575,10 @@ const handleClickModify = async (row: { row: AccountModel }) => {
 const getAccountID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：记录被他人删除后 list[0] 为 undefined，回填表单会在渲染期解构报错（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formData.value = dataQuery;
   } catch (e) {

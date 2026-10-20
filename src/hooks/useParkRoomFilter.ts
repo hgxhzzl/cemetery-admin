@@ -1,3 +1,4 @@
+import { MessagePlugin } from 'tdesign-vue-next';
 import type { Ref } from 'vue';
 import { computed, ref } from 'vue';
 
@@ -115,14 +116,22 @@ export const useParkRoomFilter = <T extends ParkRoomRow>(
   };
 
   // 按园区+区域请求墓位列表，加载完成后才置 hasQueried，避免先闪现“暂无数据”再切换为卡片
+  // 请求序号：连续切换筛选时旧慢响应后到不得覆盖新结果（慢覆盖快，审查修复 20261020）
+  let roomSeq = 0;
   const getRoomData = async () => {
+    const my = ++roomSeq;
     try {
       const { list } = await fetchRooms(formfindData.value.park || '', formfindData.value.region || '');
+      if (my !== roomSeq) return;
       dataRoomList.value = list;
       hasQueried.value = true;
       onSelectChange();
     } catch (e) {
       logError(e);
+      // 仅当前最新请求失败才提示，过期请求的失败不打扰用户；区分“请求失败”与“确无数据”
+      if (my === roomSeq) {
+        MessagePlugin.error('墓位数据加载失败，请重试');
+      }
     }
   };
 

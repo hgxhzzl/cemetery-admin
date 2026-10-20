@@ -52,7 +52,8 @@ export const login = (username: string, password: string, deviceHash = ''): Prom
     axios(requestConfig)
       .then((response: AxiosResponse) => {
         const result = response.data;
-        if (result.code === 0 && result.message === '登录成功') {
+        // 仅以 code 判成功：原 message === '登录成功' 文案判据在后端微调标点/后缀时会导致全站无法登录（审查修复 20261020）
+        if (result.code === 0) {
           resolve(result);
         } else {
           reject(new Error(result.message));

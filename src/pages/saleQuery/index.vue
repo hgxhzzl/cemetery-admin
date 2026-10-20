@@ -360,4 +360,3 @@ onMounted(() => {
 <style lang="less" scoped>
 @import './index.less';
 </style>
-<style lang="less" scoped></style>

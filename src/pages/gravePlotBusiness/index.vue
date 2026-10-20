@@ -93,7 +93,9 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260827 修改 -->
-          <div v-if="hasQueried && !businessCardRows.length" class="gravePlotBusiness-no-data">暂无数据</div>
+          <div v-if="hasQueried && !businessCardRows.length" class="gravePlotBusiness-no-data">
+            {{ t('common.noData') }}
+          </div>
 
           <!-- 卡片列表区（卡片区 + 底部工具行）已拆至子组件，网格数据/缩放状态仍由本页 useCardGrid 提供，
                卡片上的详情/购墓人/下葬者/联系人/备注点击与缩放事件由本组件接回原有处理函数 20261019 结构拆分 -->
@@ -483,7 +485,7 @@ import type { RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import { useCardGrid, usePageSwitch, useParkRoomFilter, useRoomDetail, useSubmitGuard, useTabCacheName } from '@/hooks';
-import { translate } from '@/locales';
+import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { extractServerError } from '@/utils/apiError';
 import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
@@ -493,7 +495,7 @@ import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { logError } from '@/utils/logger';
-import { printHtmlInNewTab } from '@/utils/printWindow';
+import { openPrintTab, printHtmlInNewTab, writeAndPrint } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml, numToChinese } from '@/utils/receipt';
 
@@ -1285,6 +1287,12 @@ const printReceipt = async () => {
   if (realPriceString === undefined || realPriceString === '') {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.realPricPlaceholder'));
   }
+  // 收据配制查询为异步，开窗必须在 await 之前的点击手势内同步完成，否则会被浏览器拦截
+  // （printHtmlInNewTab 拆为 openPrintTab + writeAndPrint，审查修复 20261020）
+  const printWindow = openPrintTab();
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.gravePlotBusiness.printBlockedPrompt'));
+  }
   const data: ReceiptData = {
     payer: String(payer).trim(),
     realPriceString: String(realPriceString),
@@ -1312,11 +1320,9 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 打开空白新标签页写入票据文档并唤起打印预览（流程抽至 utils/printWindow，
-  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
-  if (!printHtmlInNewTab(buildReceiptHtml(data, config))) {
-    return MessagePlugin.warning(translate('pages.gravePlotBusiness.printBlockedPrompt'));
-  }
+  // 把票据文档写入已打开的空白新标签页并唤起打印预览（流程抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛 20261020 改拆分调用
+  writeAndPrint(printWindow, buildReceiptHtml(data, config));
 };
 
 // 安葬证套打开窗：点击手势内同步开新标签页写文档并唤起预览（套打A/B 复用），

@@ -180,7 +180,12 @@ const MIN_SIDEBAR_WIDTH = 200;
 const MAX_SIDEBAR_WIDTH = 480;
 
 const storedSidebarWidth = Number(localStorage.getItem(SIDEBAR_WIDTH_KEY));
-const sidebarWidth = ref<number | null>(storedSidebarWidth > 0 ? storedSidebarWidth : null);
+// 显式校验取回值：NaN（被破坏的存储）与超出拖拽区间的历史值均回退默认宽度，避免侧栏宽度异常（审查清理 20261020）
+const hasValidStoredWidth =
+  Number.isFinite(storedSidebarWidth) &&
+  storedSidebarWidth >= MIN_SIDEBAR_WIDTH &&
+  storedSidebarWidth <= MAX_SIDEBAR_WIDTH;
+const sidebarWidth = ref<number | null>(hasValidStoredWidth ? storedSidebarWidth : null);
 const isResizing = ref(false);
 
 const defaultExpandedWidth = computed(() => (locale.value === 'en_US' ? 320 : 232));

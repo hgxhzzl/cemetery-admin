@@ -566,6 +566,10 @@ const handleCloseContactsSelect = () => {
 const getRoomID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：墓位记录被他人删除后 list[0] 为 undefined，回填表单会在渲染期解构报错（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formRoomData.value = dataQuery;
   } catch (e) {

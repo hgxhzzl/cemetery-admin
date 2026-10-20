@@ -41,11 +41,15 @@ const chartColors = computed<TChartColor>(() =>
 );
 
 // monitorChart
-let monitorContainer: HTMLElement;
-let monitorChart: echarts.ECharts;
+let monitorContainer: HTMLElement | null = null;
+let monitorChart: echarts.ECharts | null = null;
 const renderMonitorChart = () => {
   if (!monitorContainer) {
-    monitorContainer = document.getElementById('monitorContainer')!;
+    monitorContainer = document.getElementById('monitorContainer');
+  }
+  // 容器未就绪（DOM id 不存在）时直接跳过：原非空断言会使 echarts.init(undefined) 抛错并中断后续钩子（审查清理 20261020）
+  if (!monitorContainer) {
+    return;
   }
   monitorChart = echarts.init(monitorContainer);
   monitorChart.setOption(getMonthlySalesDataSet({ monthlySales: props.monthlySales, ...chartColors.value }));
@@ -111,8 +115,11 @@ watch([width, height], () => {
 onActivated(() => {
   // keep-alive 切回时重新观察容器并校准尺寸 20260915 新增
   nextTick(() => {
-    // 按当前主题重新渲染图表，防止在首页外切换亮/暗模式后文字颜色与背景色相同而不可见 20260915 修复
-    monitorChart.setOption(getMonthlySalesDataSet({ monthlySales: props.monthlySales, ...chartColors.value }));
+    // 守卫与 L62/L70/L76 口径对称：首渲染未完成时不得抢 setOption（审查清理 20261020）
+    if (monitorChart) {
+      // 按当前主题重新渲染图表，防止在首页外切换亮/暗模式后文字颜色与背景色相同而不可见 20260915 修复
+      monitorChart.setOption(getMonthlySalesDataSet({ monthlySales: props.monthlySales, ...chartColors.value }));
+    }
     updateContainer();
     startObserver();
   });
@@ -134,6 +141,7 @@ onBeforeUnmount(() => {
 watch(
   () => store.brandTheme,
   () => {
+    if (!monitorChart) return;
     changeChartsTheme([monitorChart]);
   },
 );
@@ -153,19 +161,9 @@ watch(
   },
 );
 
-watch(
-  () => store.mode,
-  () => {
-    monitorChart.dispose();
-
-    renderCharts();
-    // 若在首页外（deactivated）切换模式，容器处于离屏状态尺寸为 0，
-    // 等下一帧容器回到文档后重新校准尺寸 20260915 修改
-    nextTick(() => {
-      updateContainer();
-    });
-  },
-);
+// 原 watch(store.mode) 的 dispose+重建已删除：chartColors（按 displayMode 推导）变化时已由上方
+// watch 同一 setOption 路径覆盖重绘；auto→亮/暗同系统色时 displayMode 不变本无需重绘，
+// 保留双链路会使主题切换连发多次重绘与整图重建（丢失图例选择状态）（审查清理 20261020）
 </script>
 <style lang="less" scoped>
 // 卡片 100% 高度需要 t-col 建立高度链 20260915 新增

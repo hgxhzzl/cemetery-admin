@@ -78,7 +78,7 @@ import type { ReceiptConfigModel } from '@/api/model/receiptConfigModel';
 import { getRegionList } from '@/api/park';
 import { getReceiptConfig, saveReceiptConfig } from '@/api/receiptConfig';
 import { useSubmitGuard } from '@/hooks';
-import { i18n } from '@/locales';
+import { translate } from '@/locales';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
@@ -90,8 +90,6 @@ defineOptions({
 type ReceiptConfigFormData = Omit<typeof INITIAL_DATA, 'region'> & {
   region: string | number;
 };
-
-const translate = (key: string) => String(i18n.global.t(key));
 
 const dataRegionList = ref<SelectModel[]>([]);
 const isFormShow = ref(false);

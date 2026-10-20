@@ -91,7 +91,7 @@
           </t-form>
 
           <!-- 查询后无数据时不展示卡片区，仅在筛选表单下方居中提示 20260909 新增 -->
-          <div v-if="hasQueried && !adminfeeCardRows.length" class="adminfee-no-data">暂无数据</div>
+          <div v-if="hasQueried && !adminfeeCardRows.length" class="adminfee-no-data">{{ t('common.noData') }}</div>
 
           <!-- 卡片区 + 底部工具行统一交给通用 RoomCardList 组件（S1b 并入，与 buried/reserve/transferOut/contacts 同构）：
                信息行由 cardMetaFields 配置承接（购墓人/下葬者(截断)/联系人(截断)/管理期(date)/备注(截断)），截断口径 ellipsis（前7字+…）
@@ -312,13 +312,13 @@ import {
   useSubmitGuard,
   useTabCacheName,
 } from '@/hooks';
-import { translate } from '@/locales';
+import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { logError } from '@/utils/logger';
-import { printHtmlInNewTab } from '@/utils/printWindow';
+import { openPrintTab, writeAndPrint } from '@/utils/printWindow';
 import type { ReceiptConfigData, ReceiptData } from '@/utils/receipt';
 import { buildReceiptHtml } from '@/utils/receipt';
 
@@ -571,6 +571,10 @@ const getFirstBurialDate = (list?: BuriedModel[]): string => {
 const getRoomID = async (id: number) => {
   try {
     const { list } = await getIdList(id);
+    // 空数组守卫：墓位记录被他人删除后 list[0] 为 undefined，回填表单会在渲染期解构报错（审查修复 20261020）
+    if (!list || list.length === 0) {
+      return;
+    }
     const dataQuery = list[0];
     formRoomData.value = dataQuery;
   } catch (e) {
@@ -827,6 +831,12 @@ const printReceipt = async () => {
   if (!payAmount || Number(payAmount) <= 0) {
     return MessagePlugin.warning(translate('pages.adminfee.payAmountPlaceholder'));
   }
+  // 收据配制查询为异步，开窗必须在 await 之前的点击手势内同步完成，否则会被浏览器拦截
+  // （printHtmlInNewTab 拆为 openPrintTab + writeAndPrint，审查修复 20261020）
+  const printWindow = openPrintTab();
+  if (!printWindow) {
+    return MessagePlugin.warning(translate('pages.adminfee.printBlockedPrompt'));
+  }
   const data: ReceiptData = {
     payer: String(payer).trim(),
     realPriceString: String(payAmount),
@@ -855,11 +865,9 @@ const printReceipt = async () => {
   } catch (e) {
     logError(e);
   }
-  // 打开空白新标签页写入票据文档并唤起打印预览（流程已抽至 utils/printWindow，
-  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛
-  if (!printHtmlInNewTab(buildReceiptHtml(data, config, 'adminfee'))) {
-    return MessagePlugin.warning(translate('pages.adminfee.printBlockedPrompt'));
-  }
+  // 把票据文档写入已打开的空白新标签页并唤起打印预览（流程已抽至 utils/printWindow，
+  // 隐藏 iframe 会让预览覆盖系统页，原系统页保持不变可随时切回）20260922 方案 20261019 收敛 20261020 改拆分调用
+  writeAndPrint(printWindow, buildReceiptHtml(data, config, 'adminfee'));
 };
 
 // 提交收款登记：idAdminfee 为0走新增，否则走修改；成功后刷新列表 20260909 新增,
