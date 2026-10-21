@@ -657,6 +657,8 @@ const onConfirmDelete = async () => {
     MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
   }
   resetDeleteRow();
   confirmVisible.value = false;

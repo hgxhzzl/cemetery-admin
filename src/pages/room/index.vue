@@ -405,6 +405,7 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { getCardStatusClass } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { logError } from '@/utils/logger';
@@ -605,8 +606,12 @@ const onConfirmDelete = async () => {
     return;
   }
   const { idRoom } = deleteRoomRow.value;
+  // 原写法 catch 里只记日志,后续仍无条件弹“删除成功”,失败时谎报结果;
+  // 改为按删除是否真正成功分流提示,并透出后端语义文案(审查修复 20261021 P1-5),
+  let deleted = false;
   try {
     await deleteRoom(idRoom);
+    deleted = true;
     const i = dataRoomList.value.findIndex((item) => item.idRoom === idRoom);
     if (i > -1) {
       dataRoomList.value.splice(i, 1);
@@ -614,10 +619,13 @@ const onConfirmDelete = async () => {
     onSelectChange();
   } catch (e) {
     logError(e);
+    MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
   }
   resetIdx();
   confirmVisible.value = false;
-  MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
+  if (deleted) {
+    MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
+  }
 };
 
 // ==================== 列表：详情与修改入口 ====================
@@ -823,15 +831,23 @@ const ClickMultipleData = () => {
 // 新建提交：成功后刷新列表并关闭新建视图；由 ClickSubmit 与“位置含已迁出记录”确认弹窗复用 20260921 抽取
 const doSubmitCreate = async (jsonbody: Partial<RoomModel>) => {
   try {
-    await insertRoom(jsonbody);
-    MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+    const result = await insertRoom(jsonbody);
+    // 批量建位会在事务内静默跳过已占用坐标,不回放 created/skipped 用户无法察觉“少建了”,
+    // 因此有跳过时改为部分成功提醒(审查修复 20261021 P1-5),
+    if (result && result.skipped > 0) {
+      MessagePlugin.warning(`已新建 ${result.created} 个墓位，${result.skipped} 个坐标已存在已被跳过`);
+    } else {
+      MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+    }
     // 如果单条，单独更新暂时不做，
     getRoomData();
 
     ClickCreateClose();
   } catch (e) {
     logError(e);
-    MessagePlugin.error(translate('operate.createdFailedPrompt'));
+    // 后端 4xx 已带可读语义文案(超出批量上限/坐标并发占用/编号重复),优先透出
+    // (审查修复 20261021 P1-5),
+    MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
   }
 };
 
@@ -951,7 +967,8 @@ const submitCore = async () => {
       ClickCreateClose();
     } catch (e) {
       logError(e);
-      MessagePlugin.error(translate('operate.modifyFailedPrompt'));
+      // 修改失败同样优先透出后端 4xx 语义文案(审查修复 20261021 P1-5),
+      MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
     }
   }
 };

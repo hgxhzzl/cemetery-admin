@@ -26,7 +26,8 @@ export function insertBuried(data: Partial<BuriedModel>) {
 // 列表接口Room
 export function getBuriedList(idRoom: number) {
   return request.get<BuriedListResult>({
-    url: `${Api.queryBuried}?idRoom=${idRoom}`,
+    url: Api.queryBuried,
+    params: { idRoom },
   });
 }
 // 修改接口
@@ -38,7 +39,9 @@ export function updateBuried(data: Partial<BuriedModel>) {
 }
 // 删除下葬记录接口(按选中的 idBuried 软删除,并回写墓位下葬状态) 20260907 新增
 export function deleteBuried(idBuried: number, idRoom: number) {
-  return request.get<BuriedListResult>({
-    url: `${Api.deleteBuried}?idBuried=${idBuried}&idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<BuriedListResult>({
+    url: Api.deleteBuried,
+    data: { idBuried, idRoom },
   });
 }

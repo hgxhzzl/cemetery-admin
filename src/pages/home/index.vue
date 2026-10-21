@@ -25,7 +25,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onActivated, ref } from 'vue';
+import { defineAsyncComponent, onActivated, ref } from 'vue';
 
 import type { DashboardSummaryModel } from '@/api/dashboard';
 import { getDashboardSummary } from '@/api/dashboard';
@@ -33,13 +33,17 @@ import { logError } from '@/utils/logger';
 
 import BuriedList from './components/BuriedList.vue';
 import ExpiredList from './components/ExpiredList.vue';
-import MiddleChart from './components/MiddleChart.vue';
 import RankList from './components/RankList.vue';
 import ReserveList from './components/ReserveList.vue';
 
 defineOptions({
   name: 'HomeIndex',
 });
+
+// 销售数量统计图依赖 echarts,原静态导入会把图表运行时与其所在首页 chunk 绑在一起:
+// 首页是登录后第一个落地的页面,登录首屏就要付出这笔下载与解析代价,而图表行仅占一页的一行高度。
+// 改异步组件后 echarts 独立分块、只在渲染该行时拉取,首页其余五行不再等图表就绪(审查修复 20261021 P2 性能),
+const MiddleChart = defineAsyncComponent(() => import('./components/MiddleChart.vue'));
 
 const summary = ref<DashboardSummaryModel | null>(null);
 // 在飞标记与新鲜度时间戳：首页是最常切回的页签，原 onActivated 无条件重拉使 dashboard

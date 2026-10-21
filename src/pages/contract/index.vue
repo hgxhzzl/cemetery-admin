@@ -536,6 +536,8 @@ const onConfirmDelete = async () => {
     MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
   } finally {
     // 无论成功失败都关闭确认弹窗并重置选中行，否则删除成功后弹窗不关闭 20260926 修复,
     confirmVisible.value = false;
@@ -568,6 +570,8 @@ const handleClickDetail = async (row: { row: ContractModel }) => {
     controlPageShow('detail');
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -588,6 +592,8 @@ const getContractID = async (id: number) => {
     formData.value = dataQuery;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 const handleClickCreate = async () => {
@@ -597,6 +603,8 @@ const handleClickCreate = async () => {
     dataPartyAList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   // 乙方
   try {
@@ -604,6 +612,8 @@ const handleClickCreate = async () => {
     dataPartyBList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   controlPageShow('createCreate');
 };

@@ -57,6 +57,7 @@ import type { ListParkModel, SelectModel } from '@/api/model/parkModel';
 import { getParkList, getRegionList, insertPark } from '@/api/park';
 import { useSubmitGuard } from '@/hooks';
 import { translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA, INITIAL_PARKJSON } from './constants';
@@ -102,6 +103,8 @@ const fetchData = async () => {
     onReset();
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -111,6 +114,8 @@ const getParkData = async () => {
     dataParkList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 

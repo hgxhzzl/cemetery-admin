@@ -30,7 +30,8 @@
       "confirmPasswordRequired": "Required",
       "passwordMismatch": "The two passwords do not match",
       "oldPasswordWrong": "The old password is incorrect",
-      "changePasswordSuccess": "Password changed successfully"
+      "changePasswordSuccess": "Password changed successfully",
+      "reloginRequired": "Password changed, please sign in again with the new password"
     },
     "tagTabs": {
       "closeOther": "Close Other",
@@ -129,6 +130,8 @@
     "createDatabaseFailedPrompt": "Database creation failed",
     "createdSuccessPrompt": "Created successfully",
     "createdFailedPrompt": "Creation failed",
+    "initialPasswordHeader": "Initial login password",
+    "initialPasswordTip": "A random initial login password has been generated. Please tell the user to change it after first login (shown only once):",
     "modifySuccessPrompt": "Modified successfully",
     "modifyFailedPrompt": "Modification failed",
     "deleteSuccessPrompt": "Deleted successfully",
@@ -151,7 +154,8 @@
     "phonePlaceholder": "Enter phone number",
     "yes": "Yes",
     "no": "No",
-    "listLoadFailedPrompt": "Failed to load the list, please try again later"
+    "listLoadFailedPrompt": "Failed to load the list, please try again later",
+    "exportFailedPrompt": "Failed to export"
   },
   "statusType": {
     "useStatusEnum": {

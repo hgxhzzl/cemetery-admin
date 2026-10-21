@@ -86,6 +86,13 @@ const updateContainer = () => {
 
 // 监听图表容器尺寸变化（卡片拉伸/收缩时自动 resize）20260915 新增
 let resizeObserver: ResizeObserver | undefined;
+// 侧边栏展开态的延时校准定时器:180ms 内若已离开/卸载组件,回调会对已 dispose 的实例 resize,
+// 故与 observer 同生命周期统一清理(审查修复 20261021 P2),
+let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+const clearResizeTimer = () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = undefined;
+};
 const startObserver = () => {
   if (!monitorContainer || resizeObserver) return;
   resizeObserver = new ResizeObserver(() => {
@@ -97,6 +104,7 @@ const startObserver = () => {
 const stopObserver = () => {
   resizeObserver?.disconnect();
   resizeObserver = undefined;
+  clearResizeTimer();
 };
 
 onMounted(() => {
@@ -136,6 +144,8 @@ onDeactivated(() => {
 onBeforeUnmount(() => {
   stopObserver();
   monitorChart?.dispose();
+  // dispose 后必须置空:否则残留的延时回调/窗口变化会对已释放实例 resize,且阻碍 echarts 内部注册表回收,
+  monitorChart = null;
 });
 
 watch(
@@ -154,7 +164,8 @@ watch(
         updateContainer();
       });
     } else {
-      setTimeout(() => {
+      clearResizeTimer();
+      resizeTimer = setTimeout(() => {
         updateContainer();
       }, 180);
     }

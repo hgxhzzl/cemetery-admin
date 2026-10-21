@@ -218,11 +218,23 @@ const handleNav = (url: string) => {
   router.push(url);
 };
 
-const handleLogout = () => {
-  router.push({
-    path: '/login',
-    query: { redirect: router.currentRoute.value.fullPath },
-  });
+const loggingOut = ref(false);
+const handleLogout = async () => {
+  // 防重复点击:两次请求会让后一次面对已删除的会话 20261021 审查修复 P0-3,
+  if (loggingOut.value) return;
+  loggingOut.value = true;
+  const redirect = router.currentRoute.value.fullPath;
+  try {
+    // 先作废服务端活跃登录态再跳登录页:原写法只 push('/login'),
+    // 后端 login_session 仍活跃,拿到 localStorage 旧 token 的人在到期前还能继续调接口 20261021 审查修复 P0-3,
+    await user.serverLogout();
+  } finally {
+    loggingOut.value = false;
+    router.push({
+      path: '/login',
+      query: { redirect },
+    });
+  }
 };
 
 // 登记本机为指定电脑:取本机设备哈希写入白名单,需本机已装设备 Agent 20260924 设备白名单,
@@ -282,6 +294,10 @@ const submitPassword = async () => {
       MessagePlugin.success(t('layout.header.changePasswordSuccess'));
       passwordDialogVisible.value = false;
       resetPasswordForm();
+      // 后端改密成功即作废了活跃登录态,继续留在页里只会处处 401,因此直接清本地态并回登录页 20261021 审查修复 P0-3,
+      MessagePlugin.info(t('layout.header.reloginRequired'));
+      user.logout();
+      router.push({ path: '/login' });
       return true;
     }
     MessagePlugin.error(t('layout.header.oldPasswordWrong'));

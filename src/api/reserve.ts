@@ -46,13 +46,16 @@ export function updateReserve(data: Partial<ReserveModel>) {
 // 按墓位查询当前活动预定记录，用于修改回填 20260907 新增
 export function getReserveByRoom(idRoom: number) {
   return request.get<ListReserveResult>({
-    url: `${Api.queryReserve}/get-by-room?idRoom=${idRoom}`,
+    url: `${Api.queryReserve}/get-by-room`,
+    params: { idRoom },
   });
 }
 
 // 取消/删除预定接口 20260907 新增
 export function deleteReserve(idRoom: number) {
-  return request.get<ListReserveResult>({
-    url: `${Api.deleteReserve}?idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<ListReserveResult>({
+    url: Api.deleteReserve,
+    data: { idRoom },
   });
 }

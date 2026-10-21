@@ -48,7 +48,8 @@ export function getTransferOutRoomList(park: string, region: string) {
 // 按墓位查询全部活动迁出记录（供修改/删除时选择记录）20260916 新增
 export function getTransferOutListByIdRoom(idRoom: number) {
   return request.get<{ list: TransferOutModel[] }>({
-    url: `${Api.queryTransferOut}?idRoom=${idRoom}`,
+    url: Api.queryTransferOut,
+    params: { idRoom },
   });
 }
 
@@ -70,7 +71,9 @@ export function updateTransferOut(data: Partial<TransferOutModel>) {
 
 // 删除迁出记录：按 idTransfer 软删除，无剩余活动记录时回置 room.transferOutStatus 为未迁出 20260916 新增
 export function deleteTransferOut(idTransfer: number, idRoom: number) {
-  return request.get<{ code: number }>({
-    url: `${Api.deleteTransferOut}?idTransfer=${idTransfer}&idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<{ code: number }>({
+    url: Api.deleteTransferOut,
+    data: { idTransfer, idRoom },
   });
 }

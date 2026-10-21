@@ -26,7 +26,8 @@ export function insertAdminfee(data: Partial<AdminfeeModel>) {
 // 按墓位查询管理费收款记录接口 20260909 新增
 export function getAdminfeeList(idRoom: number) {
   return request.get<AdminfeeListResult>({
-    url: `${Api.queryAdminfee}?idRoom=${idRoom}`,
+    url: Api.queryAdminfee,
+    params: { idRoom },
   });
 }
 // 修改管理费收款记录接口 20260909 新增
@@ -38,7 +39,9 @@ export function updateAdminfee(data: Partial<AdminfeeModel>) {
 }
 // 删除管理费收款记录接口（按选中的 idAdminfee 软删除）20260909 新增
 export function deleteAdminfee(idAdminfee: number, idRoom: number) {
-  return request.get<AdminfeeListResult>({
-    url: `${Api.deleteAdminfee}?idAdminfee=${idAdminfee}&idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<AdminfeeListResult>({
+    url: Api.deleteAdminfee,
+    data: { idAdminfee, idRoom },
   });
 }

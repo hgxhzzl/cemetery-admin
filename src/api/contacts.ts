@@ -26,7 +26,8 @@ export function insertContacts(data: Partial<ContactsModel>) {
 // 按墓位查询联系人记录接口 20260909 新增
 export function getContactsList(idRoom: number) {
   return request.get<ContactsListResult>({
-    url: `${Api.queryContacts}?idRoom=${idRoom}`,
+    url: Api.queryContacts,
+    params: { idRoom },
   });
 }
 // 修改墓位联系人记录接口 20260909 新增
@@ -38,7 +39,9 @@ export function updateContacts(data: Partial<ContactsModel>) {
 }
 // 删除墓位联系人记录接口（按选中的 idContacts 软删除）20260909 新增
 export function deleteContacts(idContacts: number, idRoom: number) {
-  return request.get<ContactsListResult>({
-    url: `${Api.deleteContacts}?idContacts=${idContacts}&idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<ContactsListResult>({
+    url: Api.deleteContacts,
+    data: { idContacts, idRoom },
   });
 }

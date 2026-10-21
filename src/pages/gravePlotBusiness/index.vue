@@ -663,6 +663,8 @@ const handleClickDetail = async (row: GravePlotBusinessRoomRow) => {
     controlPageShow('detail');
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -719,6 +721,8 @@ const loadDeceasedRelationOptions = async () => {
       .map((item) => ({ label: item.tagName, value: item.tagName }));
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -1081,6 +1085,8 @@ const loadContactsRecords = async (idRoom: number) => {
     contactsRecords.value = list ?? [];
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 // 联系人新增/修改/删除成功后：刷新卡片与联系人列表并回到列表视图，连续操作无需重新进入
@@ -1218,6 +1224,8 @@ const handleOpenContactsSelect = async () => {
     controlPageShow('contactsSelect');
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -1675,6 +1683,8 @@ const onConfirmCancelSale = () =>
       ClickCreateClose();
     } catch (e) {
       logError(e);
+      // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+      MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
     }
   });
 </script>

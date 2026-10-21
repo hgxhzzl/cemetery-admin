@@ -11,14 +11,17 @@ const Api = {
 // 按区域查询收据配制：无配置时返回空 list
 export function getReceiptConfig(region: string) {
   return request.get<ListReceiptConfigResult>({
-    url: `${Api.queryConfig}?region=${encodeURIComponent(region)}`,
+    url: Api.queryConfig,
+    // region 不再手工 encodeURIComponent:axios 序列化 params 时会统一编码 20261021 审查修复 P2,
+    params: { region },
   });
 }
 
 // 按区域查询收据配制（打印票据用）：无配置时返回空 list，不校验菜单权限 20260922 新增
 export function getReceiptConfigForPrint(region: string) {
   return request.get<ListReceiptConfigResult>({
-    url: `${Api.printConfig}?region=${encodeURIComponent(region)}`,
+    url: Api.printConfig,
+    params: { region },
   });
 }
 

@@ -79,6 +79,7 @@ import { getRegionList } from '@/api/park';
 import { getReceiptConfig, saveReceiptConfig } from '@/api/receiptConfig';
 import { useSubmitGuard } from '@/hooks';
 import { translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
@@ -109,6 +110,8 @@ const fetchData = async () => {
     onReset();
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 

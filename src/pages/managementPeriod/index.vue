@@ -246,6 +246,7 @@ import {
   useTabCacheName,
 } from '@/hooks';
 import { t, translate } from '@/locales';
+import { extractServerError } from '@/utils/apiError';
 import { exportCsv } from '@/utils/csv';
 import { formatDate } from '@/utils/date';
 import { logError } from '@/utils/logger';
@@ -402,6 +403,8 @@ const handleExport = async () => {
     });
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.exportFailedPrompt'));
   } finally {
     exporting.value = false;
   }
@@ -433,6 +436,8 @@ const handleClickDetail = async (row: ManagementPeriodModel) => {
     isDetailShow.value = true;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -539,6 +544,8 @@ const loadParkOptions = async () => {
     dataParkList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 

@@ -77,3 +77,19 @@ export const login = (username: string, password: string, deviceHash = ''): Prom
       });
   });
 };
+
+// 主动登出:通知后端删除 login_session 活跃登录态,否则旧 token 在自然到期前仍可通过校验 20261021 审查修复 P0-3,
+// 这里走裸 axios 而不复用 utils/request:登出属于「尽力而为」,即使 token 已失效(401)也不能触发全局失效重登流程形成循环,
+export const logout = (token: string): Promise<void> => {
+  if (!token) {
+    return Promise.resolve();
+  }
+  return axios({
+    url: `${loginApiUrl}/logout`,
+    method: 'post',
+    headers: { 'Content-Type': 'application/json', Authorization: token },
+    timeout: 5000,
+  })
+    .then((): void => undefined)
+    .catch((): void => undefined);
+};

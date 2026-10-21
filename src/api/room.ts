@@ -28,9 +28,17 @@ export function getCanSaleList(park: string, region: string) {
   });
 }
 
+// 批量建位结果(审查修复 20261021 P1-5):后端统一信封把 affectedRows 与实建/跳过行数一同放入 data
+// 下发(request 的 transformRequestHook 只返回 data),用于向用户回放被静默跳过的重复坐标,
+export interface RoomBatchCreateResult {
+  affectedRows: number;
+  created: number;
+  skipped: number;
+}
+
 // 新增接口
 export function insertRoom(data: Partial<RoomModel>) {
-  return request.post({
+  return request.post<RoomBatchCreateResult>({
     url: Api.insertRoom,
     data,
   });
@@ -45,12 +53,15 @@ export function updateRoom(data: Partial<RoomModel>) {
 // 列表接口
 export function getIdList(idRoom: number) {
   return request.get<ListRoomResult>({
-    url: `${Api.queryRoom}/idList?idRoom=${idRoom}`,
+    url: `${Api.queryRoom}/idList`,
+    params: { idRoom },
   });
 }
 // 删除接口
+// 破坏性写操作统一走 POST(参数进 body 不进 URL):避免被预取/爬虫/日志以及历史记录直接触发, 20261021 审查修复 P0-1,
 export function deleteRoom(idRoom: number) {
-  return request.get<ListRoomResult>({
-    url: `${Api.deleteRoom}?idRoom=${idRoom}`,
+  return request.post<ListRoomResult>({
+    url: Api.deleteRoom,
+    data: { idRoom },
   });
 }

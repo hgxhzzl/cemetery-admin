@@ -466,6 +466,7 @@ import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import type { UserPermissionField } from '@/types/interface';
 import { extractServerError } from '@/utils/apiError';
+import { showInitialPasswordDialog } from '@/utils/initialPassword';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
@@ -632,6 +633,8 @@ const onConfirmDelete = async () => {
     MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
   }
 };
 
@@ -646,6 +649,8 @@ const handleClickDetail = async (row: { row: OperatorModel }) => {
     dataQuery.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   detailData[0].value = dataQuery.value[0].name;
   detailData[1].value = dataQuery.value[0].phone;
@@ -694,6 +699,8 @@ const getOperatorID = async (id: number) => {
     };
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -703,6 +710,8 @@ const editSelectData = async () => {
     dataDutiesList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   // team
   try {
@@ -710,6 +719,8 @@ const editSelectData = async () => {
     dataTeamList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   // region（区域多选选项：分配区域属管理动作，取全量区域 /operator-query/region，不按本操作员自身区域收窄）20261012 修改
   try {
@@ -717,6 +728,8 @@ const editSelectData = async () => {
     dataRegionList.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -807,10 +820,19 @@ const onReset = () => {
   formData.value = { ...INITIAL_DATA };
 };
 
-// 后端返回的日期是ISO-8601格式(带T/Z),MySQL不识别,提交前需转为标准格式 20260827 联调修复,
+// 提交前把日期归一为 MySQL 可识别的 "YYYY-MM-DD HH:mm:ss" 20260827 联调修复,
+// 20261021 审查修复 P1-6:后端 DATE/DATETIME 已改为原样字符串返回,因此已是目标格式(或纯日期)
+// 的输入不再走 Date 解析——`new Date('2026-01-05')` 按 UTC 零点解释,负偏移时区会少一天,
+// 仅对历史 ISO-8601(带 T/Z)体保留重组兼容,
 const padTwo = (n: number) => String(n).padStart(2, '0');
+const plainDateTimePattern = /^\d{4}-\d{1,2}-\d{1,2}(?:[ T]\d{1,2}:\d{2}(?::\d{2})?)?$/;
 const toMysqlDateTime = (value: string) => {
   if (!value) return value;
+  if (plainDateTimePattern.test(value)) {
+    const [day, time] = value.split(/[ T]/);
+    const [y, m, d] = day.split('-');
+    return `${y}-${padTwo(Number(m))}-${padTwo(Number(d))} ${time || '00:00:00'}`;
+  }
   const d = new Date(value);
   if (Number.isNaN(d.getTime())) return value;
   return `${d.getFullYear()}-${padTwo(d.getMonth() + 1)}-${padTwo(d.getDate())} ${padTwo(d.getHours())}:${padTwo(
@@ -883,8 +905,10 @@ const submitCore = async () => {
       const submitData = formatSubmitData(formData.value);
       if (formData.value.idOperator === 0) {
         try {
-          await insertOperator(submitData);
+          // 初始口令不再取手机号:后端随机生成时仅本次回显,弹窗让管理员转告本人 20261021 配合审查修复 中E,
+          const insertResult = await insertOperator(submitData);
           MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+          showInitialPasswordDialog(insertResult);
           fetchData();
           ClickCreateClose();
         } catch (e) {
@@ -907,6 +931,8 @@ const submitCore = async () => {
     }
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.createdFailedPrompt'));
   }
 };
 
@@ -941,6 +967,8 @@ const getDataPower = async (id: number) => {
     dataPower.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 

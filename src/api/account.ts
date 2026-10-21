@@ -19,26 +19,32 @@ export function getAllList() {
 }
 // 列表接口
 export function getIdList(idAccount: number) {
+  // 查询参数统一走 params 由 axios 编码(手写 ?k=v 会把未编码的中文账户名直接拼进 URL) 20261021 审查修复 P2,
   return request.get<ListAccountResult>({
-    url: `${Api.queryAccount}?idAccount=${idAccount}`,
+    url: Api.queryAccount,
+    params: { idAccount },
   });
 }
 
 // 列表接口
 export function getNameList(account: string) {
   return request.get<ListAccountResult>({
-    url: `${Api.queryAccount}?account=${account}`,
+    url: Api.queryAccount,
+    params: { account },
   });
 }
 // 删除接口
 export function deleteAccount(idAccount: number) {
-  return request.get<ListResult>({
-    url: `${Api.deleteAccount}?idAccount=${idAccount}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<ListResult>({
+    url: Api.deleteAccount,
+    data: { idAccount },
   });
 }
 // 新增账户（后端接收 JSON 字符串）
+// 后端不再以手机号作初始口令:未提交口令时随机生成,仅在这一次响应里回显明文 20261021 配合审查修复 中E,
 export function insertAccount(data: string) {
-  return request.post({
+  return request.post<{ initialPassword?: string }>({
     url: Api.insertAccount,
     data,
   });
@@ -54,7 +60,8 @@ export function updateAccount(data: string) {
 // 账户权限
 export function getAccountPowerList(dataBaseName: string, account: string) {
   return request.get<ListAccountPowerResult>({
-    url: `${Api.queryAccountPower}?dataBaseName=${dataBaseName}&account=${account}`,
+    url: Api.queryAccountPower,
+    params: { dataBaseName, account },
   });
 }
 

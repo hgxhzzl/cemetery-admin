@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 
-import { login } from '@/api/login';
+import { login, logout as logoutRemoteApi } from '@/api/login';
 import { usePermissionStore, useTabsRouterStore } from '@/store';
 import type { UserInfo, UserPermission, UserPermissionField } from '@/types/interface';
 
@@ -173,6 +173,13 @@ export const useUserStore = defineStore('user', {
       this.isAccount = 0;
       this.termYears = '';
       this.userInfo = { ...InitUserInfo };
+    },
+    // 完整登出:先通知后端删除 login_session 活跃登录态,再清本地状态。
+    // 只跳转/login 而后端会话仍活跃时,拿到 localStorage 旧 token 的人到到期前还能调接口 20261021 审查修复 P0-3,
+    // 后端通知失败(logoutRemoteApi 内部已吞异常)不影响本地清态,保证登出按钮不会「点不动」,
+    async serverLogout() {
+      await logoutRemoteApi(this.token);
+      this.logout();
     },
   },
   persist: {

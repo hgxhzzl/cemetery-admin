@@ -142,7 +142,7 @@ const transform: AxiosTransform = {
   // 响应错误处理
   responseInterceptorsCatch: (error: any, instance: AxiosInstance) => {
     const { config } = error;
-    // 会话失效全局处理：后端 token 过期返回 401（纯文本），此前各页 catch 静默吞掉，
+    // 会话失效全局处理：后端 token 过期返回 401（统一信封 JSON），此前各页 catch 静默吞掉，
     // 用户停留在失效会话里；统一提示并跳登录页（afterEach 进 /login 会 logout + 恢复路由 +
     // 清配色缓存，此处不重复清理）；登录接口自身 401 由 api/login.ts 本地处理，排除在外 20261019 新增
     const status = error.response?.status as number | undefined;
@@ -165,10 +165,11 @@ const transform: AxiosTransform = {
     }
 
     // 403 权限拒绝透出后端语义文案（rbac 返回 { error: '无权限:...' }，原各页 catch 只显示
-    // “Request failed with status code 403”不可读）；登录接口的设备白名单 403 由 api/login.ts
-    // 本地处理，排除在外；不进重试 20261019 新增
+    // “Request failed with status code 403”不可读）；信封统一后优先读 message、回落历史体
+    // error 20261019 新增, 20261021 审查修复 P1-5 调整读取口径；登录接口的设备白名单 403 由
+    // api/login.ts 本地处理，排除在外；不进重试 20261019 新增
     if (status === 403) {
-      const forbiddenMsg = String(error.response?.data?.error || '');
+      const forbiddenMsg = String(error.response?.data?.message || error.response?.data?.error || '');
       const isLoginApi403 = String(config?.url).includes('/login');
       if (
         forbiddenMsg &&
@@ -214,8 +215,10 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
         authenticationScheme: '',
         // 超时
         timeout: 10 * 1000,
-        // 携带Cookie
-        withCredentials: true,
+        // 不再携带 Cookie(审查修复 20261021 P2):本系统身份完全靠上方 Authorization 头里的 JWT,
+        // withCredentials: true 除了要求后端 CORS 必须回 Access-Control-Allow-Credentials、
+        // 并把 CORS_ORIGIN 锁定为不得为 * 之外没有任何作用,反而使跨域策略难以收紧,故移除,
+        withCredentials: false,
         // 头信息
         headers: { 'Content-Type': ContentTypeEnum.Json },
         // 数据处理方式

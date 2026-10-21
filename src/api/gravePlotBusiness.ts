@@ -38,7 +38,9 @@ export interface NextSerialNoResult {
 // 新建销售取号：按区域(region)取区内最大编号+1，前端进销售表单时预填（可手改）20261012 新增
 export function getNextSerialNo(region: string) {
   return request.get<NextSerialNoResult>({
-    url: `${Api.nextSerialNo}?region=${encodeURIComponent(region)}`,
+    url: Api.nextSerialNo,
+    // region 不再手工 encodeURIComponent:axios 序列化 params 时会统一编码 20261021 审查修复 P2,
+    params: { region },
   });
 }
 
@@ -138,11 +140,13 @@ export function updateGravePlotBusiness(
   });
 }
 
-// 销售取消（平台管理员作废销售）：后端按 idRoom 单事务软删 sale/buried/contacts/adminfee/burial_cert/period_change
+// 销售取消（作废销售）：后端按 idRoom 单事务软删 sale/buried/contacts/adminfee/burial_cert/period_change
 // 关联活动记录，并将 room 回置未销售/未下葬、清空编号/管理费日期/购墓人/安葬者/联系人/备注 20261008 新增
+// 破坏性写改由 POST 承载（审查同步 20261021 ⑤，后端 GET 路由已移除）
 export function cancelGravePlotBusinessSale(idRoom: number) {
-  return request.get<ListGravePlotBusinessResult>({
-    url: `${Api.cancelGravePlotBusinessSale}?idRoom=${idRoom}`,
+  return request.post({
+    url: Api.cancelGravePlotBusinessSale,
+    data: { idRoom },
   });
 }
 
@@ -154,9 +158,10 @@ export type GravePlotBusinessFormType = 'sale' | 'reserve' | 'buried' | 'contact
 export function getGravePlotBusinessByRoom<
   T extends ListGravePlotBusinessResult | ListGravePlotBusinessCertResult = ListGravePlotBusinessResult,
 >(idRoom: number, type?: GravePlotBusinessFormType) {
-  const query = `idRoom=${idRoom}${type ? `&type=${type}` : ''}`;
+  // 原先手工拼接 query string 的写法改为 params:type 为 undefined 时 axios 会自动丢弃该参数,
   return request.get<T>({
-    url: `${Api.queryGravePlotBusiness}/get-by-room?${query}`,
+    url: `${Api.queryGravePlotBusiness}/get-by-room`,
+    params: { idRoom, type },
   });
 }
 
@@ -177,7 +182,8 @@ export interface ListGravePlotBusinessContactsResult {
 // 按墓位查询全部活动联系人记录（下葬形态联系人“选择”按钮用，倒序最新在前）20260923 新增
 export function getGravePlotBusinessContacts(idRoom: number) {
   return request.get<ListGravePlotBusinessContactsResult>({
-    url: `${Api.queryGravePlotBusinessContacts}?idRoom=${idRoom}`,
+    url: Api.queryGravePlotBusinessContacts,
+    params: { idRoom },
   });
 }
 
@@ -189,8 +195,9 @@ export function deleteGravePlotBusiness(params: {
   idBuried?: number;
   idContacts?: number;
 }) {
-  const query = `idRoom=${params.idRoom}${params.type ? `&type=${params.type}` : ''}${params.idBuried !== undefined ? `&idBuried=${params.idBuried}` : ''}${params.idContacts !== undefined ? `&idContacts=${params.idContacts}` : ''}`;
-  return request.get<ListGravePlotBusinessResult>({
-    url: `${Api.deleteGravePlotBusiness}?${query}`,
+  // 破坏性写操作改 POST:参数直接进 body,不再手工拼 query string(未编码的 type 会破坏 URL) 20261021 审查修复 P0-1,
+  return request.post<ListGravePlotBusinessResult>({
+    url: Api.deleteGravePlotBusiness,
+    data: params,
   });
 }

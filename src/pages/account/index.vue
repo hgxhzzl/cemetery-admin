@@ -356,6 +356,7 @@ import { usePermission, useSubmitGuard } from '@/hooks';
 import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import { extractServerError } from '@/utils/apiError';
+import { showInitialPasswordDialog } from '@/utils/initialPassword';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
@@ -553,6 +554,8 @@ const handleClickDetail = async (row: { row: AccountModel }) => {
     dataQuery.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
   detailData[0].value = dataQuery.value[0].account;
   detailData[1].value = translate(dataQuery.value[0].enterpriseType);
@@ -583,6 +586,8 @@ const getAccountID = async (id: number) => {
     formData.value = dataQuery;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 
@@ -729,8 +734,10 @@ const submitCore = async () => {
   const jsonformDataString = JSON.stringify(submitFormData);
   if (formData.value.idAccount === 0) {
     try {
-      await insertAccount(jsonformDataString);
+      // 初始口令不再取手机号:后端随机生成时仅本次回显,弹窗让管理员转告本人 20261021 配合审查修复 中E,
+      const insertResult = await insertAccount(jsonformDataString);
       MessagePlugin.success(translate('operate.createdSuccessPrompt'));
+      showInitialPasswordDialog(insertResult);
       fetchData();
       ClickCreateClose();
     } catch (e) {
@@ -815,6 +822,8 @@ const getDataPower = async (dataBaseName: string, account: string) => {
     dataPower.value = list;
   } catch (e) {
     logError(e);
+    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
   }
 };
 

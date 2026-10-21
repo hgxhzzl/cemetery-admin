@@ -25,7 +25,7 @@ const getAppVersion = (): string => {
 
 // https://vitejs.dev/config/
 export default ({ mode }: ConfigEnv): UserConfig => {
-  const { VITE_BASE_URL, VITE_API_URL_PREFIX } = loadEnv(mode, CWD);
+  const { VITE_BASE_URL, VITE_API_URL_PREFIX, VITE_DEV_ALLOWED_HOST } = loadEnv(mode, CWD);
   return {
     base: VITE_BASE_URL,
     define: {
@@ -67,8 +67,16 @@ export default ({ mode }: ConfigEnv): UserConfig => {
 
     server: {
       port: 3002,
+      // 监听 0.0.0.0 便于现场其它机器(园区终端/打印电脑)访问开发服务,按 IP 直连不受 Host 白名单限制,
       host: '0.0.0.0',
-      allowedHosts: true,
+      // allowedHosts 原为 true(放行任意 Host 头),等于把开发服务暴露给 DNS rebinding:
+      // 恶意页面可将自持域名指向开发机,绕过同源检查读取接口与源码,现改回默认(仅本机与 IP 直连),
+      // 确需内网域名访问时用 VITE_DEV_ALLOWED_HOST=a.local,b.local 显式追加(数组值是“额外允许”而非替换) 20261021 审查修复 P2,
+      allowedHosts: VITE_DEV_ALLOWED_HOST
+        ? VITE_DEV_ALLOWED_HOST.split(',')
+            .map((item) => item.trim())
+            .filter(Boolean)
+        : [],
       proxy: {
         [VITE_API_URL_PREFIX]: 'http://127.0.0.1:3000/',
       },

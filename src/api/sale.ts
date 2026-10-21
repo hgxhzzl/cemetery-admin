@@ -48,13 +48,16 @@ export function updateSale(data: Partial<SaleModel>) {
 // 按墓位查询当前活动销售记录，用于修改回填 20260907 新增
 export function getSaleByRoom(idRoom: number) {
   return request.get<ListSaleResult>({
-    url: `${Api.querySale}/get-by-room?idRoom=${idRoom}`,
+    url: `${Api.querySale}/get-by-room`,
+    params: { idRoom },
   });
 }
 
 // 删除销售接口 20260907 新增
 export function deleteSale(idRoom: number) {
-  return request.get<ListSaleResult>({
-    url: `${Api.deleteSale}?idRoom=${idRoom}`,
+  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
+  return request.post<ListSaleResult>({
+    url: Api.deleteSale,
+    data: { idRoom },
   });
 }
