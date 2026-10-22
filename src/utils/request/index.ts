@@ -10,6 +10,7 @@ import { useUserStore } from '@/store';
 
 import { VAxios } from './Axios';
 import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
+import { resolveRequestTimeout, shouldRetry } from './retryPolicy';
 import { formatRequestDate, joinTimestamp, setObjToUrlParams } from './utils';
 
 const env = import.meta.env.MODE || 'development';
@@ -67,6 +68,11 @@ const transform: AxiosTransform = {
   // 请求前处理配置
   beforeRequestHook: (config, options) => {
     const { apiUrl, isJoinPrefix, urlPrefix, joinParamsToUrl, formatDate, joinTime = true } = options;
+
+    // 读写超时分级(审查修复 20261021 P1-4):写请求(POST)链路更长(多表事务 + 费用重算级联)且
+    // 已取消自动重试兜底,放宽到 30s,避免慢事务被默认 10s 误杀后用户重复点击触发双写;读请求沿用
+    // 10s。口径集中在 retryPolicy.resolveRequestTimeout,调用方显式传 timeout 时以显式值为准。
+    config.timeout = resolveRequestTimeout(config.method, config.timeout);
 
     // 添加接口前缀
     if (isJoinPrefix && urlPrefix && isString(urlPrefix)) {
@@ -185,21 +191,28 @@ const transform: AxiosTransform = {
 
     // 401/403 判定必须排在重试短路之前：原写法 requestOptions.retry 缺失时直接 reject，
     // 会连带静默丢失 401 跳登录与 403 文案透出（顺序耦合审查修复 20261020）
-    if (!config || !config.requestOptions?.retry) return Promise.reject(error);
+    // 是否退避重试交给纯函数 shouldRetry 判定(审查修复 20261021 P1-4):只有幂等的 GET 在网络
+    // 错误/超时/5xx 时才重试;写请求(POST)失败一律不自动重放——服务端事务可能已提交,盲重试会
+    // 造成重复入库(重复销售/下葬/收款);4xx 确定性错误与超出次数上限同样直接 reject。401/403 已在上方先行处理,不会走到这里。
+    const retryCount = config?.retryCount || 0;
+    if (
+      !config ||
+      !shouldRetry({
+        method: config.method,
+        status,
+        retryCount,
+        retry: config.requestOptions?.retry,
+      })
+    ) {
+      return Promise.reject(error);
+    }
 
-    // 4xx 为确定性业务/权限错误，重试无意义（原默认重试对 403/404 也空转 3 次），仅网络错误/超时/5xx 走退避重试 20261019 新增
-    if (status && status < 500) return Promise.reject(error);
-
-    config.retryCount = config.retryCount || 0;
-
-    if (config.retryCount >= config.requestOptions.retry.count) return Promise.reject(error);
-
-    config.retryCount += 1;
+    config.retryCount = retryCount + 1;
 
     const backoff = new Promise((resolve) => {
       setTimeout(() => {
         resolve(config);
-      }, config.requestOptions.retry.delay || 1);
+      }, config.requestOptions?.retry?.delay || 1);
     });
     config.headers = { ...config.headers, 'Content-Type': ContentTypeEnum.Json };
     return backoff.then((config) => instance.request(config as AxiosRequestConfig));
@@ -213,7 +226,8 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
         // https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication#authentication_schemes
         // 例如: authenticationScheme: 'Bearer'
         authenticationScheme: '',
-        // 超时
+        // 超时:仅作无 beforeRequestHook 参与时的兜底值;实际每次请求都会由
+        // beforeRequestHook 按 method 分级覆盖(读 10s / 写 30s,见 retryPolicy) 审查修复 20261021 P1-4
         timeout: 10 * 1000,
         // 不再携带 Cookie(审查修复 20261021 P2):本系统身份完全靠上方 Authorization 头里的 JWT,
         // withCredentials: true 除了要求后端 CORS 必须回 Access-Control-Allow-Credentials、

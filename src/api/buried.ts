@@ -1,47 +1,17 @@
-import type { BuriedListResult, BuriedModel } from '@/api/model/buriedModel';
-import type { ListRoomResult } from '@/api/model/roomModel';
+// 墓区下葬登记页（菜单 103103）已于 20261021 三轮下线：/api/buried-save/*、/api/buried-delete
+// 已从后端注册表摘除，单条下葬记录的增删改统一走 @/api/gravePlotBusiness（下葬者形态）；
+// 本模块只保留墓位详情聚合的按墓位取数（管理费收款、迁出等页也复用这一条）。
+import type { BuriedListResult } from '@/api/model/buriedModel';
 import { request } from '@/utils/request';
 
 const Api = {
-  deleteBuried: '/buried-delete',
-  insertBuried: '/buried-save/insert',
-  updateBuried: '/buried-save/update',
   queryBuried: '/buried-query/',
 };
 
-// 列表接口
-export function getRoomList(park: string, region: string) {
-  return request.get<ListRoomResult>({
-    url: `${Api.queryBuried}/room`,
-    params: { park, region },
-  });
-}
-// 新增接口
-export function insertBuried(data: Partial<BuriedModel>) {
-  return request.post({
-    url: Api.insertBuried,
-    data,
-  });
-}
-// 列表接口Room
+// 按墓位查询全部活动下葬记录（供详情卡片“多次下葬”列表展示）20260907 新增
 export function getBuriedList(idRoom: number) {
   return request.get<BuriedListResult>({
     url: Api.queryBuried,
     params: { idRoom },
-  });
-}
-// 修改接口
-export function updateBuried(data: Partial<BuriedModel>) {
-  return request.post({
-    url: Api.updateBuried,
-    data,
-  });
-}
-// 删除下葬记录接口(按选中的 idBuried 软删除,并回写墓位下葬状态) 20260907 新增
-export function deleteBuried(idBuried: number, idRoom: number) {
-  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
-  return request.post<BuriedListResult>({
-    url: Api.deleteBuried,
-    data: { idBuried, idRoom },
   });
 }

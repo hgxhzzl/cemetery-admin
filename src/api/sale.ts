@@ -1,10 +1,10 @@
+// 墓区销售登记页（菜单 103102）已于 20261021 三轮下线：新建/修改/作废接口
+// （/api/sale-save/*、/api/sale-delete）已从后端注册表摘除，销售写操作统一走
+// @/api/gravePlotBusiness（购墓人形态与取消销售），本模块只保留墓位详情聚合用的按墓位取数。
 import { request } from '@/utils/request';
 
 const Api = {
   querySale: '/sale-query',
-  deleteSale: '/sale-delete',
-  insertSale: '/sale-save/insert',
-  updateSale: '/sale-save/update',
 };
 
 // 销售记录数据模型 20260907 新增
@@ -29,35 +29,10 @@ export interface ListSaleResult {
   list: SaleModel[];
 }
 
-// 新增接口
-export function insertSale(data: Partial<SaleModel>) {
-  return request.post({
-    url: Api.insertSale,
-    data,
-  });
-}
-
-// 修改销售接口 20260907 新增
-export function updateSale(data: Partial<SaleModel>) {
-  return request.post({
-    url: Api.updateSale,
-    data,
-  });
-}
-
-// 按墓位查询当前活动销售记录，用于修改回填 20260907 新增
+// 按墓位查询当前活动销售记录，供墓位详情卡片展示销售信息 20260907 新增
 export function getSaleByRoom(idRoom: number) {
   return request.get<ListSaleResult>({
     url: `${Api.querySale}/get-by-room`,
     params: { idRoom },
-  });
-}
-
-// 删除销售接口 20260907 新增
-export function deleteSale(idRoom: number) {
-  // 破坏性写操作改 POST,参数进 body 不进 URL 20261021 审查修复 P0-1,
-  return request.post<ListSaleResult>({
-    url: Api.deleteSale,
-    data: { idRoom },
   });
 }

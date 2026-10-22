@@ -146,6 +146,8 @@
     "total": "共 ",
     "records": " 条记录",
     "row": " 排 ",
+    "number": " 号",
+    "emptyPlot": "空位",
     "treeParkPrompt": "请选择树状结构的园区节点",
     "use": "使用",
     "notFilled": "未填写",

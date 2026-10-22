@@ -20,10 +20,10 @@
               <template v-if="card.placeholder">
                 <!-- 空位卡序号与正常卡同样顶部对齐 -->
                 <div class="roomcard-card__header">
-                  <div class="roomcard-card__serial">{{ rowGroup.yNum }} 排 {{ card.xNum }} 号</div>
+                  <div class="roomcard-card__serial">{{ formatSerial(rowGroup.yNum, card.xNum) }}</div>
                 </div>
                 <div class="roomcard-card__body">
-                  <div class="roomcard-card__empty-text">空位</div>
+                  <div class="roomcard-card__empty-text">{{ translate('operate.emptyPlot') }}</div>
                 </div>
               </template>
               <template v-else>
@@ -35,7 +35,7 @@
                     :class="{ 'roomcard-card__serial--clickable': !!serialAction }"
                     @click="serialAction && emit('action', serialAction, card.row)"
                   >
-                    {{ card.row.xyNumber || `${rowGroup.yNum} 排 ${card.row.xNum} 号` }}
+                    {{ card.row.xyNumber || formatSerial(rowGroup.yNum, card.row.xNum) }}
                   </div>
                   <!-- 墓位类型值上移至首行右侧胶囊 -->
                   <div class="roomcard-card__type">{{ $t(card.row.roomType).trim() }}</div>
@@ -129,6 +129,7 @@ import { ref } from 'vue';
 
 import type { RoomModel } from '@/api/model/roomModel';
 import type { CardRowGroup } from '@/hooks';
+import { translate } from '@/locales';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
 import { isCardTextOverflow as isOverflow } from '@/utils/text';
@@ -175,6 +176,11 @@ const emit = defineEmits<{
 
 // 状态胶囊修饰类：提取枚举 key 最后一段（如 sold/buried），同各页原实现
 const statusKey = (status?: string) => (status ? String(status).split('.').pop() || '' : '');
+
+// 坐标文案改走双语词条（审查修复 20261021 三轮 P2-16）：原写法把“排/号”直写进模板文本节点，
+// 是全仓唯一未走 i18n 的展示文本，英文界面会露出中文；空位卡与正常卡同源用这一句，故抽到一处，
+const formatSerial = (yNum: number | string, xNum: number | string) =>
+  `${yNum}${translate('operate.row')}${xNum}${translate('operate.number')}`;
 
 // 卡片长文本截断：超过7字截断，口径由 truncateMode 决定（ellipsis=前7字+…；dots=前6字+....），悬停 tooltip 展示完整内容
 const truncateText = (value: string) => {

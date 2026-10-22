@@ -148,6 +148,8 @@
     "total": "Total ",
     "records": " records",
     "row": " row ",
+    "number": " No.",
+    "emptyPlot": "Vacant",
     "treeParkPrompt": "Please select a park node from the tree",
     "use": "Use",
     "notFilled": "Not filled in",
