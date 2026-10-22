@@ -244,6 +244,7 @@ import {
   useRoomDetail,
   useSubmitGuard,
   useTabCacheName,
+  useTableScrollRestore,
 } from '@/hooks';
 import { t, translate } from '@/locales';
 import { extractServerError } from '@/utils/apiError';
@@ -323,25 +324,15 @@ const { data, pagination, loading, hasMore, fetchData, onSubmit, handleScroll } 
   );
 
 // ==================== 表格滚动位置保持（tab 切换往返） ====================
-// 滚动容器为 t-table 内容区 .t-table__content：keep-alive 失活时 DOM 从文档移除，scrollTop 归零，
-// 切回 tab 会回到顶部；滚动时实时记录位置，onActivated（tab 切回）时恢复，同墓位业务页 20260926 新增
-const tableScrollTop = ref(0);
-const onTableScroll = (params: { e: WheelEvent }) => {
-  handleScroll(params);
-  tableScrollTop.value = (params.e.target as HTMLElement).scrollTop;
-};
+// t-table 内容区(.t-table__content)滚动位置的记录/恢复收敛于 useTableScrollRestore（四轮 P2-1 20261022）
+const { onTableScroll, restoreTableScroll } = useTableScrollRestore(tableRef, handleScroll);
 
 onActivated(() => {
   // 列表视图且有数据时才恢复；详情/修改视图不处理
   if (!isListShow.value || !data.value.length) {
     return;
   }
-  nextTick(() => {
-    const content = tableRef.value?.$el?.querySelector('.t-table__content');
-    if (content) {
-      content.scrollTop = tableScrollTop.value;
-    }
-  });
+  restoreTableScroll();
 });
 
 // 园区下拉随所选区域联动过滤（区域接口 value 即区域名）

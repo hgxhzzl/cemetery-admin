@@ -526,9 +526,14 @@ import {
   INITIAL_ROOM_DATA,
   remarkFormDataKey,
 } from './constants';
+// 下葬形态（buried）记录列表与三视图导航逻辑拆至页面局部模块，字段编辑/提交仍留本页共享逻辑 20261022 巨石拆分
+import { useBuriedForm } from './useBuriedForm';
 // 安葬证设置（burial_cert）表单数据与进入/刷新/保存逻辑拆至页面局部模块，模板与表单容器仍在本页 20261019 拆分
 import type { BuriedEditMode } from './useCertificateForm';
 import { certificateFormDataKey, useCertificateForm } from './useCertificateForm';
+// 联系人形态（contacts）表单数据与三视图切换/列表拉取/回填/提交校验保存逻辑拆至页面局部模块，模板与表单容器仍在本页 20261022 巨石拆分
+import type { ContactsEditMode } from './useContactsForm';
+import { useContactsForm } from './useContactsForm';
 
 // ============================================================
 // 墓位业务基础页：列表卡片（人员信息）+ 详情 + 业务登记，前后端与墓位销售完全独立 20260923 修改,
@@ -727,8 +732,7 @@ const loadDeceasedRelationOptions = async () => {
 };
 
 // ==================== 下葬形态：记录选择表格与联系人选择（同下葬页修改页，代码独立）20260923 新增 ====================
-// 该墓位全部活动下葬记录（倒序最新在前），操作列“修改”回填表单、“删除”二次确认软删
-const buriedRecords = ref<GravePlotBusinessModel[]>([]);
+// 该墓位活动下葬记录列表 buriedRecords 随下葬导航逻辑拆至 useBuriedForm（本页在下方解构复用同一 ref）20261022 巨石拆分
 // 下葬形态三视图：list=列表视图（墓位信息+记录列表，无输入框）、add=新增视图（空表单，无列表）、
 // modify=修改视图（数据带入，无列表）；点表头“新增”/行内“修改”进入，提交/取消/返回回列表视图 20260924 修改
 // certificate=安葬证设置视图（点表头“证件”进入）：暂时内容同修改视图（数据带入，后续将调整）20260927 新增
@@ -768,21 +772,20 @@ const buriedRecordColumns: PrimaryTableCol[] = [
 // ==================== 联系人形态（墓位联系人页）：记录列表与三视图（同下葬页交互，代码独立）20260924 新增 ====================
 // 联系人形态三视图：list=列表视图（墓位信息+业务字段+联系人列表）、add=新增联系人（空表单）、
 // modify=修改联系人（数据带入）；点表头“新增”/行内“修改”进入，提交/取消/返回回列表视图
-const contactsEditMode = ref<'list' | 'add' | 'modify'>('list');
-// 联系人编辑表单数据（contacts 表字段，独立于业务登记表单）
-const formContactsData = ref<{
-  idContacts: number;
-  idRoom: number;
-  contacts: string;
-  contactsPhone: string;
-  contactsIDCard: string;
-}>({
-  idContacts: 0,
-  idRoom: 0,
-  contacts: '',
-  contactsPhone: '',
-  contactsIDCard: '',
-});
+const contactsEditMode = ref<ContactsEditMode>('list');
+// 联系人形态表单数据与三视图切换/列表拉取/回填/提交校验保存逻辑拆至页面局部模块 useContactsForm，本页仅保留模板绑定 20261022 巨石拆分
+// contactsRecords（联系人列表视图表格与「选择」页共用同一份数据）随逻辑一并由该模块持有并返回
+const {
+  formContactsData,
+  contactsRecords,
+  loadContactsRecords,
+  refreshContactsStay,
+  onModifyContactsRecord,
+  handleClickContactsAdd,
+  onCancelContacts,
+  onContactsPhoneChange,
+  saveContacts,
+} = useContactsForm({ formRoomData, formBusinessData, contactsEditMode, getRoomData });
 // 将联系人表单数据 Ref 提供给拆出的 ContactsFormView 子组件（inject 共享，子组件按字段 v-model 编辑即写回同一对象，提交/校验读同一份）20261020 P2 S2 拆分
 provide(contactsFormDataKey, formContactsData);
 // 联系人记录列表列：联系人/电话/身份证号 + 操作列（表头“新增”入口，行内修改/删除，同下葬页记录列表交互）
@@ -1023,13 +1026,7 @@ const fillBusinessForm = async (idRoom: number, type?: GravePlotBusinessFormType
   }
 };
 
-// 下葬形态新增/修改/删除成功后：刷新卡片与记录列表并回到列表视图（默认回填最新记录），
-// 连续操作无需重新进入；点“返回”才回墓位业务列表页 20260924 修改
-const refreshBuriedStay = async () => {
-  await getRoomData();
-  buriedEditMode.value = 'list';
-  await fillBusinessForm(formRoomData.value.idRoom, 'buried');
-};
+// 下葬形态提交/删除后停留刷新（refreshBuriedStay）随下葬导航逻辑拆至 useBuriedForm 20261022 巨石拆分
 
 // 返回按钮分级：下葬新增/修改视图先回列表视图（含列表，回填最新记录）；联系人新增/修改视图回列表视图；
 // 列表视图及其他形态直接回列表页 20260924 修改
@@ -1049,82 +1046,9 @@ const onBackBuriedBusiness = () => {
   ClickCreateClose();
 };
 
-// ==================== 下葬形态：记录单选切换与联系人选择页（同下葬页，代码独立）20260923 新增 ====================
-// 用选中的下葬记录回填表单（记录表格单选切换时），修改对象随之切换，保留墓位信息与其他形态字段不重置
-const fillBuriedFormRecord = (record: GravePlotBusinessModel) => {
-  formBusinessData.value = {
-    ...formBusinessData.value,
-    idBusiness: record.idBuried ?? record.idBusiness,
-    idRoom: record.idRoom,
-    deceased: record.deceased ?? '',
-    deceasedIDCard: record.deceasedIDCard ?? '',
-    // 死亡日期：下葬形态虽无该控件，仍需随记录回填，避免提交时把已有日期抹空 20261011 新增,
-    deathDate: formatDate(record.deathDate ?? ''),
-    burialDate: record.burialDate ?? '',
-    // 逝者关系：随下葬记录回填（同安葬者字段）20260925 新增,
-    deceasedRelation: record.deceasedRelation ?? '',
-    // 联系人三字段：buried 表列 contactsphone 全小写
-    contacts: record.contacts ?? '',
-    contactsphone: record.contactsphone ?? '',
-    contactsIDCard: record.contactsIDCard ?? '',
-    remark: record.remark ?? '',
-  };
-};
+// ==================== 下葬形态：记录单选切换/回填（fillBuriedFormRecord/onModifyBuriedRecord）随下葬导航逻辑拆至 useBuriedForm 20261022 巨石拆分 ====================
 
-// 操作列“修改”：用该下葬记录回填表单并进入修改视图（无列表，其余与下葬页一致，数据带入）20260923 新增 20260924 修改
-const onModifyBuriedRecord = (record: GravePlotBusinessModel) => {
-  fillBuriedFormRecord(record);
-  buriedEditMode.value = 'modify';
-};
-
-// ==================== 联系人形态：拉取/刷新/回填（同下葬页交互，代码独立）20260924 新增 ====================
-// 拉取该墓位活动联系人记录列表（自有 contacts-list 接口，倒序最新在前）
-const loadContactsRecords = async (idRoom: number) => {
-  try {
-    const { list } = await getGravePlotBusinessContacts(idRoom);
-    contactsRecords.value = list ?? [];
-  } catch (e) {
-    logError(e);
-    // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
-    MessagePlugin.error(extractServerError(e) || translate('operate.listLoadFailedPrompt'));
-  }
-};
-// 联系人新增/修改/删除成功后：刷新卡片与联系人列表并回到列表视图，连续操作无需重新进入
-const refreshContactsStay = async () => {
-  await getRoomData();
-  contactsEditMode.value = 'list';
-  await loadContactsRecords(formRoomData.value.idRoom);
-};
-// 用联系人记录回填编辑表单（contacts 表字段）
-const fillContactsFormRecord = (record: GravePlotBusinessContactsModel) => {
-  formContactsData.value = {
-    idContacts: record.idContacts,
-    idRoom: record.idRoom,
-    contacts: record.contacts ?? '',
-    contactsPhone: record.contactsPhone ?? '',
-    contactsIDCard: record.contactsIDCard ?? '',
-  };
-};
-// 操作列“修改”：回填该联系人记录并进入修改视图（无列表，数据带入）
-const onModifyContactsRecord = (record: GravePlotBusinessContactsModel) => {
-  fillContactsFormRecord(record);
-  contactsEditMode.value = 'modify';
-};
-// 表头“新增”：清空联系人表单并进入新增视图（无列表），保持当前墓位
-const handleClickContactsAdd = () => {
-  formContactsData.value = {
-    idContacts: 0,
-    idRoom: formRoomData.value.idRoom,
-    contacts: '',
-    contactsPhone: '',
-    contactsIDCard: '',
-  };
-  contactsEditMode.value = 'add';
-};
-// 取消（联系人新增/修改视图）：退出并回到列表视图（含联系人列表）
-const onCancelContacts = () => {
-  contactsEditMode.value = 'list';
-};
+// ==================== 联系人形态：拉取/刷新/回填/新增/修改/取消逻辑已拆至 useContactsForm（本页经上方解构使用）20261022 巨石拆分 ====================
 // 提交区取消按钮分发：下葬形态重置表单，联系人新增/修改视图退出回列表视图 20260924 新增
 const onCancelBuriedOrContacts = () => {
   if (formMode.value === 'business' && contactsEditMode.value !== 'list') {
@@ -1203,8 +1127,7 @@ const onConfirmDelete = async () => {
   }
 };
 
-// 联系人选择页数据与列：该墓位活动联系人（自有 contacts-list 接口），操作列逐行“选择”回填并返回
-const contactsRecords = ref<GravePlotBusinessContactsModel[]>([]);
+// 联系人选择页列定义：操作列逐行“选择”回填并返回（该墓位活动联系人列表数据 contactsRecords 由 useContactsForm 提供，与列表视图共用）
 const contactsColumns: PrimaryTableCol[] = [
   { title: translate('pages.gravePlotBusiness.contacts'), colKey: 'contacts' },
   { title: translate('pages.gravePlotBusiness.contactsPhone'), colKey: 'contactsPhone', width: 140 },
@@ -1244,18 +1167,7 @@ const handleCloseContactsSelect = () => {
   controlPageShow('createModify');
 };
 
-// 取消（下葬形态）：重置表单为空表单保持当前墓位，不返回列表（同下葬页 onReset）
-const onResetBuried = () => {
-  resetBusinessForm(formRoomData.value.idRoom);
-  // 下葬形态无金额字段，保持实收金额为空（表单已转新建）
-  formBusinessData.value.realPriceString = '';
-};
-
-// 表头“新增”：进入下葬新增视图（空表单，无列表，其余与下葬页一致），保持当前墓位 20260924 修改
-const handleClickBuriedAdd = () => {
-  buriedEditMode.value = 'add';
-  onResetBuried();
-};
+// 下葬形态重置/新增（onResetBuried/handleClickBuriedAdd）随下葬导航逻辑拆至 useBuriedForm 20261022 巨石拆分
 
 // ==================== 安葬证设置（数据表 burial_cert，参照墓位销售方式读写）20260927 新增 ====================
 // 表单数据、进入视图（查记录回填 + 关联业务默认值）、提交后停留刷新与保存逻辑
@@ -1267,14 +1179,18 @@ const { formCertData, openCertificateView, saveCertificate } = useCertificateFor
 // 将安葬证表单数据 Ref 提供给拆出的 CertificateFormView 子组件（inject 共享，子组件按字段 v-model 编辑即写回同一对象）20261020 P2 S2 拆分
 provide(certificateFormDataKey, formCertData);
 
-// 取消（下葬形态）：新增/修改视图下退出并回填最新记录（回到含列表的下葬页）20260924 修改
-const onCancelBuried = () => {
-  buriedEditMode.value = 'list';
-  const record = buriedRecords.value[0];
-  if (record) {
-    fillBuriedFormRecord(record);
-  }
-};
+// 下葬形态记录列表与三视图导航（回填/新增/取消/停留刷新）拆至页面局部模块 useBuriedForm，本页仅保留模板绑定与共享提交 20261022 巨石拆分
+// fillBusinessForm/resetBusinessForm/getRoomData 为页面共享逻辑经 deps 注入；buriedRecords 列表数据仍由 fillBusinessForm(…,'buried') 写入同一 ref
+const {
+  buriedRecords,
+  fillBuriedFormRecord,
+  onModifyBuriedRecord,
+  onCancelBuried,
+  handleClickBuriedAdd,
+  refreshBuriedStay,
+} = useBuriedForm({ formRoomData, formBusinessData, buriedEditMode, getRoomData, fillBusinessForm, resetBusinessForm });
+
+// 下葬形态取消回列表（onCancelBuried）随下葬导航逻辑拆至 useBuriedForm 20261022 巨石拆分
 
 // ==================== 新建：票据打印 ====================
 // 经办人显示当前登录操作员姓名，开单保存时后端同样自动写入（userStore 已前移至表单区声明）20260921 新增
@@ -1424,12 +1340,7 @@ const onPayerPhoneChange = (value: string | number) => {
     .replace(/\D/g, '')
     .slice(0, 11);
 };
-// 联系人电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断 20261017 新增
-const onContactsPhoneChange = (value: string | number) => {
-  formContactsData.value.contactsPhone = String(value ?? '')
-    .replace(/\D/g, '')
-    .slice(0, 11);
-};
+// 联系人电话数字过滤（onContactsPhoneChange）随联系人逻辑拆至 useContactsForm 20261022 巨石拆分
 const submitCore = async () => {
   const {
     realPriceString,
@@ -1451,42 +1362,10 @@ const submitCore = async () => {
     contactsIDCard,
   } = formBusinessData.value;
 
-  // 联系人形态新增/修改视图：确认按钮保存联系人记录（contacts 表），成功后停留本页刷新联系人列表 20260924 新增
+  // 联系人形态新增/修改视图：确认按钮保存联系人记录（contacts 表，校验与读写见 useContactsForm），
+  // 成功后停留本页刷新联系人列表 20260924 新增 20261022 逻辑拆出
   if (formMode.value === 'business' && contactsEditMode.value !== 'list') {
-    const { idContacts, contacts, contactsPhone, contactsIDCard } = formContactsData.value;
-    if (contacts === undefined || contacts.trim() === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsRequiredPlaceholder'));
-    }
-    // 联系人电话调整为必填（联系人形态新增/修改）：空值拦截，占位与提示同键 20261005 新增
-    if (contactsPhone === undefined || contactsPhone.trim() === '') {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPhoneRequiredPlaceholder'));
-    }
-    // 联系人电话必须为 11 位数字（空值已在上方拦截），不足 11 位提交时提示 20261017 新增
-    if (!/^\d{11}$/.test(contactsPhone.trim())) {
-      return MessagePlugin.warning(translate('pages.gravePlotBusiness.contactsPhoneLengthPlaceholder'));
-    }
-    const contactsPayload = {
-      idRoom,
-      type: 'contacts' as const,
-      contacts: contacts.trim(),
-      contactsPhone: contactsPhone.trim(),
-      contactsIDCard: contactsIDCard.trim(),
-    };
-    try {
-      if (idContacts === 0) {
-        await insertGravePlotBusiness(contactsPayload);
-        MessagePlugin.success(translate('operate.createdSuccessPrompt'));
-      } else {
-        await updateGravePlotBusiness({ ...contactsPayload, idContacts });
-        MessagePlugin.success(translate('operate.modifySuccessPrompt'));
-      }
-      await refreshContactsStay();
-    } catch (e) {
-      logError(e);
-      MessagePlugin.error(
-        idContacts === 0 ? translate('operate.createdFailedPrompt') : translate('operate.modifyFailedPrompt'),
-      );
-    }
+    await saveContacts();
     return;
   }
 

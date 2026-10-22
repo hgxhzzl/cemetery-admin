@@ -22,3 +22,4 @@ export { useParkRoomFilter } from './useParkRoomFilter';
 export { usePermission } from './usePermission';
 export { useRoomDetail } from './useRoomDetail';
 export { useSubmitGuard } from './useSubmitGuard';
+export { useTableScrollRestore } from './useTableScrollRestore';

@@ -164,7 +164,13 @@ import type { RoomQueryModel } from '@/api/roomQuery';
 import { getRoomQueryList } from '@/api/roomQuery';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { QUERY_FORM_LABEL_WIDTH } from '@/constants';
-import { useInfiniteScrollQuery, useLayoutScrollRestore, useRoomDetail, useTabCacheName } from '@/hooks';
+import {
+  useInfiniteScrollQuery,
+  useLayoutScrollRestore,
+  useRoomDetail,
+  useTabCacheName,
+  useTableScrollRestore,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { exportCsv } from '@/utils/csv';
 import { formatDate } from '@/utils/date';
@@ -256,25 +262,15 @@ const { data, pagination, loading, hasMore, fetchData, onSubmit, handleScroll } 
   );
 
 // ==================== 表格滚动位置保持（tab 切换往返） ====================
-// 滚动容器为 t-table 内容区 .t-table__content：keep-alive 失活时 DOM 从文档移除，scrollTop 归零，
-// 切回 tab 会回到顶部；滚动时实时记录位置，onActivated（tab 切回）时恢复，同墓位业务页 20260926 新增
-const tableScrollTop = ref(0);
-const onTableScroll = (params: { e: WheelEvent }) => {
-  handleScroll(params);
-  tableScrollTop.value = (params.e.target as HTMLElement).scrollTop;
-};
+// t-table 内容区(.t-table__content)滚动位置的记录/恢复收敛于 useTableScrollRestore（四轮 P2-1 20261022）
+const { onTableScroll, restoreTableScroll } = useTableScrollRestore(tableRef, handleScroll);
 
 onActivated(() => {
   // 列表视图且有数据时才恢复；详情视图不处理
   if (isDetailShow.value || !data.value.length) {
     return;
   }
-  nextTick(() => {
-    const content = tableRef.value?.$el?.querySelector('.t-table__content');
-    if (content) {
-      content.scrollTop = tableScrollTop.value;
-    }
-  });
+  restoreTableScroll();
 });
 
 const regionOptions = computed(() => dataRegionList.value.map((item) => ({ value: item.value, label: item.label })));
