@@ -108,6 +108,7 @@
   },
   "operate": {
     "operation": "操作",
+    "save": "保存",
     "add": "新增",
     "create": "新建",
     "detail": "详情",
@@ -528,6 +529,7 @@
     },
     "park": {
       "title": "园区设置",
+      "submit": "设置提交",
       "park": "园区",
       "parkPlaceholder": "请输入园区标签",
       "region": "区域选择",
@@ -536,6 +538,7 @@
     },
     "cardColor": {
       "title": "卡片颜色",
+      "submit": "设置提交",
       "tip": "五个卡片状态的底色与外框色，全区域共用一套；保存后各卡片页立即生效。外框色由底色自动加深得到，无需单独设置。",
       "unsold": "未销售",
       "reserved": "已预定",
@@ -549,6 +552,7 @@
     },
     "receiptConfig": {
       "title": "收据配制",
+      "submit": "设置提交",
       "region": "区域选择",
       "prefix": "单据前缀",
       "prefixPlaceholder": "请必填单据前缀",
@@ -647,6 +651,12 @@
       "liaisonPlaceholder": "请必填联系人",
       "liaisonPhone": "电话",
       "liaisonPhonePlaceholder": "请输入联系人电话",
+      "liaisonPhoneRequiredPlaceholder": "请必填联系人电话",
+      "liaisonPhoneLengthPlaceholder": "请输入 11 位电话号码",
+      "reservationExpireDate": "预定限期",
+      "reservationExpireDatePlaceholder": "请选择预定限期",
+      "reservationExpireDateRequiredPlaceholder": "请必选预定限期",
+      "reservationExpireDateLimitPlaceholder": "预定限期不能晚于当前日期 10 天",
       "buyerPhone": "购墓人电话",
       "buyerIDCard": "购墓人身份证号",
       "buyerPlaceholder": "请必填购墓人",
@@ -696,7 +706,7 @@
       "printBlockedPrompt": "请允许浏览器弹出窗口后重试",
       "deleteBuriedInfoPrompt": " 下葬信息将被清空，且无法恢复",
       "deleteContactsInfoPrompt": " 联系人信息将被清空，且无法恢复",
-      "cancelSale": "销售取消",
+      "deleteReserveInfoPrompt": " 预定信息将被清空，且无法恢复",
       "cancelSaleConfirm": " 该墓位的销售记录及其关联的下葬/联系人/管理费/安葬证/期限变更将一并作废，墓位回退为未销售，且无法恢复",
       "certificate": "证件",
       "certificateTitle": "安葬证设置",
@@ -895,6 +905,7 @@
     },
     "taginfo": {
       "title": "选择设置",
+      "submit": "设置提交",
       "duties": "职务设置",
       "team": "团队设置",
       "deceasedRelation": "逝者关系",

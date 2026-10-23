@@ -88,7 +88,7 @@
                   {{ $t('operate.query') }}
                 </t-button>
                 <!-- 新增按钮保留，仍按墓室模块新增权限控制显示 20260828 修改 -->
-                <t-button v-if="userInfo.useCreate === 1" @click="handleClickCreate">
+                <t-button v-if="canRoom('create')" @click="handleClickCreate">
                   {{ $t('operate.create') }}
                 </t-button>
               </t-col>
@@ -397,9 +397,9 @@ import { BUSINESS_BASIC_FORM_LABEL_WIDTH, TYPE_ROOM_TYPES } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import {
   delayControlPageShow,
+  hasFunctionPower,
   useCardGrid,
   useParkRoomFilter,
-  usePermission,
   useRoomDetail,
   useSubmitGuard,
   useTabCacheName,
@@ -419,9 +419,9 @@ type RoomFormData = typeof INITIAL_DATA;
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活、查询数据丢失的问题 20260828 修复,
 useTabCacheName('Room');
 
-// 权限改按菜单 name 匹配：菜单 id 会因排序调整变化（room 已从 103101 调整为 103107），
-// 后端登录接口已下发 menuName，按稳定 name 匹配避免按钮因 id 变化失效 20260919 修改,
-const userInfo = usePermission('room');
+// 墓位设置新建按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'room'(仅 create);
+// 修改/删除按墓位业务态而非权限列门控(room 仅新建受权限控制) 20261023 动作列迁移,
+const canRoom = (action: string) => hasFunctionPower('room', 'room', action);
 
 // 区域由墓区设置下的区域三级菜单经路由meta下发，挂载时读取一次；
 // keep-alive按fullPath区分实例，各区域tab互不影响，无需响应式监听 20260831 新增,

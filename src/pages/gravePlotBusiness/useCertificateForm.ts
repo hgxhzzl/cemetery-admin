@@ -11,7 +11,7 @@ import type {
   GravePlotBusinessFormType,
   ListGravePlotBusinessCertResult,
 } from '@/api/gravePlotBusiness';
-import { getGravePlotBusinessByRoom, insertGravePlotBusiness, updateGravePlotBusiness } from '@/api/gravePlotBusiness';
+import { getGravePlotBusinessByRoom, updateGravePlotBusiness } from '@/api/gravePlotBusiness';
 import { translate } from '@/locales';
 import { logError } from '@/utils/logger';
 
@@ -163,13 +163,12 @@ export const useCertificateForm = (deps: {
       type: 'certificate',
     };
     try {
-      if (idBusiness === 0) {
-        await insertGravePlotBusiness(certPayload);
-        MessagePlugin.success(translate('operate.createdSuccessPrompt'));
-      } else {
-        await updateGravePlotBusiness(certPayload);
-        MessagePlugin.success(translate('operate.modifySuccessPrompt'));
-      }
+      // 安葬证权限动作已统一为 modify(权限页不再提供“新建”)：首次保存(idBusiness=0)也提交到修改入口，
+      // 后端 update 分支在 idCert=0 时回落到插入本表，避免仅具 certificate.modify 的账号被 create 守卫 403 20261023 调整,
+      await updateGravePlotBusiness(certPayload);
+      MessagePlugin.success(
+        idBusiness === 0 ? translate('operate.createdSuccessPrompt') : translate('operate.modifySuccessPrompt'),
+      );
       await refreshCertStay();
     } catch (e) {
       logError(e);

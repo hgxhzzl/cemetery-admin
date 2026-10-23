@@ -89,8 +89,8 @@
               <t-link theme="primary" @click="handleClickDetail(row)">
                 {{ t('operate.detail') }}
               </t-link>
-              <!-- 修改按管理期限菜单(managementPeriod)权限门控：operator_power.useModify 20260925 修改 -->
-              <t-link v-if="userInfo.useModify === 1" theme="primary" @click="handleClickModify(row)">
+              <!-- 修改按管理期限菜单(managementPeriod.modify)功能级权限门控：powerConfig 白名单 20261023 动作列迁移 -->
+              <t-link v-if="canManagementPeriod('modify')" theme="primary" @click="handleClickModify(row)">
                 {{ t('operate.modify') }}
               </t-link>
             </div>
@@ -238,9 +238,9 @@ import { getParkList } from '@/api/park';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { QUERY_FORM_LABEL_WIDTH } from '@/constants';
 import {
+  hasFunctionPower,
   useInfiniteScrollQuery,
   useLayoutScrollRestore,
-  usePermission,
   useRoomDetail,
   useSubmitGuard,
   useTabCacheName,
@@ -261,8 +261,8 @@ import { logError } from '@/utils/logger';
 // 不登记则 keep-alive 无法缓存本页，切换路由时 out-in 过渡会卡死导致其它页面打不开
 useTabCacheName('ManagementPeriod');
 
-// 管理期限权限对象按稳定菜单 name(managementPeriod) 匹配（菜单 id 已迁为 103109），权限不足时兼容空对象避免运行时报错 20260925 修改
-const userInfo = usePermission('managementPeriod');
+// 管理期限修改按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'managementPeriod'(仅 modify) 20261023 动作列迁移,
+const canManagementPeriod = (action: string) => hasFunctionPower('managementPeriod', 'managementPeriod', action);
 
 // 视图互斥显示：列表 / 详情 / 修改。列表始终挂载，
 // 详情/修改显示时列表通过 list-view-hidden 高度塌陷隐藏，无需单独的列表态标记

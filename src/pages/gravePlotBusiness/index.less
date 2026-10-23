@@ -202,6 +202,19 @@
     gap: 12px;
   }
 
+  // 联系人记录列表：身份证号列与操作列之间不画竖线（同下葬日期列做法）。
+  // 该线与下葬表格相同，由身份证号格右边框（公共 mixin）与操作格左边框（TDesign bordered）两处叠成，
+  // 按列 className/thClassName 定位，其余列间竖线保留 20261023 新增,
+  &--contacts {
+    :deep(.contacts-col-idcard) {
+      border-right: none;
+    }
+
+    :deep(.contacts-col-op) {
+      border-left: none;
+    }
+  }
+
   // 下葬记录列表：下葬日期列与操作列之间不画竖线。该线由两处叠成：下葬日期格右边框（公共 mixin）
   // + 操作格左边框（TDesign .t-table--bordered 逐格 border-left），两处都需去掉；按列 className/thClassName
   // 定位（非 nth-child，避开固定表头滚动时表头与表体单元格数不一致），其余列间竖线保留 20261012 新增

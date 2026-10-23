@@ -9,6 +9,15 @@
 .cms-list-panel(room);
 .cms-no-data(room);
 
+// 卡片区滚动容器（.table-container）已随模板拆至 RoomCardList 子组件：公共库的
+// .list-common-table > .table-container 规则选择器末段带本页 scope，对子组件元素不再匹配，
+// 此处用 :deep 补回上间距，使卡片区位置与墓位业务页一致 20261023 调整,
+.list-common-table {
+  :deep(.table-container) {
+    margin-top: var(--td-comp-margin-xxl);
+  }
+}
+
 // 底部工具行右侧容器与缩放控件已由 RoomCardList 组件统一持有（roomcard-list-toolbar__right/__zoom），
 // 本页插槽仅注入图例，下方为图例及其子项的本页作用域样式（slot 内容携带本页 scoped 属性，可命中）
 // 外框颜色图例（同墓位业务页图例样式：小矩形色块 + 12px 文字）20260926 新增

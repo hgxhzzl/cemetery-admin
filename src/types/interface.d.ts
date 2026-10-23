@@ -21,12 +21,20 @@ export interface UserPermission {
   operatePower?: number;
   operatPower?: number;
   useMenu?: number;
+  /** @deprecated operator_power 动作列已删除;单功能菜单判权改走 powerConfig(hasFunctionPower)。仅供旧菜单树按钮权限构造兼容 20261023 */
   useCreate?: number;
+  /** @deprecated 同上,已废弃 */
   useModify?: number;
+  /** @deprecated 同上,已废弃 */
   useDelete?: number;
+  /** @deprecated 同上,已废弃 */
   usePower?: number;
+  /** @deprecated 同上,已废弃 */
   useExamine?: number;
+  /** @deprecated 同上,已废弃 */
   useFinish?: number;
+  // 功能级权限白名单:NULL/未配置=不限功能(回退 useMenu 全权);非空仅显式 =1 的动作放行 20261023 新增,
+  powerConfig?: Record<string, { actions: Record<string, number> }> | string | null;
   [key: string]: unknown;
 }
 

@@ -13,6 +13,7 @@ const Api = {
   insertOperator: '/operator-save/insert',
   updateOperator: '/operator-save/update',
   updateOperatorPower: '/operatorPower-save/power',
+  updateOperatorPowerConfig: '/operatorPower-save/config',
   queryOperatorPower: '/operatorPower-query/power',
   updatePassword: '/operator-save/password',
 };
@@ -93,6 +94,18 @@ export function getOperatorPowerList(idOperator: number) {
 export function updatePower(data: { idPower: number; field: string }) {
   return request.post({
     url: Api.updateOperatorPower,
+    data,
+  });
+}
+
+// 功能级权限白名单整块保存：grants 为该菜单当前全部勾选项（只含被开成 1 的 功能×动作）。
+// 采用整块提交而非逐键切换，避免首次由 NULL 转非 NULL 时误锁其余动作 20261023 新增。
+export function updatePowerConfig(data: {
+  idPower: number;
+  grants: Record<string, { actions: Record<string, number> }>;
+}) {
+  return request.post({
+    url: Api.updateOperatorPowerConfig,
     data,
   });
 }

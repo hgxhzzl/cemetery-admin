@@ -296,10 +296,10 @@ import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import {
+  hasFunctionPower,
   useCardGrid,
   usePageSwitch,
   useParkRoomFilter,
-  usePermission,
   useRoomDetail,
   useSubmitGuard,
   useTabCacheName,
@@ -324,8 +324,9 @@ import { FIND_DATA, INITIAL_FORM_DATA, INITIAL_ROOM_DATA, transferOutFormDataKey
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活的问题
 useTabCacheName('TransferOut');
 
-// 迁出模块权限对象按稳定菜单 name('transferOut') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20261020 P2 C1 改按 name
-const userInfo = usePermission('transferOut');
+// 迁出模块按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'transferOut';
+// 平台管理员与 powerConfig=NULL 的存量操作员由 hasFunctionPower 内部回退放行 20261023 动作列迁移,
+const canTransferOut = (action: string) => hasFunctionPower('transferOut', 'transferOut', action);
 
 // 下葬状态：未下葬用于区分卡片是否显示“新建迁出”（未下葬墓位无迁出业务，不显示新建）20260916 新增
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
@@ -699,19 +700,19 @@ const cardActions: RoomCardAction[] = [
     labelKey: 'operate.create',
     theme: 'danger',
     visible: (row) =>
-      row.intoStatus !== INTO_INCOMPLET && row.transferOutStatus !== TRANSFER_OUT_OUT && userInfo.useCreate === 1,
+      row.intoStatus !== INTO_INCOMPLET && row.transferOutStatus !== TRANSFER_OUT_OUT && canTransferOut('create'),
   },
   {
     name: 'modify',
     labelKey: 'operate.modify',
     theme: 'primary',
-    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useModify === 1,
+    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && canTransferOut('modify'),
   },
   {
     name: 'delete',
     labelKey: 'operate.delete',
     theme: 'danger',
-    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && userInfo.useDelete === 1,
+    visible: (row) => row.transferOutStatus === TRANSFER_OUT_OUT && canTransferOut('delete'),
   },
 ];
 // RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 S1a

@@ -5,7 +5,7 @@
       <t-card class="list-card-container" :bordered="false">
         <t-row justify="space-between">
           <div class="left-operation-container">
-            <t-button v-if="userInfo.useCreate === 1" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
+            <t-button v-if="canContract('create')" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
           </div>
           <div class="search-input">
             <t-input
@@ -70,10 +70,10 @@
           <template #op="slotProps">
             <t-space>
               <t-link theme="primary" @click="handleClickDetail(slotProps)"> {{ $t('operate.detail') }}</t-link>
-              <t-link v-if="userInfo.useDelete === 1" theme="danger" @click="handleClickDelete(slotProps)">
+              <t-link v-if="canContract('delete')" theme="danger" @click="handleClickDelete(slotProps)">
                 {{ $t('operate.delete') }}</t-link
               >
-              <t-link v-if="userInfo.useModify === 1" theme="danger" @click="handleClickModify(slotProps)">
+              <t-link v-if="canContract('modify')" theme="danger" @click="handleClickModify(slotProps)">
                 {{ $t('operate.modify') }}</t-link
               >
             </t-space>
@@ -372,15 +372,15 @@ import {
 import type { ContractModel, SelectModel } from '@/api/model/contractModel';
 import Trend from '@/components/trend/index.vue';
 import { TYPE_CONTRACT_STATUS, TYPE_CONTRACT_TYPES } from '@/constants';
-import { usePermission, useSubmitGuard } from '@/hooks';
+import { hasFunctionPower, useSubmitGuard } from '@/hooks';
 import { t, translate } from '@/locales';
 import { extractServerError } from '@/utils/apiError';
 import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 合同模块权限对象按稳定菜单 name('contract') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改, 20261020 P2 C1 改按 name
-const userInfo = usePermission('contract');
+// 合同模块按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'contract' 20261023 动作列迁移,
+const canContract = (action: string) => hasFunctionPower('contract', 'contract', action);
 
 // 列表代码开始
 const isListShow = ref(false);

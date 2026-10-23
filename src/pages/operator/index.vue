@@ -5,7 +5,7 @@
       <t-card class="list-card-container" :bordered="false">
         <t-row justify="space-between">
           <div class="left-operation-container">
-            <t-button v-if="userInfo.useCreate === 1" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
+            <t-button v-if="canOperator('create')" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
           </div>
         </t-row>
         <t-table
@@ -30,13 +30,13 @@
           <template #op="slotProps">
             <t-space>
               <t-link theme="primary" @click="handleClickDetail(slotProps)"> {{ $t('operate.detail') }}</t-link>
-              <div v-if="slotProps.row.isAccount === 0 && userInfo.useDelete === 1">
+              <div v-if="slotProps.row.isAccount === 0 && canOperator('delete')">
                 <t-link theme="danger" @click="handleClickDelete(slotProps)"> {{ $t('operate.delete') }}</t-link>
               </div>
-              <t-link v-if="userInfo.useModify === 1" theme="danger" @click="handleClickModify(slotProps)">
+              <t-link v-if="canOperator('modify')" theme="danger" @click="handleClickModify(slotProps)">
                 {{ $t('operate.modify') }}</t-link
               >
-              <t-link v-if="userInfo.usePower === 1" theme="danger" @click="handleClickPower(slotProps)">
+              <t-link v-if="canOperator('power')" theme="danger" @click="handleClickPower(slotProps)">
                 {{ $t('operate.power') }}</t-link
               >
             </t-space>
@@ -309,123 +309,47 @@
           >
             <template #menuName="{ row }">
               <div v-if="row.useMenu === 1">
-                <t-checkbox :default-checked="true" @change="onPowerMenuChange('useMenu', row.idPower)">
+                <t-checkbox
+                  :default-checked="true"
+                  :disabled="!canPower"
+                  @change="onPowerMenuChange('useMenu', row.idPower)"
+                >
                   <p v-if="row.level === 1">{{ $t(row.menuName) }}</p>
                   <p v-if="row.level === 2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $t(row.menuName) }}</p>
                 </t-checkbox>
               </div>
               <div v-if="row.useMenu === 0">
-                <t-checkbox :default-checked="false" @change="onPowerMenuChange('useMenu', row.idPower)">
+                <t-checkbox
+                  :default-checked="false"
+                  :disabled="!canPower"
+                  @change="onPowerMenuChange('useMenu', row.idPower)"
+                >
                   <p v-if="row.level === 1">{{ $t(row.menuName) }}</p>
                   <p v-if="row.level === 2">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{{ $t(row.menuName) }}</p>
                 </t-checkbox>
               </div>
             </template>
-            <template #op="{ row }">
-              <!-- create mysql create字段设置无符号填冲零有影响，注意不要勾选 -->
-
-              <template v-if="row.operateCreate === 1 && row.useCreate === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerCreateChange('useCreate', row.idPower)"
-                  >{{ $t('operate.create') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operateCreate === 1 && row.useCreate === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerCreateChange('useCreate', row.idPower)"
-                  >{{ $t('operate.create') }}</t-checkbox
-                >
-              </template>
-              <!-- modify -->
-              <template v-if="row.operateModify === 1 && row.useModify === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerModifyChange('useModify', row.idPower)"
-                  >{{ $t('operate.modify') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operateModify === 1 && row.useModify === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerModifyChange('useModify', row.idPower)"
-                  >{{ $t('operate.modify') }}</t-checkbox
-                >
-              </template>
-              <!-- delete -->
-              <template v-if="row.operateDelete === 1 && row.useDelete === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerDeleteChange('useDelete', row.idPower)"
-                  >{{ $t('operate.delete') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operateDelete === 1 && row.useDelete === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerDeleteChange('useDelete', row.idPower)"
-                  >{{ $t('operate.delete') }}</t-checkbox
-                >
-              </template>
-              <!-- account_power 表已删除 operateSale/operateReserve 字段,销售/预定复选框同步移除 20260902 联调清理 -->
-              <!-- examine -->
-              <template v-if="row.operateExamine === 1 && row.useExamine === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerExamineChange('useExamine', row.idPower)"
-                  >{{ $t('operate.examine') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operateExamine === 1 && row.useExamine === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerExamineChange('useExamine', row.idPower)"
-                  >{{ $t('operate.examine') }}</t-checkbox
-                >
-              </template>
-              <!-- finish -->
-              <template v-if="row.operateFinish === 1 && row.useFinish === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerFinishChange('useFinish', row.idPower)"
-                  >{{ $t('operate.finish') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operateFinish === 1 && row.useFinish === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerFinishChange('useFinish', row.idPower)"
-                  >{{ $t('operate.finish') }}</t-checkbox
-                >
-              </template>
-              <!-- power -->
-              <template v-if="row.operatPower === 1 && row.usePower === 0">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="false"
-                  @change="onPowerPowerChange('usePower', row.idPower)"
-                  >{{ $t('operate.power') }}</t-checkbox
-                >
-              </template>
-              <template v-if="row.operatPower === 1 && row.usePower === 1">
-                <t-checkbox
-                  class="checkbox-list"
-                  :default-checked="true"
-                  @change="onPowerPowerChange('usePower', row.idPower)"
-                  >{{ $t('operate.power') }}</t-checkbox
-                >
-              </template>
+            <template #functionPower="{ row }">
+              <div v-if="rowFunctions(row).length > 0 && functionMatrix[row.idPower]" class="function-power-matrix">
+                <div v-for="fn in rowFunctions(row)" :key="fn" class="function-power-row">
+                  <span class="function-power-label">{{ functionLabel(row, fn) }}</span>
+                  <t-checkbox
+                    v-for="action in rowFunctionActions(row, fn)"
+                    :key="action"
+                    class="checkbox-list"
+                    :checked="functionMatrix[row.idPower][fn].actions[action]"
+                    :disabled="
+                      !canPower ||
+                      isSelfPowerAction(row, fn, action) ||
+                      row.useMenu !== 1 ||
+                      savingFunctionPower === row.idPower
+                    "
+                    @change="(checked: boolean) => onFunctionActionChange(row, fn, action, checked)"
+                    >{{ ACTION_LABELS[action] || action }}</t-checkbox
+                  >
+                </div>
+              </div>
+              <!-- 菜单未配置 menu.powerConfig 模板(LAYOUT 容器/只读查询类)时功能权限列留空,不再显示占位符 20261023 -->
             </template>
           </t-table>
 
@@ -444,7 +368,7 @@ export default {
 import { RollbackIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 
 import type { OperatorModel, PowerModel, SelectModel } from '@/api/model/operatorModel';
 import {
@@ -459,9 +383,12 @@ import {
   insertOperator,
   updateOperator,
   updatePower,
+  updatePowerConfig,
 } from '@/api/operator';
 import { TYPE_USE_STATUS } from '@/constants';
-import { usePermission, useSubmitGuard } from '@/hooks';
+// 功能/动作中文标签与 menu.powerConfig 模板解析(模板由后端操作员权限查询随行下发,前端不再维护目录副本) 20261023 权限模板入库,
+import { ACTION_LABELS, FUNCTION_LABELS, normalizeMenuKey, parseFunctionTemplate } from '@/constants/permissionLabels';
+import { hasFunctionPower, useSubmitGuard } from '@/hooks';
 import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import type { UserPermissionField } from '@/types/interface';
@@ -471,10 +398,18 @@ import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 操作人员模块权限对象按稳定菜单 name('operator') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260916 修复：原误用 102103（园区设置），20261020 P2 C1 改按 name 根治 id 漂移
-const userInfo = usePermission('operator');
+// 操作人员模块按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'operator';
+// 平台管理员与 powerConfig=NULL 的存量操作员由 hasFunctionPower 内部回退放行 20261023 动作列迁移,
+const canOperator = (action: string) => hasFunctionPower('operator', 'operator', action);
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
+// 当前账号无“授权”动作时权限页整体只读:菜单开关/功能勾选均不可点,
+// 避免页面残留(他人刚收紧权限或会话内自改)时逐次点击都吃 403 20261023 新增,
+const canPower = computed(() => canOperator('power'));
+// 防自锁:授权动作是权限页所有写接口的入口,当前账号不能取消自己的授权,
+// 否则保存后本页任何勾选都会被后端拒绝且无法自我恢复(与后端 save.js 双保险) 20261023 新增,
+const isSelfPowerAction = (row: PowerModel, fn: string, action: string) =>
+  action === 'power' && fn === 'operator' && Number(row.idOperator) === Number(currentUserStore.userId);
 
 // list begin
 const isListShow = ref(false);
@@ -947,15 +882,122 @@ const COLUMNSMENU: PrimaryTableCol[] = [
     fixed: 'left',
   },
 
+  // 权限配置统一列:菜单行带 menu.powerConfig 功能模板时渲染"功能×动作"矩阵,无模板(如只读查询页)统一显示 — 20261023 权限模板入库,
   {
-    title: translate('pages.operator.menuOperation'),
+    title: '功能权限',
     align: 'left',
-    fixed: 'right',
     width: 460,
-    colKey: 'op',
+    colKey: 'functionPower',
   },
 ];
 const dataPower = ref<PowerModel[]>([]);
+// 功能级权限本地编辑态:按 idPower 归集 { fn: { actions: { action: 是否勾选 } } },
+// 点行末"保存"才整块提交(避免逐键切换在 NULL→非NULL 首次配置时误锁其余动作) 20261023 新增,
+const functionMatrix = reactive<Record<number, Record<string, { actions: Record<string, boolean> }>>>({});
+const savingFunctionPower = ref<number | null>(null);
+
+// powerConfig 归一(与后端 rbac.parsePowerConfig / usePermission 同口径):对象/字符串/NULL 统一转对象,NULL 返回 null,
+const parseRowPowerConfig = (raw: unknown): Record<string, { actions: Record<string, number> }> | null => {
+  if (raw === null || raw === undefined || raw === '') {
+    return null;
+  }
+  if (typeof raw === 'object') {
+    return raw as Record<string, { actions: Record<string, number> }>;
+  }
+  try {
+    return JSON.parse(String(raw));
+  } catch {
+    return null;
+  }
+};
+
+// 初始化功能矩阵勾选态:powerConfig 为 NULL → 全选(兼容旧行为);否则仅勾上显式 =1 的项,
+// 功能列表/动作列表均来自该行 menuTemplate(menu.powerConfig),前端不再按菜单名查目录 20261023 权限模板入库,
+const rowTemplate = (row: PowerModel) => parseFunctionTemplate(row.menuTemplate);
+const rowFunctions = (row: PowerModel): string[] => Object.keys(rowTemplate(row) || {});
+const rowFunctionActions = (row: PowerModel, fn: string): string[] => rowTemplate(row)?.[fn] || [];
+// 单功能菜单直接用菜单中文名当功能标签(功能键=菜单 name);集成页功能用 FUNCTION_LABELS,
+const functionLabel = (row: PowerModel, fn: string) =>
+  FUNCTION_LABELS[fn] || (fn === normalizeMenuKey(row.menuName) ? t(row.menuName) : fn);
+
+const initFunctionMatrix = (rows: PowerModel[]) => {
+  rows.forEach((row) => {
+    const template = rowTemplate(row);
+    if (!template) {
+      return;
+    }
+    const cfg = parseRowPowerConfig(row.powerConfig);
+    const matrix: Record<string, { actions: Record<string, boolean> }> = {};
+    Object.entries(template).forEach(([fn, actions]) => {
+      const actionState: Record<string, boolean> = {};
+      actions.forEach((action) => {
+        actionState[action] = cfg === null ? true : Number(cfg?.[fn]?.actions?.[action]) === 1;
+      });
+      matrix[fn] = { actions: actionState };
+    });
+    functionMatrix[row.idPower] = matrix;
+  });
+};
+
+const toggleFunctionAction = (idPower: number, fn: string, action: string, checked: boolean) => {
+  const matrix = functionMatrix[idPower];
+  if (matrix && matrix[fn]) {
+    matrix[fn].actions[action] = checked;
+  }
+};
+
+// 整块提交当前勾选集:仅收集被勾成 1 的 功能×动作,空 actions 的功能项剔除;
+// 全部取消 → grants={} → 后端写 {}(全禁),与"白名单缺省禁止"语义一致 20261023 新增。
+// 即时保存场景不弹成功提示(避免每次点击刷屏),仅失败弹错;返回是否落库成功供上层回滚判断,
+const saveFunctionPower = async (row: PowerModel): Promise<boolean> => {
+  const matrix = functionMatrix[row.idPower];
+  if (!matrix) {
+    return false;
+  }
+  const grants: Record<string, { actions: Record<string, number> }> = {};
+  Object.entries(matrix).forEach(([fn, fnVal]) => {
+    const granted: Record<string, number> = {};
+    let any = false;
+    Object.entries(fnVal.actions).forEach(([action, checked]) => {
+      if (checked) {
+        granted[action] = 1;
+        any = true;
+      }
+    });
+    if (any) {
+      grants[fn] = { actions: granted };
+    }
+  });
+  savingFunctionPower.value = row.idPower;
+  try {
+    await updatePowerConfig({ idPower: row.idPower, grants });
+    // 乐观回写本地行(下次进入权限页按此初始化),并在配置的是当前登录操作员时热更新自身功能权限,
+    row.powerConfig = grants;
+    if (row.idOperator === currentUserStore.userId) {
+      currentUserStore.updatePermissionPowerConfig(row.idMenu, grants);
+    }
+    return true;
+  } catch (e) {
+    logError(e);
+    MessagePlugin.error(extractServerError(e) || translate('operate.modifyFailedPrompt'));
+    return false;
+  } finally {
+    savingFunctionPower.value = null;
+  }
+};
+
+// 勾选即时保存:先本地切换→整块提交当前完整勾选集(白名单整列覆写,首次由 NULL 转非 NULL 不会误锁其它动作);
+// 保存失败则回滚本次勾选,使界面与库保持一致 20261023 新增,
+const onFunctionActionChange = async (row: PowerModel, fn: string, action: string, checked: boolean) => {
+  if (!canPower.value || isSelfPowerAction(row, fn, action)) {
+    return;
+  }
+  toggleFunctionAction(row.idPower, fn, action, checked);
+  const ok = await saveFunctionPower(row);
+  if (!ok) {
+    toggleFunctionAction(row.idPower, fn, action, !checked);
+  }
+};
 const ClickOperatorPoweClose = () => {
   // formCreate.value.reset();
   controlPageShow('list');
@@ -965,6 +1007,8 @@ const getDataPower = async (id: number) => {
   try {
     const { list } = await getOperatorPowerList(id);
     dataPower.value = list;
+    // 载入后按各行 powerConfig 初始化功能矩阵勾选态(NULL 行默认全选) 20261023 新增,
+    initFunctionMatrix(list);
   } catch (e) {
     logError(e);
     // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
@@ -975,26 +1019,11 @@ const getDataPower = async (id: number) => {
 const onPowerMenuChange = (power: string, row: number) => {
   onPowerChange(power, row);
 };
-const onPowerCreateChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
-const onPowerModifyChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
-const onPowerDeleteChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
-const onPowerExamineChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
-const onPowerFinishChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
-const onPowerPowerChange = (power: string, row: number) => {
-  onPowerChange(power, row);
-};
 
 const onPowerChange = async (power: string, row: number) => {
+  if (!canPower.value) {
+    return;
+  }
   const json = { idPower: 0, field: '' };
   json.field = power;
   json.idPower = row;
@@ -1025,4 +1054,30 @@ const onPowerChange = async (power: string, row: number) => {
 <style lang="less" scoped>
 @import './index.less';
 </style>
-<style lang="less" scoped></style>
+<style lang="less" scoped>
+// 功能级权限矩阵样式:行内标签左对齐、动作复选框横排,保存按钮靠底 20261023 新增,
+.function-power-matrix {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .function-power-row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 4px 12px;
+
+    .function-power-label {
+      min-width: 56px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    // 一个功能的所有动作固定排在同一行,复选框文字不参与折行 20261023,
+    :deep(.checkbox-list) {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+  }
+}
+</style>

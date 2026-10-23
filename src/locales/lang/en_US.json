@@ -108,6 +108,7 @@
   },
   "operate": {
     "operation": "Operation",
+    "save": "Save",
     "add": "Add",
     "create": "Create",
     "detail": "Detail",
@@ -528,6 +529,7 @@
     },
     "park": {
       "title": "Park Settings",
+      "submit": "Submit Settings",
       "park": "Park",
       "parkPlaceholder": "please enter park tag",
       "region": "Region",
@@ -536,6 +538,7 @@
     },
     "cardColor": {
       "title": "Card Colors",
+      "submit": "Submit Settings",
       "tip": "Background and border colors of the five card states, shared by all areas and applied to every card page right after saving. The border color is derived by darkening the background color.",
       "unsold": "Unsold",
       "reserved": "Reserved",
@@ -549,6 +552,7 @@
     },
     "receiptConfig": {
       "title": "Receipt Config",
+      "submit": "Submit Settings",
       "region": "Region",
       "prefix": "Receipt Prefix",
       "prefixPlaceholder": "Please enter receipt prefix (required)",
@@ -647,6 +651,12 @@
       "liaisonPlaceholder": "please enter liaison (required)",
       "liaisonPhone": "Phone",
       "liaisonPhonePlaceholder": "please enter liaison phone",
+      "liaisonPhoneRequiredPlaceholder": "please enter liaison phone (required)",
+      "liaisonPhoneLengthPlaceholder": "please enter an 11-digit phone number",
+      "reservationExpireDate": "Reservation Deadline",
+      "reservationExpireDatePlaceholder": "please select reservation deadline",
+      "reservationExpireDateRequiredPlaceholder": "please select reservation deadline (required)",
+      "reservationExpireDateLimitPlaceholder": "reservation deadline cannot be later than 10 days from today",
       "buyerPhone": "Buyer Phone",
       "buyerIDCard": "Buyer ID Card",
       "buyerPlaceholder": "please enter buyer (required)",
@@ -696,7 +706,7 @@
       "printBlockedPrompt": "Please allow popups and try again",
       "deleteBuriedInfoPrompt": " burial information will be cleared and cannot be restored",
       "deleteContactsInfoPrompt": " contact information will be cleared and cannot be restored",
-      "cancelSale": "Cancel Sale",
+      "deleteReserveInfoPrompt": " reservation information will be cleared and cannot be restored",
       "cancelSaleConfirm": " the sale record and its linked burial/contact/management-fee/certificate/period-change records will be voided, the plot reverts to unsold, and it cannot be restored",
       "certificate": "Certificate",
       "certificateTitle": "Burial Certificate Settings",
@@ -895,6 +905,7 @@
     },
     "taginfo": {
       "title": "Selection Settings",
+      "submit": "Submit Settings",
       "duties": "Job Settings",
       "team": "Team Settings",
       "deceasedRelation": "Deceased Relation",

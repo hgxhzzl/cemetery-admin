@@ -21,6 +21,7 @@
               :tag-props="{ theme: 'success' }"
               :max="tagMax.dutiesNumber"
               :maxcharacter="12"
+              :readonly="!canSetting"
               @enter="onEnterDuties"
             />
           </t-form-item>
@@ -31,6 +32,7 @@
               :tag-props="{ theme: 'warning' }"
               :max="tagMax.teamNumber"
               :maxcharacter="12"
+              :readonly="!canSetting"
               @enter="onEnterTeam"
             />
           </t-form-item>
@@ -45,6 +47,7 @@
               :tag-props="{ theme: 'primary' }"
               :max="tagMax.deceasedRelationNumber"
               :maxcharacter="12"
+              :readonly="!canSetting"
               @enter="onEnterDeceasedRelation"
             />
           </t-form-item>
@@ -55,6 +58,7 @@
               :tag-props="{ theme: 'danger' }"
               :max="tagMax.regionNumber"
               :maxcharacter="12"
+              :readonly="!canSetting"
               @enter="onEnterRegion"
             />
           </t-form-item>
@@ -64,10 +68,17 @@
       <div class="form-submit-container">
         <div class="form-submit-sub">
           <div class="form-submit-left">
-            <t-button theme="primary" class="form-submit-confirm" type="submit" :disabled="submitting">
-              {{ $t('operate.confirm') }}
+            <t-button
+              v-if="canSetting"
+              theme="primary"
+              class="form-submit-confirm"
+              type="submit"
+              :disabled="submitting"
+            >
+              {{ $t('pages.taginfo.submit') }}
             </t-button>
-            <t-button type="reset" class="form-submit-cancel" theme="default" variant="base">
+            <!-- 只读态整页无操作入口:保存与取消(重置)一并隐藏 20261023 调整, -->
+            <t-button v-if="canSetting" type="reset" class="form-submit-cancel" theme="default" variant="base">
               {{ $t('operate.cancel') }}
             </t-button>
           </div>
@@ -85,14 +96,21 @@ export default {
 import type { AxiosError } from 'axios';
 import type { SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { getSetList, getTagList, insertTag } from '@/api/taginfo';
-import { useSubmitGuard } from '@/hooks';
+import { hasFunctionPower, useSubmitGuard } from '@/hooks';
 import { translate } from '@/locales';
 import { logError } from '@/utils/logger';
 
 import { FORM_RULES, INITIAL_DATA, INITIAL_TAGJSON, INITIAL_TAGMAX } from './constants';
+
+// 保存按钮按“功能×动作”白名单判权(单功能菜单功能键=菜单名),powerConfig=NULL 的存量操作员回退放行 20261023 补全,
+// 动作键用 setting(对应“设置提交”按钮),不再复用通用的 modify 20261023 调整,
+const canTagInfo = (action: string) => hasFunctionPower('tagInfo', 'tagInfo', action);
+// 无“设置提交”权限时整页只读:标签只展示,不可新增/删除,保存按钮隐藏(tag-input 的 readonly 会隐藏关闭按钮并禁用输入),
+// 服务端 /taginfo-save 同样按 setting 拦截,前端只读只为避免无效操作 20261023 新增,
+const canSetting = computed(() => canTagInfo('setting'));
 
 let dutiesNumber: number = 0;
 let teamNumber: number = 0;
@@ -174,7 +192,13 @@ const onReset = () => {
 };
 // 确认提交防重复：type=submit 表单提交无锁，双击/回车会并发发出两次写接口；submitting 同步上锁并绑定按钮 :disabled 20261004 新增
 const { submitting, run } = useSubmitGuard();
-const onSubmit = (ctx: SubmitContext) => run(() => submitCore(ctx));
+// 只读态下即使回车触发 form submit 也直接忽略(服务端有 functionPower 守卫,前端不发注定 403 的请求)20261023 新增,
+const onSubmit = (ctx: SubmitContext) => {
+  if (!canSetting.value) {
+    return;
+  }
+  run(() => submitCore(ctx));
+};
 const submitCore = async (ctx: SubmitContext) => {
   const tag: Array<{ tagName: string; tagType: string }> = [];
   duties.value.forEach((item) => {

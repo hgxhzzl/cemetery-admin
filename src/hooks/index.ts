@@ -20,6 +20,7 @@ export { useLayoutScrollRestore } from './useLayoutScrollRestore';
 export { delayControlPageShow, usePageSwitch } from './usePageSwitch';
 export { useParkRoomFilter } from './useParkRoomFilter';
 export { usePermission } from './usePermission';
+export { hasFunctionPower } from './usePermission';
 export { useRoomDetail } from './useRoomDetail';
 export { useSubmitGuard } from './useSubmitGuard';
 export { useTableScrollRestore } from './useTableScrollRestore';

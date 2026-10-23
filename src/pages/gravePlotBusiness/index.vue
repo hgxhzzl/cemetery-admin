@@ -167,7 +167,8 @@
     />
     <!-- 详情结束 -->
     <!-- 业务登记始（独立实现：点击购墓人标题进入，走 gravePlotBusiness 自有接口与 graveplotbusiness 表，不与墓位销售混用）20260923 修改 -->
-    <!-- 业务登记（独立实现）：销售形态存在销售记录且非平台管理员（isAccount=0）时表单只读，管理员可操作 20260924 修改 -->
+    <!-- 业务登记（独立实现）：销售新建无 sale.create、修改销售无 sale.modify 时整表只读，
+         并对应隐藏提交入口（按功能动作授权，不再按 isAccount 区分）20260924 修改 20261023 调整 -->
     <div v-if="isCreateShow">
       <t-form
         class="base-form"
@@ -175,7 +176,7 @@
         label-align="top"
         required-mark-position="right"
         :label-width="100"
-        :disabled="saleFormDisabled"
+        :disabled="saleCreateReadOnly || saleModifyReadOnly || reserveCreateReadOnly || reserveModifyReadOnly"
       >
         <div class="form-basic-container">
           <div class="form-basic-item">
@@ -223,17 +224,20 @@
                     </template>
                     <!-- 操作列：修改回填表单、删除二次确认后软删该条记录 20260923 新增；
                          idSale 有值的记录由销售开单联动生成，不展示修改/删除（去销售单修改）20260925 新增；
-                         仅平台管理员（operator.isAccount=1）可看到并操作“修改/删除”，普通操作员（isAccount=0）不展示不可操作 20261012 新增 -->
+                         按 buried.modify / buried.delete 功能动作分别展示，不再按 isAccount 区分 20261012 新增 20261023 调整；
+                         无可用操作时不再渲染 "-" 占位（那条短横线会被误看成表格线）20261023 调整, -->
                     <template #op="{ row }">
-                      <div v-if="!row.idSale && userStore.isAccount === 1" class="record-op-links">
-                        <t-link theme="primary" @click="onModifyBuriedRecord(row)">
+                      <div
+                        v-if="!row.idSale && (canGrave('buried', 'modify') || canGrave('buried', 'delete'))"
+                        class="record-op-links"
+                      >
+                        <t-link v-if="canGrave('buried', 'modify')" theme="primary" @click="onModifyBuriedRecord(row)">
                           {{ $t('operate.modify') }}
                         </t-link>
-                        <t-link theme="danger" @click="onDeleteBuriedRecord(row)">
+                        <t-link v-if="canGrave('buried', 'delete')" theme="danger" @click="onDeleteBuriedRecord(row)">
                           {{ $t('operate.delete') }}
                         </t-link>
                       </div>
-                      <span v-else>-</span>
                     </template>
                   </t-table>
                 </t-form-item>
@@ -241,7 +245,7 @@
               <!-- 维修状态从开单页墓位信息区移除 20260901 修改 -->
               <!-- 预定形态字段（联系人/电话）已拆至子组件 ReserveFormView（20261020 P2 S2 巨石拆分第四批）：
                    字段列经 inject 共享本页 formBusinessData（payer/payerPhone），提交/校验仍读本页同一份数据，口径不变 -->
-              <reserve-form-view v-if="formMode === 'reserve'" />
+              <reserve-form-view v-if="formMode === 'reserve'" @payer-phone-change="onPayerPhoneChange" />
               <!-- 收款人与编号字段（销售形态业务登记）已拆至子组件 SaleFormView（20261020 P2 S2 巨石拆分第三批）：
                    字段列经 inject 共享本页 formBusinessData（provide/inject），提交/校验/票据仍读本页同一份数据；
                    formMode/options 经 props 传入，实收金额失焦千分位、购墓人电话数字过滤经事件回本页
@@ -259,7 +263,7 @@
                    新增/修改视图不展示列表 20260924 新增 -->
               <t-col v-if="formMode === 'business' && contactsEditMode === 'list'" :span="12">
                 <t-table
-                  class="buried-record-table"
+                  class="buried-record-table buried-record-table--contacts"
                   :data="contactsRecords"
                   :columns="contactsBusinessColumns"
                   row-key="idContacts"
@@ -268,12 +272,18 @@
                   :max-height="240"
                 >
                   <!-- 操作列：修改回填表单、删除二次确认后软删该条联系人记录 20260924 新增 -->
+                  <!-- 操作列：修改回填表单、删除二次确认后软删该条联系人记录 20260924 新增；
+                       修改/删除分别按 contacts modify/delete 功能权隐藏(平台管理员/未配白名单者回退放行) 20261023 新增 -->
                   <template #op="{ row }">
                     <div class="record-op-links">
-                      <t-link theme="primary" @click="onModifyContactsRecord(row)">
+                      <t-link
+                        v-if="canGrave('contacts', 'modify')"
+                        theme="primary"
+                        @click="onModifyContactsRecord(row)"
+                      >
                         {{ $t('operate.modify') }}
                       </t-link>
-                      <t-link theme="danger" @click="onDeleteContactsRecord(row)">
+                      <t-link v-if="canGrave('contacts', 'delete')" theme="danger" @click="onDeleteContactsRecord(row)">
                         {{ $t('operate.delete') }}
                       </t-link>
                     </div>
@@ -311,29 +321,16 @@
                    输入框宽度覆盖 remark-fullrow-input 仍留本页 :deep（穿透深层元素照常命中） -->
               <remark-form-view v-if="formMode === 'remark'" />
             </t-row>
-            <!-- 备注整行输入框（690px、30 字）仅用于墓位预定形态：销售形态备注已进字段网格与逝者关系同行，
-                 下葬形态备注已进字段网格单独占满一行（span=12），联系人形态无备注列、墓位备注形态有 t-row 内整行框，
-                 均不进本分支 20261011 修改 -->
-            <t-form-item
-              v-if="formMode !== 'buried' && formMode !== 'business' && formMode !== 'remark' && formMode !== 'sale'"
-              :label="$t('pages.gravePlotBusiness.remark')"
-              name="remark"
-            >
-              <t-input
-                v-model="formBusinessData.remark"
-                :maxcharacter="30"
-                show-limit-number
-                :style="{ width: '690px' }"
-                :placeholder="$t('pages.gravePlotBusiness.remarkPlaceholder')"
-              />
-            </t-form-item>
           </div>
         </div>
 
         <!-- 提交区：下葬形态列表视图（纯列表）与联系人形态列表视图（纯联系人列表）不展示提交/取消按钮，
-             仅新增/修改视图及安葬证设置视图（暂时同修改视图）展示 20260924 修改 20260927 修改 -->
+             仅新增/修改视图及安葬证设置视图（暂时同修改视图）展示；销售新建无 create 权限时整块隐藏，
+             修改销售无 modify 权限时仅隐藏确认提交（保留打印票据/删除入口）20260924 修改 20260927 修改 20261023 调整 -->
         <div
           v-if="
+            !saleCreateReadOnly &&
+            !reserveCreateReadOnly &&
             (formMode !== 'buried' || buriedEditMode !== 'list') &&
             (formMode !== 'business' || contactsEditMode !== 'list')
           "
@@ -342,9 +339,16 @@
           <div class="form-submit-sub">
             <div class="form-submit-left">
               <t-button
+                v-if="
+                  !saleCreateReadOnly &&
+                  !saleModifyReadOnly &&
+                  !reserveCreateReadOnly &&
+                  !reserveModifyReadOnly &&
+                  !certificateSubmitHidden
+                "
                 theme="primary"
                 class="form-submit-confirm"
-                :disabled="businessSubmitted || saleFormDisabled || submitting"
+                :disabled="businessSubmitted || submitting || !canSubmitCurrentForm"
                 @click="ClickSubmit()"
               >
                 {{ $t('operate.confirm') }}
@@ -367,7 +371,7 @@
               <!-- 打印票据按钮：修改模式进入即显示（表单已回填可打印当前单据），新建提交成功后显示；
                    预定/下葬/联系人形态无票据（同墓位预定/下葬页；联系人页无业务单据）；
                    打印为只读操作：t-button 同样会注入 t-form 的 formDisabled 被 :disabled 一并禁用，
-                   显式 :disabled=false 使组件级 disabled 优先于表单级，非管理员有销售记录时仍可打印 20260923 修改 20260924 修改 20260924 修复 -->
+                   显式 :disabled=false 使组件级 disabled 优先于表单级，表单因无 create/modify 权限只读时仍可打印 20260923 修改 20260924 修改 20260924 修复 20261023 调整 -->
               <t-button
                 v-if="
                   formMode !== 'reserve' &&
@@ -384,17 +388,31 @@
                 {{ $t('operate.printReceipt') }}
               </t-button>
 
-              <!-- 销售取消：销售形态且已有销售记录（修改态）且当前操作员为平台管理员（isAccount=1）时展示，
-                   普通操作员不显示；作废该墓位销售并回退状态，二次确认后执行 20261008 新增 -->
+              <!-- 销售删除（原“取消销售”，按钮已改名）：销售形态且已有销售记录（修改态），
+                   且具备 sale.delete 功能动作时展示（可按操作员授权）；无删除权限不显示；
+                   作废该墓位销售并回退状态，二次确认后执行 20261008 新增 20261023 改名/权限门控 -->
               <t-button
-                v-if="formMode === 'sale' && formBusinessData.idBusiness !== 0 && userStore.isAccount === 1"
+                v-if="formMode === 'sale' && formBusinessData.idBusiness !== 0 && canGrave('sale', 'delete')"
                 class="form-submit-cancel"
                 theme="warning"
                 variant="outline"
                 :disabled="submitting"
-                @click="onClickCancelSale()"
+                @click="onClickDeleteSale()"
               >
-                {{ $t('pages.gravePlotBusiness.cancelSale') }}
+                {{ $t('operate.delete') }}
+              </t-button>
+
+              <!-- 预定删除：预定形态且已有预定记录（修改态）、且具备 reserve.delete 功能动作时展示；
+                   作废该墓位预定并回置预定状态/清空限期，二次确认后执行（样式同销售删除）20261023 新增 -->
+              <t-button
+                v-if="formMode === 'reserve' && formBusinessData.idBusiness !== 0 && canGrave('reserve', 'delete')"
+                class="form-submit-cancel"
+                theme="warning"
+                variant="outline"
+                :disabled="submitting"
+                @click="onClickDeleteReserve()"
+              >
+                {{ $t('operate.delete') }}
               </t-button>
             </div>
             <!-- 安葬证打印A/B：安葬证设置视图提交行右侧并列（form-submit-sub 为 space-between，
@@ -438,13 +456,21 @@
       :on-cancel="onCancel"
       @confirm="onConfirmDelete"
     />
-    <!-- 销售取消二次确认弹窗（仅平台管理员可见入口）20261008 新增 -->
+    <!-- 销售删除（原“取消销售”）二次确认弹窗（管理员入口，接口限平台管理员）20261008 新增 20261023 改名 -->
     <t-dialog
-      v-model:visible="cancelSaleConfirmVisible"
+      v-model:visible="deleteSaleConfirmVisible"
       :header="dialogHeader"
-      :body="cancelSaleConfirmBody"
-      :on-cancel="onCancelSaleConfirmCancel"
-      @confirm="onConfirmCancelSale"
+      :body="deleteSaleConfirmBody"
+      :on-cancel="onDeleteSaleConfirmCancel"
+      @confirm="onConfirmDeleteSale"
+    />
+    <!-- 预定删除二次确认弹窗（样式同销售删除）20261023 新增 -->
+    <t-dialog
+      v-model:visible="deleteReserveConfirmVisible"
+      :header="dialogHeader"
+      :body="deleteReserveConfirmBody"
+      :on-cancel="onDeleteReserveConfirmCancel"
+      @confirm="onConfirmDeleteReserve"
     />
   </div>
 </template>
@@ -484,13 +510,22 @@ import RoomCardList from '@/components/room-card-list/index.vue';
 import type { RoomCardMetaField } from '@/components/room-card-list/types';
 import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
-import { useCardGrid, usePageSwitch, useParkRoomFilter, useRoomDetail, useSubmitGuard, useTabCacheName } from '@/hooks';
+// 功能级权限判定 hasFunctionPower 与后端 requireFunctionPower 同口径:墓位业务多功能集成页按 功能×动作 控制入口显隐 20261023 新增,
+import {
+  hasFunctionPower,
+  useCardGrid,
+  usePageSwitch,
+  useParkRoomFilter,
+  useRoomDetail,
+  useSubmitGuard,
+  useTabCacheName,
+} from '@/hooks';
 import { t, translate } from '@/locales';
 import { useUserStore } from '@/store';
 import { extractServerError } from '@/utils/apiError';
 import type { RoomCardOverlayBData, RoomCardOverlayData } from '@/utils/burialCertificate';
 import { buildRoomCardOverlayBHtml, buildRoomCardOverlayHtml } from '@/utils/burialCertificate';
-import { getCardStatusClass, isUnsold } from '@/utils/cardStatus';
+import { getCardStatusClass, isSold, isUnsold } from '@/utils/cardStatus';
 import { isCardStateEnabled } from '@/utils/cardTheme';
 import { formatDate } from '@/utils/date';
 import { formatPrice } from '@/utils/format';
@@ -688,6 +723,13 @@ provide(businessFormDataKey, formBusinessData);
 // 当前登录用户信息：票据经办人展示、新建销售收款人默认、销售只读门控等复用（声明前移至表单区，供 enterBusinessForm 调用）20261017 前移
 const userStore = useUserStore();
 
+// 墓位业务功能级权限门控:菜单名固定 gravePlotBusiness,fn 与表单 type/功能键对齐(sale/buried/contacts/reserve/certificate/remark)。
+// 平台管理员及 powerConfig 为 NULL 的存量操作员由 hasFunctionPower 内部回退放行,无需在此重复判定 20261023 新增,
+const canGrave = (fn: string, action: string) => hasFunctionPower('gravePlotBusiness', fn, action);
+// 功能入口是否可进:该功能下至少具备一个可操作动作(进入后具体增删改仍按各动作判定)。
+// remark 仅有 modify;其余功能含 create/modify(/delete),故按传入动作集合任一命中即可,
+const canEnterGraveFeature = (fn: string, actions: string[]) => actions.some((action) => canGrave(fn, action));
+
 // 新建提交成功后置灰确认按钮防重复提交，重新进入表单时重置 20260922 新增
 const businessSubmitted = ref(false);
 
@@ -763,8 +805,14 @@ const buriedRecordColumns: PrimaryTableCol[] = [
     thClassName: 'buried-col-op',
     title: (h) =>
       h('div', { class: 'record-op-links' }, [
-        h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add')),
-        h(Link, { theme: 'primary', onClick: openCertificateView }, () => buriedCertificateText),
+        // 新增链接仅在下葬 create 有权时呈现;证件链接是安葬证设置的唯一入口，仅具 certificate.modify 才可进入
+        // (权限页已去掉安葬证“新建”动作，安葬证保存统一按 modify 控权)20261023 新增 20261023 调整,
+        ...(canGrave('buried', 'create')
+          ? [h(Link, { theme: 'primary', onClick: handleClickBuriedAdd }, () => translate('operate.add'))]
+          : []),
+        ...(canGrave('certificate', 'modify')
+          ? [h(Link, { theme: 'primary', onClick: openCertificateView }, () => buriedCertificateText)]
+          : []),
       ]),
   },
 ];
@@ -789,15 +837,30 @@ const {
 // 将联系人表单数据 Ref 提供给拆出的 ContactsFormView 子组件（inject 共享，子组件按字段 v-model 编辑即写回同一对象，提交/校验读同一份）20261020 P2 S2 拆分
 provide(contactsFormDataKey, formContactsData);
 // 联系人记录列表列：联系人/电话/身份证号 + 操作列（表头“新增”入口，行内修改/删除，同下葬页记录列表交互）
+// 身份证号列加 className/thClassName：供页面 less 去掉本列右边框（与操作列之间不画竖线，同下葬日期列做法）20261023 调整,
 const contactsBusinessColumns: PrimaryTableCol[] = [
   { title: translate('pages.gravePlotBusiness.contacts'), colKey: 'contacts' },
   { title: translate('pages.gravePlotBusiness.contactsPhone'), colKey: 'contactsPhone', width: 140 },
-  { title: translate('pages.gravePlotBusiness.contactsIDCard'), colKey: 'contactsIDCard', width: 180 },
+  {
+    title: translate('pages.gravePlotBusiness.contactsIDCard'),
+    colKey: 'contactsIDCard',
+    width: 180,
+    className: 'contacts-col-idcard',
+    thClassName: 'contacts-col-idcard',
+  },
   {
     colKey: 'op',
     width: 110,
     align: 'center',
-    title: (h) => h(Link, { theme: 'primary', onClick: handleClickContactsAdd }, () => translate('operate.add')),
+    // 操作列加 className/thClassName：供页面 less 去掉本列左边框（TDesign bordered 逐格 border-left 会在此画线）20261023 调整,
+    className: 'contacts-col-op',
+    thClassName: 'contacts-col-op',
+    title: (h) =>
+      // 联系人新增入口按 contacts create 权隐藏(平台管理员/未配白名单者回退放行)；
+      // 无新增权时不再渲染 "-" 占位（那条短横线会被误看成表格线）20261023 调整,
+      canGrave('contacts', 'create')
+        ? h(Link, { theme: 'primary', onClick: handleClickContactsAdd }, () => translate('operate.add'))
+        : '',
   },
 ];
 
@@ -853,8 +916,17 @@ const handleClickBuyer = async (row: GravePlotBusinessRoomRow) => {
 };
 
 // 预定人卡片行已移除，进入预定形态表单的入口（原 handleClickReserve）随之移除 20261002 修改,
-// 预定形态表单模板与数据逻辑（formMode='reserve' 分支）保留，恢复入口时参照原实现：
-// 已销售墓位不可再预定（isSold 兜底拦截）→ formMode='reserve' → enterBusinessForm → 清空 realPriceString 20260924 记录,
+// 20261023 恢复：卡片“预定期”标题改为按钮，预定新建/修改/删除统一由本页承接（旧独立预定页下线），
+// 20261023 入口可用性只受销售状态约束：已销售墓位不可再进预定表单（卡片入口已置灰，此处再兜底拦截）,
+const handleClickReserve = async (row: GravePlotBusinessRoomRow) => {
+  if (isSold(row.saleStatus)) {
+    return;
+  }
+  formMode.value = 'reserve';
+  await enterBusinessForm(row);
+  // 预定形态无金额字段（同原预定页），清空默认带入/回填的实收金额 20261023 新增
+  formBusinessData.value.realPriceString = '';
+};
 
 // 点击下葬者按钮：进入下葬形态表单——内容同下葬页修改页（记录选择表格 + 安葬者/下葬日期/联系人等），
 // 数据判定与读写走自有接口读写 buried 表（多记录时默认选中最新一条，可单选切换）20260923 修改
@@ -892,24 +964,49 @@ const handleClickRemark = (row: GravePlotBusinessRoomRow) => {
 // 上抛 action 回本页 onCardAction 分发到既有 handleClickXxx（处理逻辑一字未改）；预定期/管理期为普通标题；
 // 下葬者/联系人标题在未销售时置灰不可点（labelDisabled 同原 BusinessCardList 门控）20261020 P2 S2
 const cardMetaFields: RoomCardMetaField[] = [
-  { labelKey: 'pages.room.buyer', field: 'buyer', format: 'text', labelAction: 'buyer' },
+  {
+    labelKey: 'pages.room.buyer',
+    field: 'buyer',
+    format: 'text',
+    labelAction: 'buyer',
+    // 无任何销售功能动作时置灰入口(平台管理员/未配置白名单者由 canGrave 回退放行)；
+    // 删除动作也纳入入口判定，使仅有 sale.delete 的操作员能进入已有销售记录执行删除 20261023 新增/调整,
+    labelDisabled: () => !canEnterGraveFeature('sale', ['create', 'modify', 'delete']),
+  },
   {
     labelKey: 'pages.room.buriedPerson',
     field: 'deceased',
     format: 'truncate',
     labelAction: 'buried',
-    labelDisabled: (row: RoomModel) => isUnsold(row.saleStatus),
+    labelDisabled: (row: RoomModel) =>
+      isUnsold(row.saleStatus) || !canEnterGraveFeature('buried', ['create', 'modify', 'delete']),
   },
   {
     labelKey: 'pages.room.contacts',
     field: 'contacts',
     format: 'truncate',
     labelAction: 'person',
-    labelDisabled: (row: RoomModel) => isUnsold(row.saleStatus),
+    labelDisabled: (row: RoomModel) =>
+      isUnsold(row.saleStatus) || !canEnterGraveFeature('contacts', ['create', 'modify', 'delete']),
   },
-  { labelKey: 'pages.gravePlotBusiness.reservationPeriod', field: 'reservationExpireDate', format: 'date' },
+  {
+    labelKey: 'pages.gravePlotBusiness.reservationPeriod',
+    field: 'reservationExpireDate',
+    format: 'date',
+    labelAction: 'reserve',
+    // 预定期入口仅受销售状态约束：已销售墓位置灰不可点（无论是否残留预定记录）；未销售墓位（含已预定与历史脏值）均可进入，
+    // 进入后的新建/修改/删除再按 reserve.create/modify/delete 做只读与按钮显隐，越权写由后端 403 保定 20261023 调整,
+    labelDisabled: (row: RoomModel) => isSold(row.saleStatus),
+  },
   { labelKey: 'pages.adminfee.period', field: 'endDate', format: 'date' },
-  { labelKey: 'pages.gravePlotBusiness.remark', field: 'remark', format: 'truncate', labelAction: 'remark' },
+  {
+    labelKey: 'pages.gravePlotBusiness.remark',
+    field: 'remark',
+    format: 'truncate',
+    labelAction: 'remark',
+    // 备注仅有 modify 动作:无备注修改权时置灰入口 20261023 新增,
+    labelDisabled: () => !canEnterGraveFeature('remark', ['modify']),
+  },
 ];
 // 每卡状态外框：前缀改中性 roomcard 以匹配 RoomCardList scoped 内实体化的外框类（色值仍走全局 card-color 变量，视觉不变）
 const cardStatusClass = (row: RoomModel) => getCardStatusClass('roomcard', row, { withUnsold: true });
@@ -932,6 +1029,9 @@ const onCardAction = (name: string, row: RoomModel) => {
       break;
     case 'remark':
       handleClickRemark(businessRow);
+      break;
+    case 'reserve':
+      handleClickReserve(businessRow);
       break;
     default:
       break;
@@ -1001,6 +1101,8 @@ const fillBusinessForm = async (idRoom: number, type?: GravePlotBusinessFormType
       realPriceString: record.realPrice != null ? formatPrice(record.realPrice) : '',
       payer: record.payer ?? '',
       payerPhone: record.payerPhone ?? '',
+      // 预定限期：库列为 datetime，日期控件只认 yyyy-MM-dd；旧记录未填时为空由用户补选 20261023 新增,
+      reservationExpireDate: formatDate(record.reservationExpireDate ?? ''),
       remark: record.remark ?? '',
       payerIDCard: record.payerIDCard ?? '',
       payee: record.payee ?? '',
@@ -1195,10 +1297,30 @@ const {
 // ==================== 新建：票据打印 ====================
 // 经办人显示当前登录操作员姓名，开单保存时后端同样自动写入（userStore 已前移至表单区声明）20260921 新增
 
-// 销售形态只读门控：存在销售记录且操作员非平台管理员（isAccount=0）时表单内容不可操作；
-// 平台管理员（isAccount=1）可修改；新建销售（无记录）不受限；打印票据按钮除外（打印属只读操作，不受门控影响）20260924 新增
-const saleFormDisabled = computed(
-  () => formMode.value === 'sale' && formBusinessData.value.idBusiness !== 0 && userStore.isAccount === 0,
+// 销售新建只读门控：新建销售（无销售记录 idBusiness=0）但当前账号无 sale.create 动作时，
+// 整表只读并隐藏提交区，避免仅具 modify 的账号进入新增页后仍可提交（后端 insert 会 403）20261023 新增,
+const saleCreateReadOnly = computed(
+  () => formMode.value === 'sale' && formBusinessData.value.idBusiness === 0 && !canGrave('sale', 'create'),
+);
+// 销售修改只读门控：修改已有销售（idBusiness!==0）但当前账号无 sale.modify 动作时，
+// 整表只读并隐藏确认提交，避免仅具 create 的账号借修改页越权提交（后端 update 会 403）20261023 新增,
+const saleModifyReadOnly = computed(
+  () => formMode.value === 'sale' && formBusinessData.value.idBusiness !== 0 && !canGrave('sale', 'modify'),
+);
+// 预定新建只读门控：新建预定（无活动预定 idBusiness=0）但当前账号无 reserve.create 时，
+// 整表只读并隐藏确认提交（旧独立预定页下线后由本页承接同一权限口径）20261023 新增,
+const reserveCreateReadOnly = computed(
+  () => formMode.value === 'reserve' && formBusinessData.value.idBusiness === 0 && !canGrave('reserve', 'create'),
+);
+// 预定修改只读门控：修改已有预定（idBusiness!==0）但无 reserve.modify 时整表只读，
+// 仅保留删除（若具 reserve.delete）与返回入口 20261023 新增,
+const reserveModifyReadOnly = computed(
+  () => formMode.value === 'reserve' && formBusinessData.value.idBusiness !== 0 && !canGrave('reserve', 'modify'),
+);
+// 安葬证设置提交门控：安葬证只有 modify 一个动作（权限页不提供新建），无该动作时隐藏“确认提交”；
+// 入口已按 certificate.modify 门控，此处再兜底拦住直接渲染到表单的越权写 20261023 新增,
+const certificateSubmitHidden = computed(
+  () => formMode.value === 'buried' && buriedEditMode.value === 'certificate' && !canGrave('certificate', 'modify'),
 );
 
 // 打印票据：校验付款人与金额后，点击手势内同步打开空白新标签页（原系统页不动），
@@ -1334,6 +1456,35 @@ const ClickCreateClose = () => {
 // 确认提交防重复：请求在途期间忽略后续点击（businessSubmitted 仅部分形态成功后置位，不覆盖在途窗口与各修改分支）20261004 新增
 const { submitting, run } = useSubmitGuard();
 const ClickSubmit = () => run(submitCore);
+// 当前表单对应的功能键:business→contacts(联系人表),buried 证件视图→certificate,其余同 formMode(sale/reserve/buried/remark) 20261023 新增,
+const currentFunctionKey = computed(() => {
+  if (formMode.value === 'buried') {
+    return buriedEditMode.value === 'certificate' ? 'certificate' : 'buried';
+  }
+  if (formMode.value === 'business') {
+    return 'contacts';
+  }
+  return formMode.value;
+});
+// 提交按钮兵底门控:当前功能既不具 create 也不具 modify(remark 只看 modify)时置灰。
+// 因功能入口已要求 create||modify 才可进入,本判定不会误锁已能进入的合法操作,仅封住直接渲染到表单的越权写 20261023 新增,
+const canSubmitCurrentForm = computed(() => {
+  // 新建/修改销售、新建/修改预定无对应动作时已整表只读并隐藏确认提交，此处再兜底拦住任何程序化触发 20261023 调整,
+  if (
+    saleCreateReadOnly.value ||
+    saleModifyReadOnly.value ||
+    reserveCreateReadOnly.value ||
+    reserveModifyReadOnly.value
+  ) {
+    return false;
+  }
+  const fn = currentFunctionKey.value;
+  if (fn === 'remark' || fn === 'certificate') {
+    // 备注/安葬证只有 modify 一个动作（模板不再提供 create），按 modify 单动作判定 20261023 调整,
+    return canGrave(fn, 'modify');
+  }
+  return canGrave(fn, 'create') || canGrave(fn, 'modify');
+});
 // 购墓人/付款人电话仅允许数字、最长 11 位：输入时过滤非数字字符并截断 20261017 新增
 const onPayerPhoneChange = (value: string | number) => {
   formBusinessData.value.payerPhone = String(value ?? '')
@@ -1346,6 +1497,7 @@ const submitCore = async () => {
     realPriceString,
     payer,
     payerPhone,
+    reservationExpireDate,
     remark,
     idRoom,
     idBusiness,
@@ -1435,6 +1587,21 @@ const submitCore = async () => {
   if (!isReserveMode && !isBuriedMode && !/^\d{11}$/.test(payerPhone.trim())) {
     return MessagePlugin.warning(translate('pages.gravePlotBusiness.buyerPhoneLengthPlaceholder'));
   }
+  // 预定形态：联系人电话必填且为 11 位数字；预定限期必填且不得晚于今天+10 天（口径同原独立预定页）20261023 新增,
+  if (isReserveMode) {
+    if (payerPhone === undefined || payerPhone.trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.liaisonPhoneRequiredPlaceholder'));
+    }
+    if (!/^\d{11}$/.test(payerPhone.trim())) {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.liaisonPhoneLengthPlaceholder'));
+    }
+    if (reservationExpireDate === undefined || String(reservationExpireDate).trim() === '') {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.reservationExpireDateRequiredPlaceholder'));
+    }
+    if (dayjs(String(reservationExpireDate).trim()).isAfter(dayjs().add(10, 'day'), 'day')) {
+      return MessagePlugin.warning(translate('pages.gravePlotBusiness.reservationExpireDateLimitPlaceholder'));
+    }
+  }
   // 销售形态额外必填：编号、购墓人身份证号、安葬者（购墓人/购墓人电话已在上方校验），
   // 确认提交时逐项判断未填写则给出提示 20261003 新增 20261005 编号改为必填
   if (formMode.value === 'sale') {
@@ -1463,6 +1630,8 @@ const submitCore = async () => {
     realPrice,
     payer: payer.trim(),
     payerPhone: payerPhone.trim(),
+    // 预定限期（仅预定形态有意义）随开单提交保存到 reserve.reservationExpireDate 20261023 新增,
+    reservationExpireDate: String(reservationExpireDate ?? '').trim(),
     remark,
     // 付款人扩展字段随开单提交保存 20260901 新增,
     payerIDCard: payerIDCard.trim(),
@@ -1534,27 +1703,27 @@ const submitCore = async () => {
   }
 };
 
-// ==================== 销售形态：销售取消（平台管理员作废销售，二次确认弹窗）20261008 新增 ====================
-const cancelSaleConfirmVisible = ref(false);
-// 确认文案：拼接当前墓位园区/排/号 + 取消后果描述（同删除二次确认样式）
-const cancelSaleConfirmBody = computed(
+// ==================== 销售形态：销售删除（原“取消销售”，平台管理员作废销售，二次确认弹窗）20261008 新增 20261023 改名 ====================
+const deleteSaleConfirmVisible = ref(false);
+// 确认文案：拼接当前墓位园区/排/号 + 删除后果描述（同删除二次确认样式）
+const deleteSaleConfirmBody = computed(
   () =>
     `${translate('operate.deleteDataAPrompt')}${formRoomData.value.park}${formRoomData.value.yNum}${translate(
       'operate.row',
     )}${formRoomData.value.xNum}${translate('pages.gravePlotBusiness.cancelSaleConfirm')}`,
 );
-// 点击“销售取消”：打开二次确认
-const onClickCancelSale = () => {
-  cancelSaleConfirmVisible.value = true;
+// 点击“删除”（销售删除）：打开二次确认
+const onClickDeleteSale = () => {
+  deleteSaleConfirmVisible.value = true;
 };
-const onCancelSaleConfirmCancel = () => {
-  cancelSaleConfirmVisible.value = false;
+const onDeleteSaleConfirmCancel = () => {
+  deleteSaleConfirmVisible.value = false;
 };
-// 确认销售取消：后端单事务软删关联业务表并回置墓位；复用提交守卫 run 防在途重复点击，成功后刷新列表并返回
-const onConfirmCancelSale = () =>
+// 确认销售删除：后端单事务软删关联业务表并回置墓位；复用提交守卫 run 防在途重复点击，成功后刷新列表并返回
+const onConfirmDeleteSale = () =>
   run(async () => {
     const { idRoom } = formBusinessData.value;
-    cancelSaleConfirmVisible.value = false;
+    deleteSaleConfirmVisible.value = false;
     try {
       await cancelGravePlotBusinessSale(idRoom);
       MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
@@ -1563,6 +1732,38 @@ const onConfirmCancelSale = () =>
     } catch (e) {
       logError(e);
       // 失败必须让用户看见:此前只写控制台,界面表现为“点了没反应”(审查修复 20261021 P2),
+      MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
+    }
+  });
+
+// ==================== 预定形态：预定删除（软删活动预定，二次确认弹窗）20261023 新增 ====================
+const deleteReserveConfirmVisible = ref(false);
+// 确认文案：拼接当前墓位园区/排/号 + 删除后果描述（样式同销售删除）
+const deleteReserveConfirmBody = computed(
+  () =>
+    `${translate('operate.deleteDataAPrompt')}${formRoomData.value.park}${formRoomData.value.yNum}${translate(
+      'operate.row',
+    )}${formRoomData.value.xNum}${translate('pages.gravePlotBusiness.deleteReserveInfoPrompt')}`,
+);
+// 点击“删除”（预定删除）：打开二次确认
+const onClickDeleteReserve = () => {
+  deleteReserveConfirmVisible.value = true;
+};
+const onDeleteReserveConfirmCancel = () => {
+  deleteReserveConfirmVisible.value = false;
+};
+// 确认预定删除：后端单事务软删活动预定、回置未预定并清空限期副本；复用提交守卫 run 防在途重复点击，成功后刷新列表并返回
+const onConfirmDeleteReserve = () =>
+  run(async () => {
+    const { idRoom } = formBusinessData.value;
+    deleteReserveConfirmVisible.value = false;
+    try {
+      await deleteGravePlotBusiness({ idRoom, type: 'reserve' });
+      MessagePlugin.success(translate('operate.deleteSuccessPrompt'));
+      await getRoomData();
+      ClickCreateClose();
+    } catch (e) {
+      logError(e);
       MessagePlugin.error(extractServerError(e) || translate('operate.deleteFailedPrompt'));
     }
   });

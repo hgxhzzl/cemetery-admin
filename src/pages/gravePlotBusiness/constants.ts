@@ -40,6 +40,8 @@ export const INITIAL_BUSINESS_DATA = {
   realPriceString: '',
   payer: '',
   payerPhone: '',
+  // 预定限期（库列 reserve.reservationExpireDate）：仅预定形态录入，必填，日期控件只认 yyyy-MM-dd 20261023 新增,
+  reservationExpireDate: '',
   remark: '',
   // 付款人扩展字段 20260901 新增,
   payerIDCard: '',

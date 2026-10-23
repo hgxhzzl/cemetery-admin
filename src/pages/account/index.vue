@@ -5,7 +5,7 @@
       <t-card class="list-card-container" :bordered="false">
         <t-row justify="space-between">
           <div class="left-operation-container">
-            <t-button v-if="userInfo.useCreate === 1" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
+            <t-button v-if="canAccount('create')" @click="handleClickCreate">{{ $t('operate.create') }} </t-button>
           </div>
 
           <div class="search-input">
@@ -59,10 +59,10 @@
           <template #op="slotProps">
             <t-space>
               <t-link theme="primary" @click="handleClickDetail(slotProps)"> {{ $t('operate.detail') }}</t-link>
-              <t-link v-if="userInfo.useDelete === 1" theme="danger" @click="handleClickDelete(slotProps)">
+              <t-link v-if="canAccount('delete')" theme="danger" @click="handleClickDelete(slotProps)">
                 {{ $t('operate.delete') }}</t-link
               >
-              <t-link v-if="userInfo.useModify === 1" theme="danger" @click="handleClickModify(slotProps)">
+              <t-link v-if="canAccount('modify')" theme="danger" @click="handleClickModify(slotProps)">
                 {{ $t('operate.modify') }}</t-link
               >
               <t-link theme="warning" @click="handleClickPower(slotProps)"> {{ $t('operate.power') }}</t-link>
@@ -352,7 +352,7 @@ import {
 } from '@/api/account';
 import type { AccountModel, AccountPowerModel } from '@/api/model/accountModel';
 import { TYPE_ENTERPRISE_TYPES, TYPE_USE_STATUS } from '@/constants';
-import { usePermission, useSubmitGuard } from '@/hooks';
+import { hasFunctionPower, useSubmitGuard } from '@/hooks';
 import { t, translate } from '@/locales';
 import { getPermissionStore, useUserStore } from '@/store';
 import { extractServerError } from '@/utils/apiError';
@@ -361,8 +361,8 @@ import { logError } from '@/utils/logger';
 
 import { INITIAL_DATA } from './constants';
 
-// 账户模块权限对象按稳定菜单 name('account') 匹配（菜单排序调整致 id 变化时不需改代码），权限不足时兼容空对象避免运行时报错 20260827 修改, 20261020 P2 C1 改按 name
-const userInfo = usePermission('account');
+// 账户模块按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'account' 20261023 动作列迁移,
+const canAccount = (action: string) => hasFunctionPower('account', 'account', action);
 const currentUserStore = useUserStore();
 const permissionStore = getPermissionStore();
 

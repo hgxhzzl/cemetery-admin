@@ -304,10 +304,10 @@ import RoomDetail from '@/components/room-detail/index.vue';
 import { BUSINESS_BASIC_FORM_LABEL_WIDTH } from '@/constants';
 import type { CardRowArg } from '@/hooks';
 import {
+  hasFunctionPower,
   useCardGrid,
   usePageSwitch,
   useParkRoomFilter,
-  usePermission,
   useRoomDetail,
   useSubmitGuard,
   useTabCacheName,
@@ -338,8 +338,8 @@ import { feeFormDataKey, FIND_DATA, INITIAL_FEE_DATA, INITIAL_ROOM_DATA } from '
 // 向tab记录登记组件真实name，修复后端路由name与组件name不一致导致切tab不保活的问题 20260909 新增,
 useTabCacheName('Adminfee');
 
-// 管理费收款权限对象按稳定菜单 name(adminfee) 匹配（菜单 id 已迁为 103108），权限不足时兼容空对象避免运行时报错 20260925 修改
-const userInfo = usePermission('adminfee');
+// 管理费收款按钮改按“功能×动作”白名单判权(与后端 requireFunctionPower 同口径),单功能菜单功能键=菜单名 'adminfee' 20261023 动作列迁移,
+const canAdminfee = (action: string) => hasFunctionPower('adminfee', 'adminfee', action);
 
 // 下葬状态：未下葬用于区分卡片是否显示“新建/修改/删除”（管理费锚定首次下葬，未下葬无锚点）20260909 新增
 const INTO_INCOMPLET = 'statusType.intoStatusEnum.incomplet';
@@ -709,19 +709,19 @@ const cardActions: RoomCardAction[] = [
     name: 'create',
     labelKey: 'operate.create',
     theme: 'danger',
-    visible: (row) => row.intoStatus !== INTO_INCOMPLET && userInfo.useCreate === 1,
+    visible: (row) => row.intoStatus !== INTO_INCOMPLET && canAdminfee('create'),
   },
   {
     name: 'modify',
     labelKey: 'operate.modify',
     theme: 'primary',
-    visible: (row) => row.intoStatus !== INTO_INCOMPLET && userInfo.useModify === 1,
+    visible: (row) => row.intoStatus !== INTO_INCOMPLET && canAdminfee('modify'),
   },
   {
     name: 'delete',
     labelKey: 'operate.delete',
     theme: 'danger',
-    visible: (row) => row.intoStatus !== INTO_INCOMPLET && userInfo.useDelete === 1,
+    visible: (row) => row.intoStatus !== INTO_INCOMPLET && canAdminfee('delete'),
   },
 ];
 // RoomCardList 上抛的操作名回本页分发到既有处理函数（处理逻辑一字未改）20261020 P2 S1b

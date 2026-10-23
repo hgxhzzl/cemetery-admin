@@ -14,10 +14,12 @@
             :name="row.state"
           >
             <div class="card-color-row">
-              <t-checkbox v-model="row.isEnabled">{{ $t('pages.cardColor.enable') }}</t-checkbox>
+              <t-checkbox v-model="row.isEnabled" :disabled="!canSetting">
+                {{ $t('pages.cardColor.enable') }}
+              </t-checkbox>
               <t-input
                 v-model="row.color"
-                :disabled="!row.isEnabled"
+                :disabled="!canSetting || !row.isEnabled"
                 :maxcharacter="7"
                 :style="{ width: '140px' }"
                 :placeholder="$t('pages.cardColor.colorPlaceholder')"
@@ -46,11 +48,18 @@
       <div class="form-submit-container">
         <div class="form-submit-sub">
           <div class="form-submit-left">
-            <t-button theme="primary" class="form-submit-confirm" type="submit" :disabled="submitting">
-              {{ $t('operate.confirm') }}
+            <!-- 无“设置提交”权限时整页只读:着色/色值不可编辑,保存与重置一并隐藏 20261023 新增, -->
+            <t-button
+              v-if="canSetting"
+              theme="primary"
+              class="form-submit-confirm"
+              type="submit"
+              :disabled="submitting"
+            >
+              {{ $t('pages.cardColor.submit') }}
             </t-button>
             <!-- 重新载入：丢弃未提交的修改并回到库中当前配置 20261011 新增 -->
-            <t-button theme="default" variant="base" class="form-submit-cancel" @click="loadData">
+            <t-button v-if="canSetting" theme="default" variant="base" class="form-submit-cancel" @click="loadData">
               {{ $t('operate.reset') }}
             </t-button>
           </div>
@@ -61,11 +70,11 @@
 </template>
 <script setup lang="ts">
 import { MessagePlugin } from 'tdesign-vue-next';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import { getCardColor, saveCardColor } from '@/api/cardColor';
 import type { CardColorConfig, CardColorState } from '@/api/model/cardColorModel';
-import { useSubmitGuard } from '@/hooks';
+import { hasFunctionPower, useSubmitGuard } from '@/hooks';
 import { translate } from '@/locales';
 import { CARD_COLOR_STATES, darkenColor, isHexColor, normalizeCardColors, reloadCardColors } from '@/utils/cardTheme';
 import { logError } from '@/utils/logger';
@@ -73,6 +82,13 @@ import { logError } from '@/utils/logger';
 defineOptions({
   name: 'CardColor',
 });
+
+// 保存按钮按“功能×动作”白名单判权(单功能菜单功能键=菜单名),powerConfig=NULL 的存量操作员回退放行 20261023 补全,
+// 动作键用 setting(对应“设置提交”按钮),不再复用通用的 modify 20261023 调整,
+const canCardColor = (action: string) => hasFunctionPower('cardColor', 'cardColor', action);
+// 无“设置提交”权限时整页只读:着色勾选/色值输入不可编辑,保存与重置按钮隐藏;
+// 服务端 /cardColor-save/color 同样按 setting 拦截,前端只读只为避免无效操作 20261023 新增,
+const canSetting = computed(() => canCardColor('setting'));
 
 // 页面行模型：状态 key 与四态字段一起铺开，便于 v-for 渲染 20261011 新增
 interface CardColorRow {
@@ -129,7 +145,13 @@ const sampleStyle = (row: CardColorRow) => {
 
 // 确认提交防重复：沿用收据配制页的 useSubmitGuard，双击/回车不会并发发出两次写接口 20261011 新增
 const { submitting, run } = useSubmitGuard();
-const onSubmit = () => run(submitCore);
+// 只读态下即使回车触发 form submit 也直接忽略(服务端有 functionPower 守卫,前端不发注定 403 的请求)20261023 新增,
+const onSubmit = () => {
+  if (!canSetting.value) {
+    return;
+  }
+  run(submitCore);
+};
 const submitCore = async () => {
   const invalid = formRows.value.find((row) => row.isEnabled && !isHexColor(row.color));
   if (invalid) {

@@ -21,12 +21,8 @@ function normalizePermissionRecord(permission: UserPermission) {
     operatePower: permission.operatePower ?? permission.operatPower,
     operatPower: permission.operatPower ?? permission.operatePower,
     useMenu: Number(permission.useMenu ?? 0),
-    useCreate: Number(permission.useCreate ?? 0),
-    useModify: Number(permission.useModify ?? 0),
-    useDelete: Number(permission.useDelete ?? 0),
-    usePower: Number(permission.usePower ?? 0),
-    useExamine: Number(permission.useExamine ?? 0),
-    useFinish: Number(permission.useFinish ?? 0),
+    // operator_power 的 useCreate/useModify/useDelete/usePower/useExamine/useFinish 六个动作列已废弃删除,
+    // 单功能菜单判权统一走 powerConfig 白名单(hasFunctionPower);此处不再归一这些字段 20261023 动作列迁移,
     operateCreate: Number(permission.operateCreate ?? 0),
     operateModify: Number(permission.operateModify ?? 0),
     operateDelete: Number(permission.operateDelete ?? 0),
@@ -161,6 +157,26 @@ export const useUserStore = defineStore('user', {
         roleItems.push(nextPermission);
       }
 
+      this.userInfo.roles = roleItems;
+    },
+    // 功能级权限白名单自身热更新:管理员在权限页给自己改完 powerConfig 后,就地写回 roles 对应菜单行,
+    // 使 hasFunctionPower 立即反映新配置(与 updatePermissionField 同口径,整块替换 powerConfig) 20261023 新增,
+    updatePermissionPowerConfig(
+      idMenu: string,
+      powerConfig: Record<string, { actions: Record<string, number> }> | null,
+    ) {
+      const roleItems = Array.isArray(this.userInfo.roles) ? [...this.userInfo.roles] : [];
+      const permissionIndex = roleItems.findIndex(
+        (role) =>
+          typeof role === 'object' && role !== null && 'idMenu' in role && (role as UserPermission).idMenu === idMenu,
+      );
+      if (permissionIndex < 0) {
+        return;
+      }
+      roleItems[permissionIndex] = {
+        ...(roleItems[permissionIndex] as UserPermission),
+        powerConfig,
+      } as UserPermission;
       this.userInfo.roles = roleItems;
     },
     async logout() {

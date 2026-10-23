@@ -302,11 +302,11 @@ function normalizeMenuRoutes(routeList: RouteItem[]): RouteItem[] {
 
 // 动态引入路由组件：业务页面目录静态收集（result/404、result/500 由 constant.ts 显式引用，不受此 glob 影响）
 // 注意：glob 模式必须内联为字面量，rolldown 无法跨变量分析 import.meta.glob 的模式
-// 注：20261021 三轮下线三个登记页目录（sale/buried/contacts，由 gravePlotBusiness 承接），已同步从下方白名单移除；
+// 注：20261021 三轮下线三个登记页目录（sale/buried/contacts，由 gravePlotBusiness 承接），20261023 下线预定页目录（reserve，同样由 gravePlotBusiness 承接），均已同步从下方白名单移除；
 // 菜单驱动路由只从本表取组件，存量库未执行下线 SQL 时会回落成空白页，因此发布前须先跑 README 的迁移 SQL。
 const dynamicViewsModules: Record<string, () => Promise<Recordable>> = {
   ...import.meta.glob<Recordable>(
-    '../../pages/{account,adminfee,adminfeeQuery,buriedQuery,cardColor,contactsQuery,contract,gravePlotBusiness,home,login,managementPeriod,operator,park,receiptConfig,reserve,room,roomQuery,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
+    '../../pages/{account,adminfee,adminfeeQuery,buriedQuery,cardColor,contactsQuery,contract,gravePlotBusiness,home,login,managementPeriod,operator,park,receiptConfig,room,roomQuery,saleQuery,taginfo,transferOut,transferOutQuery}/**/*.vue',
   ),
 };
 

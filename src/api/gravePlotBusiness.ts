@@ -56,6 +56,8 @@ export interface GravePlotBusinessModel {
   realPrice: number;
   payer: string;
   payerPhone: string;
+  // 预定限期（预留）：预定形态回填 reserve.reservationExpireDate，其余形态为空 20261023 新增
+  reservationExpireDate?: string;
   remark: string;
   payerIDCard: string;
   payee: string;
@@ -140,7 +142,7 @@ export function updateGravePlotBusiness(
   });
 }
 
-// 销售取消（作废销售）：后端按 idRoom 单事务软删 sale/buried/contacts/adminfee/burial_cert/period_change
+// 销售删除/原销售取消（作废销售，按钮现名“删除”）：后端按 idRoom 单事务软删 sale/buried/contacts/adminfee/burial_cert/period_change
 // 关联活动记录，并将 room 回置未销售/未下葬、清空编号/管理费日期/购墓人/安葬者/联系人/备注 20261008 新增
 // 破坏性写改由 POST 承载（审查同步 20261021 ⑤，后端 GET 路由已移除）
 export function cancelGravePlotBusinessSale(idRoom: number) {
@@ -188,10 +190,11 @@ export function getGravePlotBusinessContacts(idRoom: number) {
 }
 
 // 删除墓位业务接口：业务形态按 idRoom 软删本业务表记录；下葬形态(type=buried)按 idBuried 删单条下葬记录；
-// 联系人形态(type=contacts)按 idContacts 删单条联系人记录 20260923 修改 20260924 修改
+// 联系人形态(type=contacts)按 idContacts 删单条联系人记录；预定形态(type=reserve)软删活动预定并回置墓位预定状态 20260923 修改 20260924 修改 20261023 补充
+// （旧独立预定删除接口已下线，预定删除统一走本接口）
 export function deleteGravePlotBusiness(params: {
   idRoom: number;
-  type?: 'buried' | 'contacts';
+  type?: 'buried' | 'contacts' | 'reserve';
   idBuried?: number;
   idContacts?: number;
 }) {
