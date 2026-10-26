@@ -45,6 +45,12 @@ export async function getDeviceInfo(): Promise<DeviceFingerprint | null> {
     logError('[device] 无法连接本机 Agent(未安装/未运行/超时)', e);
     // AbortError 是前端 3 秒超时(Agent 收到但答慢了);其余多为 Fetch 层面被拦/未装,沿用错误名与消息
     lastDeviceErrorText = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    // HTTP 公网页面请求本机回环会被浏览器直接拦掉:本地网络访问权限只对安全上下文开放,
+    // HTTP 页面连授权弹窗都弹不出来;现场看到这个前缀就能确定不是 Agent 没装,而是访问方式/浏览器策略问题,
+    // 需改用 HTTPS,或由设备 Agent 安装包写入浏览器企业策略放行当前站点 20261026,
+    if (!window.isSecureContext) {
+      lastDeviceErrorText = `insecure-context, ${lastDeviceErrorText}`;
+    }
     return null;
   }
 }

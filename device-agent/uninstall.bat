@@ -21,5 +21,15 @@ rem Clean leftovers of the old service-based design.
 sc stop CemeteryDeviceAgent >nul 2>&1
 sc delete CemeteryDeviceAgent >nul 2>&1
 
+rem Remove the browser local-network exemption written by install.ps1. Only the values
+rem this installer owns are deleted; anything else under the policy key is untouched.
+rem Closing/reopening the browser is required for the change to take effect. 20261026
+for %%K in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Microsoft\Edge") do (
+    for %%V in (InsecurePrivateNetworkRequestsAllowedForUrls LocalNetworkAccessAllowedForUrls LocalNetworkAccessRestrictionsTemporaryOptOut) do (
+        reg delete %%K /v %%V /f >nul 2>&1
+    )
+)
+
 echo Done. This PC no longer provides a device fingerprint, so logins from it will be rejected.
+echo Browser policies written by the installer were removed; restart Chrome/Edge to apply.
 pause

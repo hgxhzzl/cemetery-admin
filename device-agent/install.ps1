@@ -106,6 +106,90 @@ try {
     Log ('  FAILED: ' + $_.Exception.Message)
 }
 
+# --- browser policy: let the production HTTP page reach this loopback agent ---
+# Chrome/Edge 138+ gate requests from a public HTTP page to 127.0.0.1 behind Local
+# Network Access, and an HTTP page can never show the permission prompt, so the only
+# client-side fix is an enterprise policy on this PC. The site is served over plain
+# HTTP on a public IP (no domain/HTTPS yet), hence the installer writes the exemption.
+# Only the listed origins are exempted; every other site stays blocked. 20261026
+$BuiltinOrigins = @('http://124.221.213.247')
+$OriginsFile = Join-Path $PSScriptRoot 'device-agent.origins.json'
+
+function Get-PolicyOriginList {
+    $list = New-Object System.Collections.ArrayList
+    foreach ($item in $BuiltinOrigins) { [void]$list.Add($item) }
+    if (Test-Path -LiteralPath $OriginsFile) {
+        try {
+            $parsed = (Get-Content -LiteralPath $OriginsFile -Raw) | ConvertFrom-Json
+            $items = @()
+            if ($parsed -is [System.Array]) { $items = $parsed }
+            elseif ($parsed.origins) { $items = @($parsed.origins) }
+            foreach ($item in $items) {
+                $text = ([string]$item).Trim()
+                if (-not $text) { continue }
+                if ($text -match '^https?://') {
+                    [void]$list.Add($text.TrimEnd('/'))
+                } else {
+                    # Bare host: the agent matches it for any scheme, but a browser URL
+                    # list needs an explicit scheme, so cover both. 20261026
+                    $hostText = $text.TrimEnd('/')
+                    [void]$list.Add('http://' + $hostText)
+                    [void]$list.Add('https://' + $hostText)
+                }
+            }
+        } catch {
+            Log ('  origins file ignored: ' + $_.Exception.Message)
+        }
+    }
+    return @($list | Select-Object -Unique)
+}
+
+function Ensure-RegistryKey([string]$Path) {
+    if (Test-Path -LiteralPath $Path) { return }
+    $parent = Split-Path -Path $Path -Parent
+    if ($parent) { Ensure-RegistryKey $parent }
+    New-Item -Path $Path -Force | Out-Null
+}
+
+# Merge instead of overwrite: a domain policy or another installer may already list
+# other origins, and dropping them would silently break unrelated software.
+function Set-OriginPolicy([string]$KeyPath, [string]$ValueName, [string[]]$Origins) {
+    $current = @()
+    try {
+        $existing = Get-ItemProperty -Path $KeyPath -Name $ValueName -ErrorAction Stop
+        $current = @($existing.$ValueName)
+    } catch {
+        $current = @()
+    }
+    $merged = @($current + $Origins | Where-Object { $_ } | Select-Object -Unique)
+    New-ItemProperty -Path $KeyPath -Name $ValueName -PropertyType MultiString `
+        -Value ([string[]]$merged) -Force | Out-Null
+}
+
+$policyOrigins = Get-PolicyOriginList
+Log '--- browser policy (local network access exemption) ---'
+Log ('  origins: ' + ($policyOrigins -join ', '))
+$policyKeys = @(
+    @{ Name = 'Chrome'; Path = 'HKLM:\SOFTWARE\Policies\Google\Chrome' },
+    @{ Name = 'Edge';   Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Edge' }
+)
+foreach ($key in $policyKeys) {
+    try {
+        Ensure-RegistryKey $key.Path
+        # InsecurePrivateNetworkRequestsAllowedForUrls is the list an HTTP page obeys
+        # (legacy PNA path); the LocalNetworkAccess* values cover Chromium builds that
+        # already route loopback through the newer permission model. 20261026
+        Set-OriginPolicy $key.Path 'InsecurePrivateNetworkRequestsAllowedForUrls' $policyOrigins
+        Set-OriginPolicy $key.Path 'LocalNetworkAccessAllowedForUrls' $policyOrigins
+        New-ItemProperty -Path $key.Path -Name 'LocalNetworkAccessRestrictionsTemporaryOptOut' `
+            -PropertyType DWord -Value 1 -Force | Out-Null
+        Log ('  ' + $key.Name + ': policy written to ' + $key.Path)
+    } catch {
+        Log ('  ' + $key.Name + ': FAILED: ' + $_.Exception.Message)
+    }
+}
+Log '  NOTE: close every Chrome/Edge window and reopen the browser for the policy to load.'
+
 Log '--- start now ---'
 try {
     Start-ScheduledTask -TaskName $TaskName
