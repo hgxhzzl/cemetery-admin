@@ -240,7 +240,7 @@
                   </t-select>
                 </t-form-item>
               </t-col>
-              <!-- 缴费年限：多选下拉，选项固定 1/2/3/5/10，样式与操作同区域；库存 operator.termYears 逗号分隔串 20261017 新增 -->
+              <!-- 缴费年限：多选下拉，选项固定 1~20，样式与操作同区域；库存 operator.termYears 逗号分隔串 20261017 新增 20261026 选项改为 1~20 -->
               <t-col :span="6">
                 <t-form-item :label="$t('pages.operator.termYears')" name="termYears">
                   <t-select
@@ -426,14 +426,12 @@ const dataDutiesList = ref<SelectModel[]>([]);
 const dataTeamList = ref<SelectModel[]>([]);
 // 区域多选选项（取全量区域 /operator-query/region，不按本操作员自身区域收窄）20261012 修改
 const dataRegionList = ref<SelectModel[]>([]);
-// 缴费年限多选固定选项（同区域样式）：值用字符串以匹配 splitRegion 回显产出的字符串，避免数字/字符串不等致勾选丢失 20261017 新增
-const TERM_YEARS_OPTIONS: { value: string; label: string }[] = [
-  { value: '1', label: '1' },
-  { value: '2', label: '2' },
-  { value: '3', label: '3' },
-  { value: '5', label: '5' },
-  { value: '10', label: '10' },
-];
+// 缴费年限多选固定选项（同区域样式）：值用字符串以匹配 splitRegion 回显产出的字符串，避免数字/字符串不等致勾选丢失 20261017 新增；
+// 选项由固定的 1/2/3/5/10 改为 1~20 连续整数 20261026 修改
+const TERM_YEARS_OPTIONS: { value: string; label: string }[] = Array.from({ length: 20 }, (_, index) => {
+  const year = String(index + 1);
+  return { value: year, label: year };
+});
 const deleteIdx = ref(-1);
 const dialogHeader = translate('operate.deleteDataCPrompt');
 let listTotal = '';

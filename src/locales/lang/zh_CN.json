@@ -20,7 +20,7 @@
       "themeColor": "主题色",
       "changePassword": "修改密码",
       "bindDevice": "登记本机",
-      "bindDeviceAgentMissing": "未检测到本机设备服务，请先安装设备 Agent",
+      "bindDeviceAgentMissing": "未检测到本机设备服务，请先安装设备 Agent（已安装时请用本机或内网地址访问，具体原因见浏览器控制台）",
       "bindDeviceSuccess": "本机已登记为指定电脑",
       "oldPasswordPlaceholder": "请必填旧密码",
       "newPasswordPlaceholder": "请必填新密码",

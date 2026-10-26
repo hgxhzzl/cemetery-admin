@@ -13,7 +13,7 @@
       <template #operations>
         <div class="operations-container">
           <!-- 顶部搜索框已移除（无实际功能）20260915 修改 -->
-          <language-switcher />
+          <!-- 中英语言切换图标已隐藏，不再显示 20261026 修改 -->
           <!-- 主题色选择 -->
           <t-popup placement="bottom-right" trigger="click" :overlay-inner-style="{ padding: '16px' }">
             <t-button theme="default" variant="text" shape="square">
@@ -45,9 +45,9 @@
           </t-button>
           <t-dropdown :min-column-width="120" trigger="click">
             <template #dropdown>
-              <!-- 设备登记入口仅平台管理员可见:把当前电脑哈希写入登录白名单 20260924 设备白名单 -->
+              <!-- 设备登记入口仅管理员账号(isAccount=1)可见:把当前电脑哈希写入登录白名单 20260924 设备白名单 -->
               <t-dropdown-item
-                v-if="user.isAccount === 1"
+                v-if="canBindDevice"
                 class="operations-dropdown-container-item"
                 @click="bindCurrentDevice"
               >
@@ -130,14 +130,13 @@ import { useRouter } from 'vue-router';
 import { bindDevice } from '@/api/device';
 import { updatePassword } from '@/api/operator';
 import LogoFull from '@/assets/assets-logo-full.svg?component';
-import LanguageSwitcher from '@/components/LanguageSwitcher.vue';
 import { DEFAULT_COLOR_OPTIONS } from '@/config/color';
 import { prefix } from '@/config/global';
 import { t } from '@/locales';
 import { getActive } from '@/router';
 import { useSettingStore, useUserStore } from '@/store';
 import type { MenuRoute, ModeType } from '@/types/interface';
-import { getDeviceInfo } from '@/utils/device';
+import { getDeviceInfo, getLastDeviceErrorText } from '@/utils/device';
 import { logError } from '@/utils/logger';
 
 import MenuContent from './MenuContent.vue';
@@ -237,11 +236,18 @@ const handleLogout = async () => {
   }
 };
 
+// 设备登记入口:后端 rbac.isAccountAdmin 只要求 isAccount=1(不限租户),园区管理员也能给自己的电脑登记本机,
+// 入口可见性与后端拦口径保持一致 20261026 调整(中途曾收窄为仅平台管理员,那会把园区管理员直接挡死),
+const canBindDevice = computed(() => user.isAccount === 1);
+
 // 登记本机为指定电脑:取本机设备哈希写入白名单,需本机已装设备 Agent 20260924 设备白名单,
+// 失败时把具体原因拼在提示后面(现场多半开不了控制台):
+// AbortError/Failed to fetch 属浏览器侧拦或未装, Agent 403 属来源不在白名单,两者处理方式完全不同 20261026 修改,
 const bindCurrentDevice = async () => {
   const deviceInfo = await getDeviceInfo();
   if (!deviceInfo) {
-    MessagePlugin.warning(t('layout.header.bindDeviceAgentMissing'));
+    const reason = getLastDeviceErrorText();
+    MessagePlugin.warning(`${t('layout.header.bindDeviceAgentMissing')}${reason ? ` [${reason}]` : ''}`);
     return;
   }
   try {
@@ -249,7 +255,11 @@ const bindCurrentDevice = async () => {
     MessagePlugin.success(t('layout.header.bindDeviceSuccess'));
   } catch (e) {
     logError(e);
-    MessagePlugin.error((e as Error).message);
+    // 403 已由 request 拦截器透出后端文案(如“无权限:仅平台管理员可操作!”),此处再弹 axios 的
+    // “Request failed with status code 403”会变成双弹窗且不可读 20261026 修复,
+    if ((e as { response?: { status?: number } })?.response?.status !== 403) {
+      MessagePlugin.error((e as Error).message);
+    }
   }
 };
 

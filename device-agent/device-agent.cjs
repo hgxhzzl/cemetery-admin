@@ -1,19 +1,86 @@
 // 设备指纹 Agent:登录页通过 http://127.0.0.1:19700/device-info 获取本机设备哈希 20260924 新增,
 // deviceHash = SHA256(硬盘序列号|主板序列号|MachineGuid),物理序列号为主,防止软件层伪造设备身份,
 // 安全:仅监听 127.0.0.1(外部网络不可达) + Origin 白名单(防其他网站探测),
+// 20261026 修复:原白名单是三条完整 Origin 字面量,端口一变(Vite 3002 被占自动换端口)或换用内网 IP 访问
+// 就命中 403,前端把非 2xx 统一当成“未检测到设备服务”,无法登记本机,
 const http = require('node:http');
+const fs = require('node:fs');
+const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const { exec } = require('node:child_process');
 
-const PORT = 19700;
-// 允许访问本服务的站点 Origin:开发 Vite(3002) 与生产域名,部署时按实际地址调整,
-const ALLOWED_ORIGINS = [
-  'http://localhost:3002',
-  'http://127.0.0.1:3002',
-  // 生产站点 Origin:腾讯云轻量服务器直 IP 访问 20260925 部署,
-  'http://124.221.213.247',
-];
+// 端口可由环境变量覆盖:计划任务固定用默认 19700,仅便于在开发机另起一份实例做联调/回归验证,
+const PORT = Number(process.env.DEVICE_AGENT_PORT) || 19700;
+// 允许访问本服务的页面来源(Origin)判定口径:
+// 1) 本机回环任意端口:http://localhost|127.0.0.1:port —— 开发服务端口可能因占用漂移,
+//    且 localhost/127.0.0.1 只可能是本机页面,放行不扩大攻击面;
+// 2) 私网地址任意端口:http://10.x|172.16-31.x|192.168.x:port —— 现场终端/打印电脑直连内网服务,
+//    公网站点的 Origin 不可能落在私网段,同样不扩大攻击面;
+// 3) 内置生产站点 host(协议与端口不限):直 IP 部署 20260925 部署;
+// 4) 同目录 device-agent.origins.json 追加的精确 Origin 或 host(换域名/HTTPS 时无需改代码)。
+// 正则内一律用非捕获组(只做校验不取值,捕获组会被规则判为无用),
+const LOOPBACK_ORIGIN = /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d{1,5})?$/i;
+const PRIVATE_ORIGIN =
+  /^http:\/\/(?:10(?:\.\d{1,3}){3}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2}|192\.168(?:\.\d{1,3}){2})(?::\d{1,5})?$/;
+const ALLOWED_HOSTS = ['124.221.213.247'];
+
+// 可选配置文件:数组形式 ['http://a.example.com','https://b.example.com:8443'] 或 { origins: [...] },
+// 条目可以是完整 origin(精确匹配)也可以是 host(匹配任意协议/端口);读不到/格式错即忽略,不影响内置口径,
+function loadExtraOrigins() {
+  const file = path.join(__dirname, 'device-agent.origins.json');
+  try {
+    const parsed = JSON.parse(fs.readFileSync(file, 'utf8'));
+    const list = Array.isArray(parsed) ? parsed : parsed && Array.isArray(parsed.origins) ? parsed.origins : [];
+    return list.map((item) => String(item).trim()).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+const EXTRA_ORIGINS = loadExtraOrigins();
+
+// 运行事件记录:计划任务以 SYSTEM 运行、标准输出无终端可看,访问与自退原因只落这个文件。
+// 除拒绝外也记成功访问:排查“页面报未检测到设备服务”时,日志有无新行直接区分
+// 「请求根本没到达 Agent(浏览器侧拦/页面未调用)」与「到达并 200(问题在前端解析)」;
+// 频次极低(登录页与登记各一次),超上限时清空重写,不做多文件轮转 20261026,
+const LOG_PATH = path.join(__dirname, 'device-agent.log');
+const LOG_MAX_BYTES = 256 * 1024;
+
+function appendLog(line) {
+  try {
+    try {
+      if (fs.statSync(LOG_PATH).size > LOG_MAX_BYTES) {
+        fs.writeFileSync(LOG_PATH, '');
+      }
+    } catch {
+      // 文件尚不存在时忽略
+    }
+    fs.appendFileSync(LOG_PATH, `[${new Date().toISOString()}] ${line}\n`, 'utf8');
+  } catch {
+    // 日志写失败不得影响主体行为
+  }
+}
+
+function logDenied(origin, reason) {
+  appendLog(`deny origin="${origin}" ${reason}`);
+}
+
+function isAllowedOrigin(origin) {
+  // 无 Origin:浏览器地址栏直接打开(自检用)、本地程序/命令行调用。
+  // 不能算作“放行外部网站”:浏览器发起的跳源 GET/POST 一定带 Origin 头(或 Origin: null),
+  // 不带 Origin 的标签类请求(如 img)本就无从读取响应体,不会泄露指纹 20261026 补充,
+  if (!origin) return true;
+  if (EXTRA_ORIGINS.includes(origin)) return true;
+  if (LOOPBACK_ORIGIN.test(origin) || PRIVATE_ORIGIN.test(origin)) return true;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return false;
+    if (ALLOWED_HOSTS.includes(url.hostname)) return true;
+    return EXTRA_ORIGINS.some((item) => item === url.host || item === url.hostname);
+  } catch {
+    return false;
+  }
+}
 
 // 执行命令并取输出:wmic 输出为 UTF-16LE,被 node 按 UTF-8 解码后会残留大量 NUL 字符;
 // PowerShell/CIM 输出为普通文本。统一剥 NUL 与 BOM 即可兼容两者,
@@ -83,14 +150,28 @@ async function getFingerprint() {
 
 const server = http.createServer(async (req, res) => {
   const origin = req.headers.origin || '';
-  const corsHeader = ALLOWED_ORIGINS.includes(origin) ? origin : '';
-  // CORS 预检
+  const allowed = isAllowedOrigin(origin);
+  // CORS 预检:未授权来源直接 403(此前回退到白名单首项,预检看似通过、真正 GET 才被挡,排查时更迷惑),
   if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': corsHeader || ALLOWED_ORIGINS[0],
+    if (!allowed) {
+      logDenied(origin, 'preflight');
+      res.writeHead(403);
+      return res.end();
+    }
+    const preflightHeaders = {
       'Access-Control-Allow-Methods': 'GET, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-    });
+    };
+    // 无 Origin(地址标自检、命令行调用等非跨源场景)不设 ACAO:空值头对浏览器无意义,省得响应头出现空来源,
+    if (origin) {
+      preflightHeaders['Access-Control-Allow-Origin'] = origin;
+    }
+    // 浏览器私有网络访问(PNA)/本地网络访问预检会带这个请求头,服务端须显式同意,
+    // 否则请求被浏览器拦在门外、连 GET 都不会发出 20261026 补充,
+    if (String(req.headers['access-control-request-private-network'] || '').toLowerCase() === 'true') {
+      preflightHeaders['Access-Control-Allow-Private-Network'] = 'true';
+    }
+    res.writeHead(204, preflightHeaders);
     return res.end();
   }
   if (req.url !== '/device-info' || req.method !== 'GET') {
@@ -98,20 +179,23 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
   // Origin 白名单:非授权站点一律 403,不暴露设备信息
-  if (!ALLOWED_ORIGINS.includes(origin)) {
+  if (!allowed) {
+    logDenied(origin, 'get');
     res.writeHead(403);
     return res.end();
   }
   try {
     const fingerprint = await getFingerprint();
-    res.writeHead(200, {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': origin,
-    });
+    appendLog(`ok origin="${origin || '-'}"`);
+    const responseHeaders = { 'Content-Type': 'application/json' };
+    if (origin) {
+      responseHeaders['Access-Control-Allow-Origin'] = origin;
+    }
+    res.writeHead(200, responseHeaders);
     res.end(JSON.stringify(fingerprint));
   } catch (err) {
     console.error('[device-agent] fingerprint error:', err.message);
-    res.writeHead(500, { 'Access-Control-Allow-Origin': origin });
+    res.writeHead(500, origin ? { 'Access-Control-Allow-Origin': origin } : {});
     res.end(JSON.stringify({ error: 'fingerprint error' }));
   }
 });
@@ -124,10 +208,11 @@ server.listen(PORT, '127.0.0.1', () => {
   getFingerprint().catch(() => {});
 });
 
-// 端口被占(已有实例在跑)时直接退出,避免报错弹窗
+// 端口被占时不再完全静默:旧 Agent 进程没被计划任务结束时会一直占着 19700 继续跑旧代码,
+// 新实例只能退出,此时至少要在日志里留下这么一行(否则安装脚本看似成功、行为却没变)20261026 补充,
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    console.log('[device-agent] already running, exit');
+    appendLog(`exit: port ${PORT} already in use, another agent instance is serving requests`);
     process.exit(0);
   }
   throw err;

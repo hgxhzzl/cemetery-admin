@@ -10,7 +10,8 @@ $KeepAliveName = 'CemeteryDeviceAgentKeepAlive'
 $AgentPath     = Join-Path $PSScriptRoot 'device-agent.cjs'
 $LogPath       = Join-Path $PSScriptRoot 'install.log'
 
-Set-Content -LiteralPath $LogPath -Value ('install started ' + (Get-Date)) -Encoding UTF8
+$installStarted = Get-Date
+Set-Content -LiteralPath $LogPath -Value ('install started ' + $installStarted) -Encoding UTF8
 
 function Log([string]$Message) {
     $line = '{0}  {1}' -f (Get-Date -Format 'HH:mm:ss'), $Message
@@ -48,6 +49,34 @@ foreach ($m in @('stop', 'delete')) {
 }
 foreach ($t in @($TaskName, $KeepAliveName)) {
     (cmd /c "schtasks.exe /delete /tn $t /f 2>&1" | Out-String).Trim() | ForEach-Object { Log ('  task delete: ' + $_) }
+}
+
+# Free port 19700 before registering: deleting a scheduled task does NOT kill an instance that is
+# already running, and such an orphan keeps serving the OLD origin whitelist forever. The fresh
+# instance then hits EADDRINUSE and exits silently, so the installer would otherwise "succeed"
+# while the browser keeps talking to stale code. 20261026
+Log '--- free port 19700 ---'
+foreach ($round in 1..10) {
+    $conns = Get-NetTCPConnection -LocalPort 19700 -State Listen -ErrorAction SilentlyContinue
+    if (-not $conns) { break }
+    foreach ($hp in ($conns | ForEach-Object { $_.OwningProcess } | Sort-Object -Unique)) {
+        try {
+            $proc = Get-CimInstance -ClassName Win32_Process -Filter ("ProcessId=$hp")
+            $procName = if ($proc) { $proc.Name } else { 'unknown' }
+            $procCmd = if ($proc) { $proc.CommandLine } else { '' }
+            Log ('  stop pid=' + $hp + ' name=' + $procName + ' cmd=' + $procCmd)
+            Stop-Process -Id $hp -Force -ErrorAction Stop
+        } catch {
+            Log ('  stop pid=' + $hp + ' FAILED: ' + $_.Exception.Message)
+        }
+    }
+    Start-Sleep -Seconds 1
+}
+$stillHolding = Get-NetTCPConnection -LocalPort 19700 -State Listen -ErrorAction SilentlyContinue
+if ($stillHolding) {
+    Log ('  WARNING: port 19700 still held by pid=' + (($stillHolding | ForEach-Object { $_.OwningProcess }) -join ','))
+} else {
+    Log '  port 19700 free'
 }
 
 $action    = New-ScheduledTaskAction -Execute $node -Argument ('"' + $AgentPath + '"') -WorkingDirectory $PSScriptRoot
@@ -91,10 +120,27 @@ $listening = Get-NetTCPConnection -LocalPort 19700 -State Listen -ErrorAction Si
 Log ('  port 19700 listening : ' + [bool]$listening)
 # Report the owner of the listening process: it must be SYSTEM, otherwise the agent was started
 # by an interactive test run and will die when that window closes. 20261010
+# GetOwner is a WMI method, not a property of a CimInstance, so it has to go through Invoke-CimMethod. 20261026
 if ($listening) {
     $ownerPid = ($listening | Select-Object -First 1).OwningProcess
-    $sid = (Get-CimInstance -ClassName Win32_Process -Filter ("ProcessId=$ownerPid")).GetOwner()
-    Log ('  listener pid=' + $ownerPid + ' owner=' + $sid.Domain + '\' + $sid.User)
+    $ownerProc = Get-CimInstance -ClassName Win32_Process -Filter ("ProcessId=$ownerPid")
+    $ownerText = 'unknown'
+    if ($ownerProc) {
+        try {
+            $owner = Invoke-CimMethod -InputObject $ownerProc -MethodName GetOwner
+            $ownerText = $owner.Domain + '\' + $owner.User
+        } catch {
+            $ownerText = 'unavailable (' + $_.Exception.Message + ')'
+        }
+    }
+    Log ('  listener pid=' + $ownerPid + ' owner=' + $ownerText)
+    # The verify step above can be "happy" with a stale instance: protocol what was actually started.
+    if ($ownerProc) {
+        Log ('  listener started=' + $ownerProc.CreationDate + ' cmd=' + $ownerProc.CommandLine)
+        if ($ownerProc.CreationDate -lt $installStarted) {
+            Log '  WARNING: listener predates this install run - the new agent did NOT take over port 19700'
+        }
+    }
 }
 try {
     $resp = Invoke-WebRequest -Uri 'http://127.0.0.1:19700/device-info' `

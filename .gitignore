@@ -27,6 +27,9 @@ test-report.html
 yarn-error.log
 # 设备 Agent 安装脚本的运行日志(本机排障用,不入库) 20261010 新增,
 device-agent/install.log
+# 设备 Agent 运行时产物:403 拒绝记录日志与可选的来源白名单配置 20261026 新增,
+device-agent/device-agent.log
+device-agent/device-agent.origins.json
 *.zip
 .history
 .stylelintcache
