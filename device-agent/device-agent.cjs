@@ -208,11 +208,25 @@ server.listen(PORT, '127.0.0.1', () => {
   getFingerprint().catch(() => {});
 });
 
-// 端口被占时不再完全静默:旧 Agent 进程没被计划任务结束时会一直占着 19700 继续跑旧代码,
-// 新实例只能退出,此时至少要在日志里留下这么一行(否则安装脚本看似成功、行为却没变)20261026 补充,
+// 端口被占时退出前留一行排查线索(旧 Agent 没被结束时新实例装了新代码却不生效),
+// 但 keepalive 任务每 5 分钟都会拉起一个撞端口的新进程,逐条记日志纯是噪音:
+// 同一天只记第一条,其余静默退出 20261027 降噪,
+function logExitOncePerDay(port) {
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const tail = fs.readFileSync(LOG_PATH, 'utf8').slice(-2048);
+    const lines = tail.split('\n').filter((line) => line.includes('already in use'));
+    const last = lines[lines.length - 1] || '';
+    if (last.startsWith(`[${today}`)) return;
+  } catch {
+    // 日志文件尚不存在时视为今天未记录
+  }
+  appendLog(`exit: port ${port} already in use, another agent instance is serving requests`);
+}
+
 server.on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
-    appendLog(`exit: port ${PORT} already in use, another agent instance is serving requests`);
+    logExitOncePerDay(PORT);
     process.exit(0);
   }
   throw err;

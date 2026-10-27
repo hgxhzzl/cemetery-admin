@@ -23,13 +23,22 @@ sc delete CemeteryDeviceAgent >nul 2>&1
 
 rem Remove the browser local-network exemption written by install.ps1. Only the values
 rem this installer owns are deleted; anything else under the policy key is untouched.
+rem List policies live in a subkey with numbered values, while the older revision of the
+rem installer wrote a MultiString value of the same name - remove both forms.
 rem Closing/reopening the browser is required for the change to take effect. 20261026
 for %%K in ("HKLM\SOFTWARE\Policies\Google\Chrome" "HKLM\SOFTWARE\Policies\Microsoft\Edge") do (
-    for %%V in (InsecurePrivateNetworkRequestsAllowedForUrls LocalNetworkAccessAllowedForUrls LocalNetworkAccessRestrictionsTemporaryOptOut) do (
+    for %%V in (InsecurePrivateNetworkRequestsAllowedForUrls LocalNetworkAccessAllowedForUrls LocalNetworkAllowedForUrls LoopbackNetworkAllowedForUrls) do (
         reg delete %%K /v %%V /f >nul 2>&1
+        reg delete "%%~K\%%V" /f >nul 2>&1
     )
+    reg delete %%K /v InsecurePrivateNetworkRequestsAllowed /f >nul 2>&1
+    reg delete %%K /v LocalNetworkAccessRestrictionsTemporaryOptOut /f >nul 2>&1
 )
 
+rem Drop the site's private CA from the machine trust store, otherwise the PC keeps trusting
+rem certificates signed by a CA that is no longer managed. 20261026
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Get-ChildItem Cert:\LocalMachine\Root | Where-Object { $_.Subject -like '*CN=Cemetery Internal Root CA*' } | Remove-Item -Force" >nul 2>&1
+
 echo Done. This PC no longer provides a device fingerprint, so logins from it will be rejected.
-echo Browser policies written by the installer were removed; restart Chrome/Edge to apply.
+echo Browser policies and the site CA were removed; restart Chrome/Edge to apply.
 pause

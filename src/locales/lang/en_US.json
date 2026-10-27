@@ -20,7 +20,7 @@
       "themeColor": "Theme Color",
       "changePassword": "Change Password",
       "bindDevice": "Register This PC",
-      "bindDeviceAgentMissing": "Device agent not detected: install the device agent first; if it is already installed, restart Chrome/Edge (this HTTP site needs a browser policy to reach local services - see the browser console)",
+      "bindDeviceAgentMissing": "Device agent not detected: re-run the device agent installer as administrator (it also lets the browser reach local services), then quit the browser completely and reopen it",
       "bindDeviceSuccess": "This computer has been registered",
       "oldPasswordPlaceholder": "Please fill in old password",
       "newPasswordPlaceholder": "Please fill in new password",
